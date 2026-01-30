@@ -1,0 +1,1045 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  ShoppingCart, 
+  Users, 
+  Package, 
+  TrendingUp,
+  AlertTriangle,
+  Bell,
+  BarChart3,
+  FileText,
+  CreditCard,
+  Building,
+  Wallet,
+  Receipt,
+  Minus,
+  Calendar,
+  Search,
+  ShoppingBag,
+  Banknote,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Truck,
+  Tag,
+  Eye
+} from 'lucide-react';
+import DashboardReportModal from '../components/DashboardReportModal';
+import {
+  useGetTodaySummaryQuery,
+  useGetOrdersQuery,
+  useLazyGetPeriodSummaryQuery,
+} from '../store/services/salesApi';
+import { useGetLowStockItemsQuery, useGetInventorySummaryQuery } from '../store/services/inventoryApi';
+import { useGetCustomersQuery } from '../store/services/customersApi';
+import { useGetSalesOrdersQuery } from '../store/services/salesOrdersApi';
+import { useGetPurchaseOrdersQuery } from '../store/services/purchaseOrdersApi';
+import { useGetPurchaseInvoicesQuery } from '../store/services/purchaseInvoicesApi';
+import { useGetCashReceiptsQuery } from '../store/services/cashReceiptsApi';
+import { useGetCashPaymentsQuery } from '../store/services/cashPaymentsApi';
+import { useGetBankReceiptsQuery } from '../store/services/bankReceiptsApi';
+import { useGetBankPaymentsQuery } from '../store/services/bankPaymentsApi';
+import { useGetUpcomingExpensesQuery } from '../store/services/expensesApi';
+import { formatCurrency, formatDate } from '../utils/formatters';
+import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage, LoadingInline } from '../components/LoadingSpinner';
+import PeriodComparisonSection from '../components/PeriodComparisonSection';
+import PeriodComparisonCard from '../components/PeriodComparisonCard';
+import ComparisonChart from '../components/ComparisonChart';
+import { usePeriodComparison } from '../hooks/usePeriodComparison';
+
+const StatCard = ({ title, value, icon: Icon, color, change, changeType }) => (
+  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2 sm:p-3 md:p-4 h-full">
+    <div className="text-center flex flex-col justify-center items-center h-full">
+      <div className="flex justify-center mb-1 sm:mb-2 md:mb-3">
+        <div className={`p-2 sm:p-2.5 md:p-3 rounded-full ${color}`}>
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+        </div>
+      </div>
+      <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 line-clamp-2">{title}</p>
+      <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-gray-900 mb-1 break-words">{value}</p>
+      <div className="h-4 sm:h-5 flex items-center justify-center space-x-1">
+        {change && (
+          <>
+            {changeType === 'positive' && (
+              <svg className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            )}
+            <p className={`text-xs sm:text-sm font-medium ${changeType === 'positive' ? 'text-green-600' : 'text-gray-600'}`}>
+              {changeType === 'positive' ? '+' : ''}{change}
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+// Helper function to get local date in YYYY-MM-DD format (avoids timezone issues with toISOString)
+const getLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const Dashboard = () => {
+  const navigate = useNavigate();
+  const today = getLocalDateString();
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
+  const [activeFromDate, setActiveFromDate] = useState(today);
+  const [activeToDate, setActiveToDate] = useState(today);
+  
+  // Modal states
+  const [showSalesOrdersModal, setShowSalesOrdersModal] = useState(false);
+  const [showPurchaseOrdersModal, setShowPurchaseOrdersModal] = useState(false);
+  const [showSalesInvoicesModal, setShowSalesInvoicesModal] = useState(false);
+  const [showPurchaseInvoicesModal, setShowPurchaseInvoicesModal] = useState(false);
+  const [showCashReceiptsModal, setShowCashReceiptsModal] = useState(false);
+  const [showCashPaymentsModal, setShowCashPaymentsModal] = useState(false);
+  const [showBankReceiptsModal, setShowBankReceiptsModal] = useState(false);
+  const [showBankPaymentsModal, setShowBankPaymentsModal] = useState(false);
+
+  // Lazy query for period summary
+  const [getPeriodSummary] = useLazyGetPeriodSummaryQuery();
+
+  // Handle search button click
+  const handleSearch = () => {
+    setActiveFromDate(fromDate);
+    setActiveToDate(toDate);
+  };
+
+  // Wrapper function for period summary that matches the expected API format
+  const fetchPeriodSummary = async (params) => {
+    try {
+      const result = await getPeriodSummary(params).unwrap();
+      return {
+        data: {
+          data: result.data || result
+        }
+      };
+    } catch (error) {
+      // Error fetching period summary - silent fail
+      return {
+        data: {
+          data: {
+            totalRevenue: 0,
+            totalOrders: 0,
+            averageOrderValue: 0,
+            totalItems: 0
+          }
+        }
+      };
+    }
+  };
+
+  const { data: todaySummary, isLoading: summaryLoading, error: todaySummaryError } = useGetTodaySummaryQuery(undefined, {
+    pollingInterval: 30000, // Refetch every 30 seconds
+  });
+
+  // Debug: Log the summary data to see what we're getting
+  if (todaySummary) {
+    console.log('Today Summary Data:', todaySummary);
+  }
+  if (todaySummaryError) {
+    console.error('Today Summary Error:', todaySummaryError);
+  }
+
+  const { data: lowStockData, isLoading: lowStockLoading } = useGetLowStockItemsQuery();
+
+  const { data: inventoryData, isLoading: inventoryLoading } = useGetInventorySummaryQuery();
+
+  const { data: customersData, isLoading: customersLoading } = useGetCustomersQuery(
+    { status: 'active' }
+  );
+
+  // Pending Sales Orders data (draft status only)
+  const { data: pendingSalesOrdersData, isLoading: pendingSalesOrdersLoading } = useGetSalesOrdersQuery(
+    { status: 'draft' }
+  );
+
+  // All Sales Orders data (for total value calculation)
+  // Use 'all' parameter to get all orders without pagination
+  const { data: salesOrdersData, isLoading: salesOrdersLoading } = useGetSalesOrdersQuery(
+    { dateFrom: activeFromDate, dateTo: activeToDate, all: true },
+    { skip: !activeFromDate || !activeToDate }
+  );
+
+  // Pending Purchase Orders data (draft status only)
+  const { data: pendingPurchaseOrdersData, isLoading: pendingPurchaseOrdersLoading } = useGetPurchaseOrdersQuery(
+    { status: 'draft' }
+  );
+
+  // All Purchase Orders data (for total value calculation)
+  const { data: purchaseOrdersData, isLoading: purchaseOrdersLoading } = useGetPurchaseOrdersQuery(
+    { dateFrom: activeFromDate, dateTo: activeToDate },
+    { skip: !activeFromDate || !activeToDate }
+  );
+
+  // Sales Invoices (from Sales page) - actual completed sales
+  // Use 'all' parameter to get all orders without pagination
+  const { data: salesInvoicesData, isLoading: salesInvoicesLoading } = useGetOrdersQuery(
+    { dateFrom: activeFromDate, dateTo: activeToDate, all: true },
+    { skip: !activeFromDate || !activeToDate }
+  );
+
+  // Purchase Invoices (from Purchase page) - actual purchases
+  const { data: purchaseInvoicesData, isLoading: purchaseInvoicesLoading } = useGetPurchaseInvoicesQuery(
+    { dateFrom: activeFromDate, dateTo: activeToDate },
+    { skip: !activeFromDate || !activeToDate }
+  );
+
+  // Cash Receipts data
+  const { data: cashReceiptsData, isLoading: cashReceiptsLoading } = useGetCashReceiptsQuery(
+    { dateFrom: activeFromDate, dateTo: activeToDate },
+    { skip: !activeFromDate || !activeToDate }
+  );
+
+  // Cash Payments data
+  const { data: cashPaymentsData, isLoading: cashPaymentsLoading } = useGetCashPaymentsQuery(
+    { dateFrom: activeFromDate, dateTo: activeToDate },
+    { skip: !activeFromDate || !activeToDate }
+  );
+
+  // Bank Receipts data
+  const { data: bankReceiptsData, isLoading: bankReceiptsLoading } = useGetBankReceiptsQuery(
+    { dateFrom: activeFromDate, dateTo: activeToDate },
+    { skip: !activeFromDate || !activeToDate }
+  );
+
+  // Bank Payments data
+  const { data: bankPaymentsData, isLoading: bankPaymentsLoading } = useGetBankPaymentsQuery(
+    { dateFrom: activeFromDate, dateTo: activeToDate },
+    { skip: !activeFromDate || !activeToDate }
+  );
+
+  const { data: recurringExpensesData, isLoading: recurringExpensesLoading } = useGetUpcomingExpensesQuery(
+    { days: 14 },
+    { pollingInterval: 60000 }
+  );
+
+  if (summaryLoading || lowStockLoading || inventoryLoading || customersLoading || 
+      salesOrdersLoading || pendingSalesOrdersLoading || purchaseOrdersLoading || pendingPurchaseOrdersLoading || 
+      salesInvoicesLoading || purchaseInvoicesLoading || cashReceiptsLoading || 
+      cashPaymentsLoading || bankReceiptsLoading || bankPaymentsLoading || recurringExpensesLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Handle different response structures from RTK Query
+  // RTK Query wraps responses in 'data', but some APIs return data directly
+  const summary = todaySummary?.data?.summary || todaySummary?.summary || {};
+  const lowStockCount = lowStockData?.data?.products?.length || lowStockData?.products?.length || 0;
+  const inventorySummary = inventoryData?.data?.summary || inventoryData?.summary || {};
+  
+  const activeCustomersCount = customersData?.data?.customers?.length || customersData?.customers?.length || 0;
+  
+  // Extract counts from API responses
+  const pendingSalesOrdersCount = pendingSalesOrdersData?.data?.salesOrders?.length || pendingSalesOrdersData?.salesOrders?.length || 0;
+  const pendingPurchaseOrdersCount = pendingPurchaseOrdersData?.data?.purchaseOrders?.length || pendingPurchaseOrdersData?.purchaseOrders?.length || 0;
+  const cashReceiptsCount = cashReceiptsData?.data?.cashReceipts?.length || 0;
+  const cashPaymentsCount = cashPaymentsData?.data?.cashPayments?.length || 0;
+  const bankReceiptsCount = bankReceiptsData?.data?.bankReceipts?.length || 0;
+  const bankPaymentsCount = bankPaymentsData?.data?.bankPayments?.length || 0;
+
+  const upcomingRecurringExpenses = recurringExpensesData?.data || recurringExpensesData?.expenses || [];
+
+  const calculateDaysUntilDue = (dateString) => {
+    if (!dateString) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dateString);
+    due.setHours(0, 0, 0, 0);
+    const diff = due.getTime() - today.getTime();
+    return Math.round(diff / (1000 * 60 * 60 * 24));
+  };
+
+  const getRecurringPayeeName = (expense) => {
+    if (expense?.supplier) {
+      return (
+        expense.supplier.displayName ||
+        expense.supplier.companyName ||
+        expense.supplier.businessName ||
+        expense.supplier.name
+      );
+    }
+    if (expense?.customer) {
+      return (
+        expense.customer.displayName ||
+        expense.customer.businessName ||
+        expense.customer.name ||
+        [expense.customer.firstName, expense.customer.lastName].filter(Boolean).join(' ')
+      );
+    }
+    return 'General Expense';
+  };
+  
+  // Calculate totals for financial metrics
+  // RTK Query wraps axios response in 'data', so structure is: { data: { salesOrders: [...], pagination: {...} } }
+  // Sales Orders use `total` directly, not `pricing.total`
+  const salesOrdersArray = salesOrdersData?.data?.salesOrders || salesOrdersData?.salesOrders || [];
+  const salesOrdersTotal = salesOrdersArray.reduce((sum, order) => {
+    const orderTotal = order.total || order.pricing?.total || 0;
+    return sum + Number(orderTotal);
+  }, 0);
+  
+  const purchaseOrdersTotal = (purchaseOrdersData?.data?.purchaseOrders || purchaseOrdersData?.purchaseOrders || []).reduce((sum, order) => {
+    return sum + Number(order.pricing?.total || order.total || 0);
+  }, 0);
+  
+  // Sales Invoices (from Sales/POS page) - use `pricing.total`
+  // RTK Query wraps axios response in 'data', so structure is: { data: { orders: [...], pagination: {...} } }
+  // Also handle direct response structure (no data wrapper)
+  const salesInvoicesArray = salesInvoicesData?.data?.orders || salesInvoicesData?.orders || [];
+  const salesInvoicesTotal = salesInvoicesArray.reduce((sum, order) => {
+    const orderTotal = order.pricing?.total || order.total || 0;
+    return sum + Number(orderTotal);
+  }, 0);
+  
+  // Purchase Invoices (from Purchase page)
+  const purchaseInvoicesTotal = purchaseInvoicesData?.data?.invoices?.reduce((sum, invoice) => sum + (invoice.pricing?.total || 0), 0) || 
+                                 purchaseInvoicesData?.invoices?.reduce((sum, invoice) => sum + (invoice.pricing?.total || 0), 0) || 0;
+  
+  const cashReceiptsTotal = cashReceiptsData?.data?.cashReceipts?.reduce((sum, receipt) => sum + (receipt.amount || 0), 0) || 0;
+  const cashPaymentsTotal = cashPaymentsData?.data?.cashPayments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+  const bankReceiptsTotal = bankReceiptsData?.data?.bankReceipts?.reduce((sum, receipt) => sum + (receipt.amount || 0), 0) || 0;
+  const bankPaymentsTotal = bankPaymentsData?.data?.bankPayments?.reduce((sum, payment) => sum + (payment.amount || 0), 0) || 0;
+  
+  // Calculate total sales (Sales Orders + Sales Invoices)
+  const totalSales = salesOrdersTotal + salesInvoicesTotal;
+  
+  // Calculate total purchases (Purchase Orders + Purchase Invoices) - COGS
+  const totalPurchases = purchaseOrdersTotal + purchaseInvoicesTotal;
+  
+  // Calculate total discounts from sales orders and sales invoices
+  const salesOrdersDiscounts = salesOrdersData?.data?.salesOrders?.reduce((sum, order) => sum + (order.pricing?.discountAmount || 0), 0) || 0;
+  const salesInvoicesDiscounts = salesInvoicesData?.data?.orders?.reduce((sum, order) => sum + (order.discountAmount || 0), 0) || 
+                                  salesInvoicesData?.orders?.reduce((sum, order) => sum + (order.discountAmount || 0), 0) || 0;
+  const totalDiscounts = salesOrdersDiscounts + salesInvoicesDiscounts;
+  
+  // Separate Cash/Bank Payments into Supplier Payments vs Operating Expenses
+  // Operating expenses are payments that don't have a supplier or customer (general expenses)
+  const cashPayments = cashPaymentsData?.data?.cashPayments || [];
+  const bankPayments = bankPaymentsData?.data?.bankPayments || [];
+  
+  const cashOperatingExpenses = cashPayments
+    .filter(payment => !payment?.supplier && !payment?.customer)
+    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  
+  const bankOperatingExpenses = bankPayments
+    .filter(payment => !payment?.supplier && !payment?.customer)
+    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  
+  const operatingExpenses = cashOperatingExpenses + bankOperatingExpenses;
+  
+  const totalCashPayments = cashPaymentsTotal;
+  const totalBankPayments = bankPaymentsTotal;
+  const totalPayments = totalCashPayments + totalBankPayments; // Includes both supplier payments and expenses
+  
+  // Cash Flow Calculations
+  const totalCashReceipts = cashReceiptsTotal;
+  const totalBankReceipts = bankReceiptsTotal;
+  const totalReceipts = totalCashReceipts + totalBankReceipts;
+  const netCashFlow = totalReceipts - totalPayments;
+  
+  // Financial Performance Calculations
+  const grossRevenue = totalSales; // Total sales before discounts
+  const netRevenue = totalSales - totalDiscounts; // Sales after discounts
+  const costOfGoodsSold = totalPurchases; // COGS
+  const grossProfit = netRevenue - costOfGoodsSold; // Gross Profit
+  const netProfit = grossProfit - operatingExpenses;
+
+  // Column definitions for modals
+  const salesOrdersColumns = [
+    { key: 'soNumber', label: 'Order Number', sortable: true },
+    { key: 'customer', label: 'Customer', sortable: true, render: (val, row) => row.customer?.businessName || row.customer?.name || '-' },
+    { key: 'orderDate', label: 'Date', sortable: true, format: 'date' },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'total', label: 'Total', sortable: true, format: 'currency' }
+  ];
+
+  const purchaseOrdersColumns = [
+    { key: 'poNumber', label: 'PO Number', sortable: true },
+    { key: 'supplier', label: 'Supplier', sortable: true, render: (val, row) => row.supplier?.companyName || row.supplier?.name || '-' },
+    { key: 'orderDate', label: 'Date', sortable: true, format: 'date' },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'total', label: 'Total', sortable: true, format: 'currency' }
+  ];
+
+  const salesInvoicesColumns = [
+    { key: 'orderNumber', label: 'Order Number', sortable: true },
+    { key: 'customer', label: 'Customer', sortable: true, render: (val, row) => row.customerInfo?.businessName || row.customerInfo?.name || '-' },
+    { key: 'createdAt', label: 'Date', sortable: true, format: 'date' },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'pricing', label: 'Total', sortable: true, render: (val) => formatCurrency(val?.total || 0) }
+  ];
+
+  const purchaseInvoicesColumns = [
+    { key: 'invoiceNumber', label: 'Invoice Number', sortable: true },
+    { key: 'supplier', label: 'Supplier', sortable: true, render: (val, row) => row.supplier?.companyName || row.supplier?.name || '-' },
+    { key: 'invoiceDate', label: 'Date', sortable: true, format: 'date' },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'pricing', label: 'Total', sortable: true, render: (val) => formatCurrency(val?.total || 0) }
+  ];
+
+  const cashReceiptsColumns = [
+    { key: 'voucherCode', label: 'Voucher Code', sortable: true },
+    { key: 'customer', label: 'Customer', sortable: true, render: (val, row) => row.customer?.businessName || row.customer?.name || '-' },
+    { key: 'date', label: 'Date', sortable: true, format: 'date' },
+    { key: 'particular', label: 'Particular', sortable: true },
+    { key: 'amount', label: 'Amount', sortable: true, format: 'currency' }
+  ];
+
+  const cashPaymentsColumns = [
+    { key: 'voucherCode', label: 'Voucher Code', sortable: true },
+    { key: 'supplier', label: 'Supplier', sortable: true, render: (val, row) => row.supplier?.companyName || row.supplier?.name || '-' },
+    { key: 'customer', label: 'Customer', sortable: true, render: (val, row) => row.customer?.businessName || row.customer?.name || '-' },
+    { key: 'date', label: 'Date', sortable: true, format: 'date' },
+    { key: 'particular', label: 'Particular', sortable: true },
+    { key: 'amount', label: 'Amount', sortable: true, format: 'currency' }
+  ];
+
+  const bankReceiptsColumns = [
+    { key: 'voucherCode', label: 'Voucher Code', sortable: true },
+    { key: 'customer', label: 'Customer', sortable: true, render: (val, row) => row.customer?.businessName || row.customer?.name || '-' },
+    { key: 'date', label: 'Date', sortable: true, format: 'date' },
+    { key: 'particular', label: 'Particular', sortable: true },
+    { key: 'amount', label: 'Amount', sortable: true, format: 'currency' }
+  ];
+
+  const bankPaymentsColumns = [
+    { key: 'voucherCode', label: 'Voucher Code', sortable: true },
+    { key: 'supplier', label: 'Supplier', sortable: true, render: (val, row) => row.supplier?.companyName || row.supplier?.name || '-' },
+    { key: 'customer', label: 'Customer', sortable: true, render: (val, row) => row.customer?.businessName || row.customer?.name || '-' },
+    { key: 'date', label: 'Date', sortable: true, format: 'date' },
+    { key: 'particular', label: 'Particular', sortable: true },
+    { key: 'amount', label: 'Amount', sortable: true, format: 'currency' }
+  ];
+
+  // Prepare data arrays for modals
+  const salesOrdersModalData = salesOrdersArray;
+  const purchaseOrdersModalData = purchaseOrdersData?.data?.purchaseOrders || purchaseOrdersData?.purchaseOrders || [];
+  const salesInvoicesModalData = salesInvoicesArray;
+  const purchaseInvoicesDataArray = purchaseInvoicesData?.data?.invoices || purchaseInvoicesData?.invoices || [];
+  const cashReceiptsDataArray = cashReceiptsData?.data?.cashReceipts || [];
+  const cashPaymentsDataArray = cashPayments;
+  const bankReceiptsDataArray = bankReceiptsData?.data?.bankReceipts || [];
+  const bankPaymentsDataArray = bankPayments;
+
+  return (
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm sm:text-base text-gray-600">Welcome back! Here's what's happening today.</p>
+        </div>
+        <div className="hidden md:flex items-center gap-2">
+          <button
+            onClick={() => navigate('/cash-receiving')}
+            className="btn btn-primary items-center justify-center space-x-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex"
+          >
+            <Receipt className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="text-sm sm:text-base font-medium">Cash Receiving</span>
+          </button>
+        </div>
+      </div>
+
+      {upcomingRecurringExpenses.length > 0 && (
+        <div className="card">
+          <div className="card-header flex items-center justify-between">
+            <div>
+              <h2 className="text-base sm:text-lg font-medium text-gray-900 flex items-center space-x-2">
+                <Bell className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
+                <span>Upcoming Monthly Obligations</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-600">
+                Stay ahead of salaries, rent, and other committed expenses.
+              </p>
+            </div>
+          </div>
+          <div className="card-content">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {upcomingRecurringExpenses.slice(0, 4).map((expense) => {
+                const daysLeft = calculateDaysUntilDue(expense.nextDueDate);
+                const isOverdue = typeof daysLeft === 'number' && daysLeft < 0;
+                return (
+                  <div
+                    key={expense._id}
+                    className={`border rounded-lg p-4 shadow-sm ${
+                      isOverdue ? 'border-danger-200 bg-danger-50/60' : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        {expense.defaultPaymentType === 'bank' ? 'Bank Payment' : 'Cash Payment'}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-900">{expense.name}</h3>
+                    <p className="text-sm text-gray-600">{getRecurringPayeeName(expense)}</p>
+                    <p className="text-lg font-bold text-gray-900 mt-2">
+                      {formatCurrency(expense.amount)}
+                    </p>
+                    <div className="mt-2 text-sm text-gray-600 flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-gray-400" />
+                      <span>Due {formatDate(expense.nextDueDate)}</span>
+                    </div>
+                    <div className="mt-2">
+                      <span
+                        className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${
+                          isOverdue
+                            ? 'bg-danger-100 text-danger-700'
+                            : 'bg-primary-100 text-primary-700'
+                        }`}
+                      >
+                        {isOverdue ? `${Math.abs(daysLeft)} day(s) overdue` : `${daysLeft} day(s) left`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {upcomingRecurringExpenses.length > 4 && (
+              <p className="text-xs text-gray-500 mt-3">
+                Showing first 4 reminders. Review all recurring expenses from the Cash Payments page.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Financial Dashboard */}
+      <div className="card">
+        <div className="card-header">
+          <div className="flex flex-col items-center space-y-2 sm:space-y-4">
+            <h2 className="text-sm sm:text-lg font-medium text-gray-900">Financial Overview</h2>
+            <div className="flex flex-row items-center space-x-1.5 sm:space-x-4 w-full sm:w-auto">
+              <div className="flex flex-row items-center space-x-1.5 sm:space-x-3 flex-1 sm:flex-initial min-w-0">
+                <Calendar className="h-4 w-4 text-gray-500 hidden sm:block flex-shrink-0" />
+                <div className="flex flex-row items-center space-x-1 flex-1 sm:flex-initial min-w-0">
+                  <label className="text-xs sm:text-sm font-medium text-gray-600 whitespace-nowrap hidden sm:inline flex-shrink-0">From:</label>
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="input text-xs sm:text-sm flex-1 min-w-0 sm:w-36 md:w-40 py-1.5 sm:py-2 h-[38px] sm:h-auto"
+                  />
+                </div>
+                <div className="flex flex-row items-center space-x-1 flex-1 sm:flex-initial min-w-0">
+                  <label className="text-xs sm:text-sm font-medium text-gray-600 whitespace-nowrap hidden sm:inline flex-shrink-0">To:</label>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="input text-xs sm:text-sm flex-1 min-w-0 sm:w-36 md:w-40 py-1.5 sm:py-2 h-[38px] sm:h-auto"
+                  />
+                </div>
+              </div>
+              <button 
+                onClick={handleSearch}
+                className="btn btn-primary flex items-center justify-center px-2.5 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-base flex-shrink-0 min-w-[40px] sm:min-w-0 h-[38px] sm:h-auto"
+              >
+                <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline ml-1 sm:ml-2">Search</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="card-content space-y-6">
+          
+          {/* REVENUE, COST & DISCOUNT SECTION */}
+          <div>
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Revenue, Cost & Discounts</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+            
+            {/* Sales */}
+            <div 
+              className="text-center p-2 sm:p-3 md:p-4 border-2 border-green-300 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 hover:border-green-400 transition-colors relative group"
+              onClick={() => setShowSalesInvoicesModal(true)}
+            >
+              <div className="absolute top-1 right-1 sm:top-2 sm:right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+              </div>
+              <div className="flex justify-center mb-1 sm:mb-2">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-green-500 rounded-full">
+                  <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm font-medium text-green-700 mb-1">Sales (Revenue)</p>
+              <p className="text-base sm:text-lg md:text-xl font-bold text-green-800 break-words">{Math.round(totalSales).toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-green-600 mt-1 hidden sm:block">SO: {Math.round(salesOrdersTotal)} | SI: {Math.round(salesInvoicesTotal)}</p>
+            </div>
+
+            {/* Purchase (COGS) */}
+            <div 
+              className="text-center p-2 sm:p-3 md:p-4 border-2 border-purple-300 bg-purple-50 rounded-lg cursor-pointer hover:bg-purple-100 hover:border-purple-400 transition-colors relative group"
+              onClick={() => setShowPurchaseInvoicesModal(true)}
+            >
+              <div className="absolute top-1 right-1 sm:top-2 sm:right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
+              </div>
+              <div className="flex justify-center mb-1 sm:mb-2">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-purple-500 rounded-full">
+                  <Truck className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm font-medium text-purple-700 mb-1">Purchase (COGS)</p>
+              <p className="text-base sm:text-lg md:text-xl font-bold text-purple-800 break-words">{Math.round(totalPurchases).toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-purple-600 mt-1 hidden sm:block">PO: {Math.round(purchaseOrdersTotal)} | PI: {Math.round(purchaseInvoicesTotal)}</p>
+            </div>
+
+            {/* Discount */}
+            <div className="text-center p-2 sm:p-3 md:p-4 border-2 border-red-300 bg-red-50 rounded-lg">
+              <div className="flex justify-center mb-1 sm:mb-2">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-red-500 rounded-full">
+                  <Tag className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm font-medium text-red-700 mb-1">Discount Given</p>
+              <p className="text-base sm:text-lg md:text-xl font-bold text-red-800 break-words">{Math.round(totalDiscounts).toLocaleString()}</p>
+            </div>
+
+             {/* Pending Sales Orders */}
+             <div 
+               className="text-center p-2 sm:p-3 md:p-4 border-2 border-cyan-300 bg-cyan-50 rounded-lg cursor-pointer hover:bg-cyan-100 hover:border-cyan-400 transition-colors"
+               onClick={() => navigate('/sales-orders')}
+             >
+               <div className="flex justify-center mb-1 sm:mb-2">
+                 <div className="p-2 sm:p-2.5 md:p-3 bg-cyan-500 rounded-full">
+                   <FileText className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                 </div>
+               </div>
+               <p className="text-xs sm:text-sm font-medium text-cyan-700 mb-1">Pending Sales Orders</p>
+               <p className="text-base sm:text-lg md:text-xl font-bold text-cyan-800 break-words">{pendingSalesOrdersCount}</p>
+             </div>
+ 
+             {/* Pending Purchase Orders */}
+             <div 
+               className="text-center p-2 sm:p-3 md:p-4 border-2 border-indigo-300 bg-indigo-50 rounded-lg cursor-pointer hover:bg-indigo-100 hover:border-indigo-400 transition-colors"
+               onClick={() => navigate('/purchase-orders')}
+             >
+               <div className="flex justify-center mb-1 sm:mb-2">
+                 <div className="p-2 sm:p-2.5 md:p-3 bg-indigo-500 rounded-full">
+                   <Receipt className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                 </div>
+               </div>
+               <p className="text-xs sm:text-sm font-medium text-indigo-700 mb-1">Pending Purchase Orders</p>
+               <p className="text-base sm:text-lg md:text-xl font-bold text-indigo-800 break-words">{pendingPurchaseOrdersCount}</p>
+             </div>
+            </div>
+          </div>
+          
+          {/* PROFITABILITY & CASH FLOW SECTION */}
+          <div>
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Profitability & Cash Flow</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+            
+            {/* Gross Profit */}
+            <div className="text-center p-2 sm:p-3 md:p-4 border-2 border-blue-300 bg-blue-50 rounded-lg">
+              <div className="flex justify-center mb-1 sm:mb-2">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-blue-500 rounded-full">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Gross Profit</p>
+              <p className={`text-base sm:text-lg md:text-xl font-bold break-words ${grossProfit >= 0 ? 'text-blue-700' : 'text-red-600'}`}>
+                {Math.round(grossProfit).toLocaleString()}
+              </p>
+              <p className="text-[10px] sm:text-xs text-gray-600 mt-1 hidden sm:block">Revenue - COGS</p>
+            </div>
+            
+            {/* Total Receipts */}
+            <div 
+              className="text-center p-2 sm:p-3 md:p-4 border-2 border-emerald-300 bg-emerald-50 rounded-lg cursor-pointer hover:bg-emerald-100 hover:border-emerald-400 transition-colors relative group"
+              onClick={() => setShowCashReceiptsModal(true)}
+            >
+              <div className="absolute top-1 right-1 sm:top-2 sm:right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600" />
+              </div>
+              <div className="flex justify-center mb-1 sm:mb-2">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-emerald-500 rounded-full">
+                  <Receipt className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm font-medium text-emerald-700 mb-1">Total Receipts</p>
+              <p className="text-base sm:text-lg md:text-xl font-bold text-emerald-800 break-words">{Math.round(totalReceipts).toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-emerald-600 mt-1 hidden sm:block">Cash: {Math.round(totalCashReceipts)} | Bank: {Math.round(totalBankReceipts)}</p>
+            </div>
+            
+            {/* Total Payments */}
+            <div 
+              className="text-center p-2 sm:p-3 md:p-4 border-2 border-orange-300 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 hover:border-orange-400 transition-colors relative group"
+              onClick={() => setShowCashPaymentsModal(true)}
+            >
+              <div className="absolute top-1 right-1 sm:top-2 sm:right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
+              </div>
+              <div className="flex justify-center mb-1 sm:mb-2">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-orange-500 rounded-full">
+                  <Banknote className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm font-medium text-orange-700 mb-1">Total Payments</p>
+              <p className="text-base sm:text-lg md:text-xl font-bold text-orange-800 break-words">{Math.round(totalPayments).toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-orange-600 mt-1 hidden sm:block">Cash: {Math.round(totalCashPayments)} | Bank: {Math.round(totalBankPayments)}</p>
+            </div>
+            
+            {/* Net Cash Flow */}
+            <div className={`text-center p-2 sm:p-3 md:p-4 border-2 rounded-lg ${netCashFlow >= 0 ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'}`}>
+              <div className="flex justify-center mb-1 sm:mb-2">
+                <div className={`p-2 sm:p-2.5 md:p-3 rounded-full ${netCashFlow >= 0 ? 'bg-green-500' : 'bg-red-500'}`}>
+                  <Wallet className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Net Cash Flow</p>
+              <p className={`text-base sm:text-lg md:text-xl font-bold break-words ${netCashFlow >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                {Math.round(netCashFlow).toLocaleString()}
+              </p>
+              <p className="text-[10px] sm:text-xs text-gray-600 mt-1 hidden sm:block">Receipts - Payments</p>
+            </div>
+            
+            {/* Total Orders */}
+            <div className="text-center p-2 sm:p-3 md:p-4 border-2 border-yellow-300 bg-yellow-50 rounded-lg">
+              <div className="flex justify-center mb-1 sm:mb-2">
+                <div className="p-2 sm:p-2.5 md:p-3 bg-yellow-500 rounded-full">
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
+                </div>
+              </div>
+              <p className="text-xs sm:text-sm font-medium text-yellow-700 mb-1">Total Transactions</p>
+              <p className="text-base sm:text-lg md:text-xl font-bold text-yellow-800 break-words">{summary.totalOrders || 0}</p>
+            </div>
+            
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Grid - Single Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4 md:gap-5">
+        <StatCard
+          title="Today's Revenue"
+          value={`${summary.totalRevenue?.toFixed(2) || '0.00'}`}
+          icon={TrendingUp}
+          color="bg-success-500"
+          change="12%"
+          changeType="positive"
+        />
+        <StatCard
+          title="Orders Today"
+          value={summary.totalOrders || 0}
+          icon={ShoppingCart}
+          color="bg-primary-500"
+          change="8%"
+          changeType="positive"
+        />
+        <StatCard
+          title="Total Products"
+          value={inventorySummary.totalProducts || 0}
+          icon={Package}
+          color="bg-warning-500"
+        />
+        <StatCard
+          title="Active Customers"
+          value={activeCustomersCount.toLocaleString()}
+          icon={Users}
+          color="bg-purple-500"
+          change="5%"
+          changeType="positive"
+        />
+        <StatCard
+          title="Items Sold Today"
+          value={summary.totalItems || 0}
+          icon={TrendingUp}
+          color="bg-blue-500"
+        />
+        <StatCard
+          title="Average Order Value"
+          value={`${summary.averageOrderValue?.toFixed(2) || '0.00'}`}
+          icon={BarChart3}
+          color="bg-indigo-500"
+        />
+        <StatCard
+          title="Low Stock Items"
+          value={lowStockCount}
+          icon={AlertTriangle}
+          color="bg-danger-500"
+        />
+      </div>
+
+      {/* Period Comparison Section */}
+      <PeriodComparisonSection
+        title="Sales Performance Comparison"
+        metrics={[
+          {
+            title: 'Total Revenue',
+            fetchFunction: (params) => fetchPeriodSummary(params).then(res => ({
+              data: res.data?.data?.totalRevenue || 0
+            })),
+            format: 'currency',
+            icon: TrendingUp,
+            iconColor: 'bg-green-500'
+          },
+          {
+            title: 'Total Orders',
+            fetchFunction: (params) => fetchPeriodSummary(params).then(res => ({
+              data: res.data?.data?.totalOrders || 0
+            })),
+            format: 'number',
+            icon: ShoppingCart,
+            iconColor: 'bg-blue-500'
+          },
+          {
+            title: 'Average Order Value',
+            fetchFunction: (params) => fetchPeriodSummary(params).then(res => ({
+              data: res.data?.data?.averageOrderValue || 0
+            })),
+            format: 'currency',
+            icon: TrendingUp,
+            iconColor: 'bg-purple-500'
+          },
+          {
+            title: 'Total Items Sold',
+            fetchFunction: (params) => fetchPeriodSummary(params).then(res => ({
+              data: res.data?.data?.totalItems || 0
+            })),
+            format: 'number',
+            icon: Package,
+            iconColor: 'bg-orange-500'
+          }
+        ]}
+        fetchFunction={fetchPeriodSummary}
+      />
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {/* Recent Orders */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900">Today's Orders</h3>
+          </div>
+          <div className="card-content">
+            {summary.orderTypes ? (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Retail Orders</span>
+                  <span className="font-medium">{summary.orderTypes.retail || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Wholesale Orders</span>
+                  <span className="font-medium">{summary.orderTypes.wholesale || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Returns</span>
+                  <span className="font-medium">{summary.orderTypes.return || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Exchanges</span>
+                  <span className="font-medium">{summary.orderTypes.exchange || 0}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500">No orders today</p>
+            )}
+          </div>
+        </div>
+
+        {/* Low Stock Alert */}
+        <div className="card">
+          <div className="card-header">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900">Low Stock Alert</h3>
+          </div>
+          <div className="card-content">
+            {lowStockCount > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  {lowStockCount} products are running low on stock
+                </p>
+                <div className="space-y-1">
+                  {lowStockData?.data?.products?.slice(0, 3).map((product) => (
+                    <div key={product._id} className="flex justify-between items-center text-sm">
+                      <span className="truncate">{product.name}</span>
+                      <span className="text-danger-600 font-medium">
+                        {product.inventory.currentStock} left
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {lowStockCount > 3 && (
+                  <p className="text-xs text-gray-500">
+                    And {lowStockCount - 3} more...
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-success-600">All products are well stocked!</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Methods */}
+      {summary.paymentMethods && (
+        <div className="card">
+          <div className="card-header">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900">Payment Methods Today</h3>
+          </div>
+          <div className="card-content">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+              {Object.entries(summary.paymentMethods).map(([method, count]) => (
+                <div key={method} className="text-center">
+                  <p className="text-2xl font-semibold text-gray-900">{count}</p>
+                  <p className="text-sm text-gray-600 capitalize">
+                    {method.replace('_', ' ')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Financial Metrics Legend */}
+      <div className="card bg-blue-50 border-blue-200">
+        <div className="card-content">
+          <h3 className="text-xs sm:text-sm font-semibold text-blue-900 mb-3">📊 Financial Metrics Explained</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 text-xs text-blue-800">
+            <div><strong>Sales:</strong> Total revenue from Sales Orders + Sales Invoices</div>
+            <div><strong>Net Revenue:</strong> Sales minus discounts given</div>
+            <div><strong>Purchase (COGS):</strong> Cost of goods purchased from suppliers</div>
+            <div><strong>Gross Profit:</strong> Net Revenue - COGS (your margin)</div>
+            <div><strong>Receipts:</strong> Cash/Bank money received (includes sales + customer payments)</div>
+            <div><strong>Payments:</strong> Cash/Bank money paid (includes supplier payments + expenses)</div>
+            <div><strong>Net Cash Flow:</strong> Total receipts minus total payments (cash position)</div>
+            <div className="md:col-span-2 lg:col-span-3 mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded">
+              <strong>⚠️ Note:</strong> Receipts/Payments may include both sales/purchases AND separate cash/bank transactions. For accurate accounting, check individual transaction pages.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      <DashboardReportModal
+        isOpen={showSalesOrdersModal}
+        onClose={() => setShowSalesOrdersModal(false)}
+        title="Sales Orders"
+        columns={salesOrdersColumns}
+        data={salesOrdersModalData}
+        isLoading={salesOrdersLoading}
+        dateFrom={activeFromDate}
+        dateTo={activeToDate}
+        onDateChange={(from, to) => {
+          setActiveFromDate(from);
+          setActiveToDate(to);
+        }}
+      />
+
+      <DashboardReportModal
+        isOpen={showPurchaseOrdersModal}
+        onClose={() => setShowPurchaseOrdersModal(false)}
+        title="Purchase Orders"
+        columns={purchaseOrdersColumns}
+        data={purchaseOrdersModalData}
+        isLoading={purchaseOrdersLoading}
+        dateFrom={activeFromDate}
+        dateTo={activeToDate}
+        onDateChange={(from, to) => {
+          setActiveFromDate(from);
+          setActiveToDate(to);
+        }}
+      />
+
+      <DashboardReportModal
+        isOpen={showSalesInvoicesModal}
+        onClose={() => setShowSalesInvoicesModal(false)}
+        title="Sales Invoices"
+        columns={salesInvoicesColumns}
+        data={salesInvoicesModalData}
+        isLoading={salesInvoicesLoading}
+        dateFrom={activeFromDate}
+        dateTo={activeToDate}
+        onDateChange={(from, to) => {
+          setActiveFromDate(from);
+          setActiveToDate(to);
+        }}
+      />
+
+      <DashboardReportModal
+        isOpen={showPurchaseInvoicesModal}
+        onClose={() => setShowPurchaseInvoicesModal(false)}
+        title="Purchase Invoices"
+        columns={purchaseInvoicesColumns}
+        data={purchaseInvoicesDataArray}
+        isLoading={purchaseInvoicesLoading}
+        dateFrom={activeFromDate}
+        dateTo={activeToDate}
+        onDateChange={(from, to) => {
+          setActiveFromDate(from);
+          setActiveToDate(to);
+        }}
+      />
+
+      <DashboardReportModal
+        isOpen={showCashReceiptsModal}
+        onClose={() => setShowCashReceiptsModal(false)}
+        title="Cash Receipts"
+        columns={cashReceiptsColumns}
+        data={cashReceiptsDataArray}
+        isLoading={cashReceiptsLoading}
+        dateFrom={activeFromDate}
+        dateTo={activeToDate}
+        onDateChange={(from, to) => {
+          setActiveFromDate(from);
+          setActiveToDate(to);
+        }}
+      />
+
+      <DashboardReportModal
+        isOpen={showCashPaymentsModal}
+        onClose={() => setShowCashPaymentsModal(false)}
+        title="Cash Payments"
+        columns={cashPaymentsColumns}
+        data={cashPaymentsDataArray}
+        isLoading={cashPaymentsLoading}
+        dateFrom={activeFromDate}
+        dateTo={activeToDate}
+        onDateChange={(from, to) => {
+          setActiveFromDate(from);
+          setActiveToDate(to);
+        }}
+      />
+
+      <DashboardReportModal
+        isOpen={showBankReceiptsModal}
+        onClose={() => setShowBankReceiptsModal(false)}
+        title="Bank Receipts"
+        columns={bankReceiptsColumns}
+        data={bankReceiptsDataArray}
+        isLoading={bankReceiptsLoading}
+        dateFrom={activeFromDate}
+        dateTo={activeToDate}
+        onDateChange={(from, to) => {
+          setActiveFromDate(from);
+          setActiveToDate(to);
+        }}
+      />
+
+      <DashboardReportModal
+        isOpen={showBankPaymentsModal}
+        onClose={() => setShowBankPaymentsModal(false)}
+        title="Bank Payments"
+        columns={bankPaymentsColumns}
+        data={bankPaymentsDataArray}
+        isLoading={bankPaymentsLoading}
+        dateFrom={activeFromDate}
+        dateTo={activeToDate}
+        onDateChange={(from, to) => {
+          setActiveFromDate(from);
+          setActiveToDate(to);
+        }}
+      />
+    </div>
+  );
+};
