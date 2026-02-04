@@ -166,10 +166,13 @@ const DateFilter = ({
         </div>
 
         {showClear && (startDate || endDate) && (
-          <div className="flex items-end">
+          <div className="flex-1 sm:flex-none">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5 opacity-0 pointer-events-none">
+              Clear
+            </label>
             <button
               onClick={handleClear}
-              className="btn btn-secondary h-[42px] flex items-center gap-2"
+              className="w-full sm:w-auto btn btn-secondary h-[42px] flex items-center justify-center gap-2 px-4"
               type="button"
             >
               <X className="h-4 w-4" />

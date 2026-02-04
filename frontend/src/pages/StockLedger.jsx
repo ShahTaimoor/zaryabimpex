@@ -7,7 +7,9 @@ import {
   Calendar,
   X,
   ChevronDown,
-  Eye
+  Eye,
+  User,
+  Package
 } from 'lucide-react';
 import { useGetStockLedgerQuery } from '../store/services/inventoryApi';
 import { useGetProductsQuery } from '../store/services/productsApi';
@@ -229,26 +231,36 @@ export const StockLedger = () => {
   const pagination = ledgerData?.data?.pagination || { current: 1, pages: 1, total: 0 };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Stock Ledger</h1>
-          <p className="mt-1 text-sm text-gray-500">View stock movement history with detailed filters</p>
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <FileText className="h-6 w-6 text-blue-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">Stock Ledger</h1>
+          </div>
+          <p className="ml-14 text-sm text-gray-600">View stock movement history with detailed filters and comprehensive reporting</p>
         </div>
 
         {/* Filter Section */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-6 mb-6">
+          <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-200">
+            <Search className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Filter Options</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {/* Invoice Type */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2.5 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-gray-500" />
                 Invoice Type
               </label>
               <select
                 value={filters.invoiceType}
                 onChange={(e) => handleFilterChange('invoiceType', e.target.value)}
-                className="input w-full"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:border-gray-400"
               >
                 <option value="--All--">--All--</option>
                 <option value="SALE">SALE</option>
@@ -261,7 +273,8 @@ export const StockLedger = () => {
 
             {/* Customer / Supplier */}
             <div className="relative" ref={customerDropdownRef}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2.5 flex items-center gap-2">
+                <User className="h-4 w-4 text-gray-500" />
                 Customer / Supplier
               </label>
               <div className="relative">
@@ -289,40 +302,40 @@ export const StockLedger = () => {
                       setShowCustomerDropdown(true);
                     }
                   }}
-                  className="input w-full"
+                  className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:border-gray-400"
                 />
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                 {showCustomerDropdown && !filters.supplier && filteredCustomers.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                     {filteredCustomers.map((customer) => (
                       <button
                         key={customer._id}
                         onClick={() => handleCustomerSelect(customer)}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                        className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-b-0"
                       >
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-semibold text-gray-900">
                           {customer.businessName || customer.name}
                         </div>
                         {customer.email && (
-                          <div className="text-xs text-gray-500">{customer.email}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{customer.email}</div>
                         )}
                       </button>
                     ))}
                   </div>
                 )}
                 {showSupplierDropdown && !filters.customer && filteredSuppliers.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                     {filteredSuppliers.map((supplier) => (
                       <button
                         key={supplier._id}
                         onClick={() => handleSupplierSelect(supplier)}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                        className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-b-0"
                       >
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-semibold text-gray-900">
                           {supplier.companyName || supplier.name}
                         </div>
                         {supplier.email && (
-                          <div className="text-xs text-gray-500">{supplier.email}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{supplier.email}</div>
                         )}
                       </button>
                     ))}
@@ -337,7 +350,8 @@ export const StockLedger = () => {
                     setCustomerSearchQuery('');
                     setSupplierSearchQuery('');
                   }}
-                  className="absolute right-2 top-8 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-11 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+                  title="Clear selection"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -346,21 +360,23 @@ export const StockLedger = () => {
 
             {/* Invoice No */}
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2.5 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-gray-500" />
                 Invoice No
               </label>
               <input
                 type="text"
-                placeholder="0"
+                placeholder="Enter invoice number..."
                 value={filters.invoiceNo}
                 onChange={(e) => handleFilterChange('invoiceNo', e.target.value)}
-                className="input w-full"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:border-gray-400"
               />
             </div>
 
             {/* Product */}
             <div className="relative" ref={productDropdownRef}>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2.5 flex items-center gap-2">
+                <Package className="h-4 w-4 text-gray-500" />
                 Product
               </label>
               <div className="relative">
@@ -373,20 +389,20 @@ export const StockLedger = () => {
                     setShowProductDropdown(true);
                   }}
                   onFocus={() => setShowProductDropdown(true)}
-                  className="input w-full"
+                  className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:border-gray-400"
                 />
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                 {showProductDropdown && filteredProducts.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                     {filteredProducts.map((product) => (
                       <button
                         key={product._id}
                         onClick={() => handleProductSelect(product)}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50"
+                        className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-b-0"
                       >
-                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                        <div className="text-sm font-semibold text-gray-900">{product.name}</div>
                         {product.sku && (
-                          <div className="text-xs text-gray-500">SKU: {product.sku}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">SKU: {product.sku}</div>
                         )}
                       </button>
                     ))}
@@ -399,7 +415,8 @@ export const StockLedger = () => {
                     handleFilterChange('product', '');
                     setProductSearchQuery('');
                   }}
-                  className="absolute right-2 top-8 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-11 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+                  title="Clear selection"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -408,18 +425,21 @@ export const StockLedger = () => {
 
             {/* Date Range */}
             <div className="lg:col-span-2">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2.5 flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
                 Date Range
               </label>
-              <DateFilter
-                startDate={filters.dateFrom}
-                endDate={filters.dateTo}
-                onDateChange={(startDate, endDate) => {
-                  setFilters({ ...filters, dateFrom: startDate, dateTo: endDate });
-                }}
-                compact={false}
-                showPresets={true}
-              />
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <DateFilter
+                  startDate={filters.dateFrom}
+                  endDate={filters.dateTo}
+                  onDateChange={(startDate, endDate) => {
+                    setFilters({ ...filters, dateFrom: startDate, dateTo: endDate });
+                  }}
+                  compact={false}
+                  showPresets={true}
+                />
+              </div>
             </div>
 
             {/* View Button */}
@@ -427,10 +447,10 @@ export const StockLedger = () => {
               <button
                 onClick={handleView}
                 disabled={isLoading || isFetching}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md border border-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                <Eye className="h-4 w-4" />
-                View
+                <Eye className="h-5 w-5" />
+                {isLoading || isFetching ? 'Loading...' : 'View Report'}
               </button>
             </div>
           </div>
@@ -438,20 +458,24 @@ export const StockLedger = () => {
 
         {/* Report Section */}
         {showReport && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 print:shadow-none print:border-none">
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 print:shadow-none print:border-none overflow-hidden">
             {/* Report Header */}
-            <div className="p-6 border-b border-gray-200 print:border-b-2">
-              <div className="flex justify-between items-start mb-4">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 print:bg-white print:from-white print:to-white">
+              <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Stock Ledger</h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h2 className="text-2xl font-bold text-white print:text-gray-900 flex items-center gap-3">
+                    <FileText className="h-6 w-6" />
+                    Stock Ledger Report
+                  </h2>
+                  <p className="text-sm text-blue-100 print:text-gray-600 mt-2 flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
                     From: {formatDateForReport(filters.dateFrom)} To: {formatDateForReport(filters.dateTo)}
                   </p>
                 </div>
                 <div className="flex gap-2 print:hidden">
                   <button
                     onClick={handlePrint}
-                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                    className="p-3 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all hover:scale-105 shadow-lg"
                     title="Print"
                   >
                     <Printer className="h-5 w-5" />
@@ -462,41 +486,47 @@ export const StockLedger = () => {
 
             {/* Report Content */}
             {isLoading || isFetching ? (
-              <div className="p-12 text-center">
-                <LoadingSpinner />
+              <div className="p-16 text-center bg-gray-50">
+                <div className="inline-block p-4 bg-blue-100 rounded-full mb-4">
+                  <LoadingSpinner />
+                </div>
+                <p className="text-gray-600 font-medium">Loading stock ledger data...</p>
               </div>
             ) : ledger.length === 0 ? (
-              <div className="p-12 text-center text-gray-500">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p>No data found for the selected filters.</p>
+              <div className="p-16 text-center bg-gradient-to-br from-gray-50 to-blue-50">
+                <div className="inline-block p-4 bg-gray-100 rounded-full mb-4">
+                  <FileText className="h-12 w-12 text-gray-400" />
+                </div>
+                <p className="text-gray-600 font-semibold text-lg mb-2">No data found</p>
+                <p className="text-gray-500">Try adjusting your filters to see results.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">
                         S.No
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">
                         Invoice Date
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">
                         Invoice No
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">
                         Invoice Type
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">
                         Customer / Supplier
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">
                         Price
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">
                         QTY
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">
                         Amount
                       </th>
                     </tr>
@@ -505,66 +535,100 @@ export const StockLedger = () => {
                     {ledger.map((productGroup, groupIndex) => (
                       <React.Fragment key={productGroup.productId || groupIndex}>
                         {/* Product Header */}
-                        <tr className="bg-gray-100 font-semibold">
-                          <td colSpan="8" className="px-4 py-2 text-sm text-gray-900">
-                            {productGroup.productName}
+                        <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 font-bold border-t-2 border-blue-200">
+                          <td colSpan="8" className="px-6 py-3 text-sm text-blue-900">
+                            <div className="flex items-center gap-2">
+                              <Package className="h-4 w-4" />
+                              {productGroup.productName}
+                            </div>
                           </td>
                         </tr>
                         {/* Product Entries */}
                         {productGroup.entries.map((entry, entryIndex) => (
-                          <tr key={`${entry.referenceId}-${entryIndex}`} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                          <tr key={`${entry.referenceId}-${entryIndex}`} className="hover:bg-blue-50/50 transition-colors border-b border-gray-100">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
                               {entryIndex + 1}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {formatDate(entry.invoiceDate)}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                               {entry.invoiceNo}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                              {entry.invoiceType}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                entry.invoiceType === 'SALE' ? 'bg-green-100 text-green-800' :
+                                entry.invoiceType === 'PURCHASE' ? 'bg-blue-100 text-blue-800' :
+                                entry.invoiceType.includes('RETURN') ? 'bg-orange-100 text-orange-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {entry.invoiceType}
+                              </span>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900">
+                            <td className="px-6 py-4 text-sm text-gray-900">
                               {entry.customerSupplier}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
                               {formatCurrency(entry.price)}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900">
-                              {entry.quantity < 0 ? `(${Math.abs(entry.quantity)})` : entry.quantity}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">
+                              {entry.quantity < 0 ? (
+                                <span className="text-red-600">({Math.abs(entry.quantity)})</span>
+                              ) : (
+                                <span className="text-green-600">{entry.quantity}</span>
+                              )}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900">
-                              {entry.amount < 0 ? `(${formatCurrency(Math.abs(entry.amount))})` : formatCurrency(entry.amount)}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">
+                              {entry.amount < 0 ? (
+                                <span className="text-red-600">({formatCurrency(Math.abs(entry.amount))})</span>
+                              ) : (
+                                <span className="text-green-600">{formatCurrency(entry.amount)}</span>
+                              )}
                             </td>
                           </tr>
                         ))}
                         {/* Product Total */}
-                        <tr className="bg-blue-50 font-semibold">
-                          <td colSpan="5" className="px-4 py-2 text-sm text-gray-900">
+                        <tr className="bg-gradient-to-r from-blue-100 to-indigo-100 font-bold border-t-2 border-blue-300">
+                          <td colSpan="5" className="px-6 py-3 text-sm text-blue-900">
                             Total of {productGroup.productName}
                           </td>
-                          <td className="px-4 py-2 text-sm text-right text-gray-900"></td>
-                          <td className="px-4 py-2 text-sm text-right text-gray-900">
-                            {productGroup.totalQuantity < 0 ? `(${Math.abs(productGroup.totalQuantity)})` : productGroup.totalQuantity}
+                          <td className="px-6 py-3 text-sm text-right text-blue-900"></td>
+                          <td className="px-6 py-3 text-sm text-right text-blue-900">
+                            {productGroup.totalQuantity < 0 ? (
+                              <span className="text-red-700">({Math.abs(productGroup.totalQuantity)})</span>
+                            ) : (
+                              <span className="text-green-700">{productGroup.totalQuantity}</span>
+                            )}
                           </td>
-                          <td className="px-4 py-2 text-sm text-right text-gray-900">
-                            {productGroup.totalAmount < 0 ? `(${formatCurrency(Math.abs(productGroup.totalAmount))})` : formatCurrency(productGroup.totalAmount)}
+                          <td className="px-6 py-3 text-sm text-right text-blue-900">
+                            {productGroup.totalAmount < 0 ? (
+                              <span className="text-red-700">({formatCurrency(Math.abs(productGroup.totalAmount))})</span>
+                            ) : (
+                              <span className="text-green-700">{formatCurrency(productGroup.totalAmount)}</span>
+                            )}
                           </td>
                         </tr>
                       </React.Fragment>
                     ))}
                     {/* Grand Total */}
-                    <tr className="bg-gray-200 font-bold">
-                      <td colSpan="5" className="px-4 py-3 text-sm text-gray-900">
+                    <tr className="bg-gradient-to-r from-gray-800 to-gray-900 font-bold text-white border-t-4 border-gray-700">
+                      <td colSpan="5" className="px-6 py-4 text-sm">
                         Grand Total
                       </td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900"></td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900">
-                        {grandTotal.totalQuantity < 0 ? `(${Math.abs(grandTotal.totalQuantity)})` : grandTotal.totalQuantity}
+                      <td className="px-6 py-4 text-sm text-right"></td>
+                      <td className="px-6 py-4 text-sm text-right">
+                        {grandTotal.totalQuantity < 0 ? (
+                          <span className="text-red-300">({Math.abs(grandTotal.totalQuantity)})</span>
+                        ) : (
+                          <span className="text-green-300">{grandTotal.totalQuantity}</span>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900">
-                        {grandTotal.totalAmount < 0 ? `(${formatCurrency(Math.abs(grandTotal.totalAmount))})` : formatCurrency(grandTotal.totalAmount)}
+                      <td className="px-6 py-4 text-sm text-right">
+                        {grandTotal.totalAmount < 0 ? (
+                          <span className="text-red-300">({formatCurrency(Math.abs(grandTotal.totalAmount))})</span>
+                        ) : (
+                          <span className="text-green-300">{formatCurrency(grandTotal.totalAmount)}</span>
+                        )}
                       </td>
                     </tr>
                   </tbody>
