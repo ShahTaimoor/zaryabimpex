@@ -58,14 +58,6 @@ export const shopsApi = api.injectEndpoints({
         method: 'get',
       }),
     }),
-    updateShopPlan: builder.mutation({
-      query: ({ shopId, planId }) => ({
-        url: `shops/${shopId}/plan`,
-        method: 'patch',
-        data: { planId },
-      }),
-      invalidatesTags: ['Shops'],
-    }),
   }),
   overrideExisting: false,
 });
@@ -80,5 +72,4 @@ export const {
   useCreateAdminMutation,
   useGetShopSuppliersQuery,
   useGetShopProductsQuery,
-  useUpdateShopPlanMutation,
 } = shopsApi;
