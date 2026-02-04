@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   Wallet,
   ChevronRight,
+  ChevronDown,
   Camera
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -167,6 +168,39 @@ export const MultiTabLayout = ({ children }) => {
     return saved ? JSON.parse(saved) : {};
   });
 
+  // Sidebar section expansion state - keep Sales, Purchase, and Operations open by default
+  const [expandedSections, setExpandedSections] = useState(() => {
+    const saved = localStorage.getItem('sidebarExpandedSections');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    // Default: Sales Section, Purchase Section, Operations Section are open
+    return {
+      'Sales Section': true,
+      'Purchase Section': true,
+      'Operations Section': true,
+      'Financial Transactions': false,
+      'Master Data Section': false,
+      'Inventory Section': false,
+      'Accounting Section': false,
+      'Reports & Analytics': false,
+      'HR/Admin Section': false,
+      'System/Utilities': false
+    };
+  });
+
+  // Save expanded sections to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarExpandedSections', JSON.stringify(expandedSections));
+  }, [expandedSections]);
+
+  const toggleSection = (sectionName) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionName]: !prev[sectionName]
+    }));
+  };
+
   // Listener for sidebar configuration changes
   useEffect(() => {
     const handleSidebarChange = () => {
@@ -190,46 +224,64 @@ export const MultiTabLayout = ({ children }) => {
   const totalAlerts = summary.total || 0;
   const displayCount = criticalCount > 0 ? criticalCount : (totalAlerts > 0 ? totalAlerts : 3);
 
-  // Filtered navigation (using useMemo for performance)
-  const filteredNavigation = React.useMemo(() => {
-    return navigation.reduce((acc, item, index) => {
+  // Group navigation by headings for collapsible sections
+  const groupedNavigation = React.useMemo(() => {
+    const groups = [];
+    let currentGroup = null;
+
+    navigation.forEach((item, index) => {
       if (item.type === 'heading') {
+        // Start a new group
         const subItems = [];
         for (let i = index + 1; i < navigation.length; i++) {
           if (navigation[i].type === 'heading') break;
-          if (navigation[i].name) subItems.push(navigation[i]);
+          if (navigation[i].name) {
+            const isVisible = sidebarConfig[navigation[i].name] !== false;
+            const isPermitted = !navigation[i].permission || user?.role === 'admin' || hasPermission(navigation[i].permission);
+            if (isVisible && isPermitted) {
+              subItems.push(navigation[i]);
+            }
+          }
         }
 
-        // Hide heading if no visible sub-items OR if the heading itself is hidden (though headings aren't usually in config)
-        const hasVisibleSubItem = subItems.some(subItem => sidebarConfig[subItem.name] !== false);
-
-        // Check permissions for sub-items too
-        const hasPermittedVisibleSubItem = subItems.some(subItem => {
-          const isVisible = sidebarConfig[subItem.name] !== false;
-          const isPermitted = !subItem.permission || user?.role === 'admin' || hasPermission(subItem.permission);
-          return isVisible && isPermitted;
-        });
-
-        if (hasPermittedVisibleSubItem) {
-          acc.push(item);
+        // Only add group if it has visible items
+        if (subItems.length > 0) {
+          currentGroup = {
+            heading: item,
+            items: subItems
+          };
+          groups.push(currentGroup);
+        } else {
+          currentGroup = null;
         }
-      } else if (item.name) {
+      } else if (item.name && !currentGroup) {
+        // Items before first heading (like Dashboard)
         const isVisible = sidebarConfig[item.name] !== false;
         const isPermitted = !item.permission || user?.role === 'admin' || hasPermission(item.permission);
         if (isVisible && isPermitted) {
-          acc.push(item);
+          groups.push({ heading: null, items: [item] });
         }
-      } else {
-        acc.push(item);
       }
-      return acc;
-    }, []);
+    });
+
+    return groups;
   }, [sidebarConfig, user, hasPermission]);
+
+  // Flatten grouped navigation for redirect logic
+  const flattenedNavigation = React.useMemo(() => {
+    const flat = [];
+    groupedNavigation.forEach(group => {
+      group.items.forEach(item => {
+        flat.push(item);
+      });
+    });
+    return flat;
+  }, [groupedNavigation]);
 
   // Redirect if current page is hidden
   useEffect(() => {
     // Only run if we have a user and navigation items loaded
-    if (!user || filteredNavigation.length === 0) return;
+    if (!user || flattenedNavigation.length === 0) return;
 
     const currentPath = location.pathname;
 
@@ -241,14 +293,14 @@ export const MultiTabLayout = ({ children }) => {
     // Check if the current path is hidden in sidebarConfig
     const currentNavItem = navigation.find(item => item.href === currentPath);
 
-    // If the item exists in navigation but is NOT in filteredNavigation, it means it's hidden or restricted
+    // If the item exists in navigation but is NOT in flattenedNavigation, it means it's hidden or restricted
     if (currentNavItem && currentNavItem.name) {
       const isVisible = sidebarConfig[currentNavItem.name] !== false;
       const isPermitted = !currentNavItem.permission || user?.role === 'admin' || hasPermission(currentNavItem.permission);
 
       if (!isVisible || !isPermitted) {
         // Find the first visible and permitted page (non-heading, non-divider)
-        const firstVisiblePage = filteredNavigation.find(item => item.href && item.name && item.type !== 'heading' && item.type !== 'divider');
+        const firstVisiblePage = flattenedNavigation.find(item => item.href && item.name);
 
         if (firstVisiblePage && firstVisiblePage.href !== currentPath) {
           navigate(firstVisiblePage.href);
@@ -256,7 +308,7 @@ export const MultiTabLayout = ({ children }) => {
         }
       }
     }
-  }, [location.pathname, sidebarConfig, filteredNavigation, user, hasPermission, navigate]);
+  }, [location.pathname, sidebarConfig, flattenedNavigation, user, hasPermission, navigate]);
 
 
   const handleLogout = () => {
@@ -344,58 +396,91 @@ export const MultiTabLayout = ({ children }) => {
             </button>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto max-h-[calc(100vh-4rem)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            {filteredNavigation.map((item, index) => {
-              if (item.type === 'divider') {
-                return (
-                  <div key={`divider-${index}`} className="my-2 border-t border-gray-200"></div>
-                );
-              }
+            {groupedNavigation.map((group, groupIndex) => (
+              <div key={`group-${groupIndex}`}>
+                {/* Render items without heading (like Dashboard) */}
+                {!group.heading && group.items.map((item) => {
+                  const normalizedPathname = location.pathname.replace(/\/$/, '') || '/';
+                  const normalizedHref = item.href.replace(/\/$/, '') || '/';
+                  const componentInfo = getComponentInfo(item.href);
+                  let isActive;
+                  if (componentInfo) {
+                    const activeTab = tabs.find(tab => tab.id === activeTabId);
+                    const isActiveByTab = activeTab && activeTab.path === item.href;
+                    const isActiveByLocation = normalizedPathname === normalizedHref;
+                    isActive = isActiveByTab || isActiveByLocation;
+                  } else {
+                    isActive = normalizedPathname === normalizedHref;
+                  }
 
-              if (item.type === 'heading') {
-                return (
-                  <div key={`heading-${index}`} className={`${item.color} text-white px-3 py-2 mt-3 mb-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm`}>
-                    {item.name}
-                  </div>
-                );
-              }
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => {
+                        handleNavigationClick(item);
+                        setSidebarOpen(false);
+                      }}
+                      className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md ${isActive
+                        ? 'bg-primary-100 text-primary-900'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                    >
+                      <item.icon className="mr-3 h-5 w-5" />
+                      {item.name}
+                    </button>
+                  );
+                })}
 
-              // Normalize paths for comparison (remove trailing slashes)
-              const normalizedPathname = location.pathname.replace(/\/$/, '') || '/';
-              const normalizedHref = item.href.replace(/\/$/, '') || '/';
+                {/* Render heading with collapsible functionality */}
+                {group.heading && (
+                  <>
+                    <button
+                      onClick={() => toggleSection(group.heading.name)}
+                      className={`w-full ${group.heading.color} text-white px-3 py-2 mt-3 mb-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm flex items-center justify-between hover:opacity-90 transition-opacity cursor-pointer`}
+                    >
+                      <span>{group.heading.name}</span>
+                      {expandedSections[group.heading.name] ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </button>
+                    {/* Render items if section is expanded */}
+                    {expandedSections[group.heading.name] && group.items.map((item) => {
+                      const normalizedPathname = location.pathname.replace(/\/$/, '') || '/';
+                      const normalizedHref = item.href.replace(/\/$/, '') || '/';
+                      const componentInfo = getComponentInfo(item.href);
+                      let isActive;
+                      if (componentInfo) {
+                        const activeTab = tabs.find(tab => tab.id === activeTabId);
+                        const isActiveByTab = activeTab && activeTab.path === item.href;
+                        const isActiveByLocation = normalizedPathname === normalizedHref;
+                        isActive = isActiveByTab || isActiveByLocation;
+                      } else {
+                        isActive = normalizedPathname === normalizedHref;
+                      }
 
-              // Check if item has component in registry
-              const componentInfo = getComponentInfo(item.href);
-
-              // If item is in registry (opens as tab), check active tab
-              // If item is not in registry (like Dashboard), check location only
-              let isActive;
-              if (componentInfo) {
-                const activeTab = tabs.find(tab => tab.id === activeTabId);
-                const isActiveByTab = activeTab && activeTab.path === item.href;
-                const isActiveByLocation = normalizedPathname === normalizedHref;
-                isActive = isActiveByTab || isActiveByLocation;
-              } else {
-                // For items not in registry (Dashboard, etc.), only check location
-                isActive = normalizedPathname === normalizedHref;
-              }
-
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    handleNavigationClick(item);
-                    setSidebarOpen(false);
-                  }}
-                  className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md ${isActive
-                    ? 'bg-primary-100 text-primary-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </button>
-              );
-            })}
+                      return (
+                        <button
+                          key={item.name}
+                          onClick={() => {
+                            handleNavigationClick(item);
+                            setSidebarOpen(false);
+                          }}
+                          className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md ${isActive
+                            ? 'bg-primary-100 text-primary-900'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            }`}
+                        >
+                          <item.icon className="mr-3 h-5 w-5" />
+                          {item.name}
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            ))}
           </nav>
         </div>
       </div>
@@ -407,55 +492,85 @@ export const MultiTabLayout = ({ children }) => {
             <h1 className="text-xl font-bold text-gray-900">POS System</h1>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto max-h-[calc(100vh-4rem)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            {filteredNavigation.map((item, index) => {
-              if (item.type === 'divider') {
-                return (
-                  <div key={`divider-${index}`} className="my-2 border-t border-gray-200"></div>
-                );
-              }
+            {groupedNavigation.map((group, groupIndex) => (
+              <div key={`group-${groupIndex}`}>
+                {/* Render items without heading (like Dashboard) */}
+                {!group.heading && group.items.map((item) => {
+                  const normalizedPathname = location.pathname.replace(/\/$/, '') || '/';
+                  const normalizedHref = item.href.replace(/\/$/, '') || '/';
+                  const componentInfo = getComponentInfo(item.href);
+                  let isActive;
+                  if (componentInfo) {
+                    const activeTab = tabs.find(tab => tab.id === activeTabId);
+                    const isActiveByTab = activeTab && activeTab.path === item.href;
+                    const isActiveByLocation = normalizedPathname === normalizedHref;
+                    isActive = isActiveByTab || isActiveByLocation;
+                  } else {
+                    isActive = normalizedPathname === normalizedHref;
+                  }
 
-              if (item.type === 'heading') {
-                return (
-                  <div key={`heading-${index}`} className={`${item.color} text-white px-3 py-2 mt-3 mb-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm`}>
-                    {item.name}
-                  </div>
-                );
-              }
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => handleNavigationClick(item)}
+                      className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md ${isActive
+                        ? 'bg-primary-100 text-primary-900'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                    >
+                      <item.icon className="mr-3 h-5 w-5" />
+                      {item.name}
+                    </button>
+                  );
+                })}
 
-              // Normalize paths for comparison (remove trailing slashes)
-              const normalizedPathname = location.pathname.replace(/\/$/, '') || '/';
-              const normalizedHref = item.href.replace(/\/$/, '') || '/';
+                {/* Render heading with collapsible functionality */}
+                {group.heading && (
+                  <>
+                    <button
+                      onClick={() => toggleSection(group.heading.name)}
+                      className={`w-full ${group.heading.color} text-white px-3 py-2 mt-3 mb-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm flex items-center justify-between hover:opacity-90 transition-opacity cursor-pointer`}
+                    >
+                      <span>{group.heading.name}</span>
+                      {expandedSections[group.heading.name] ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </button>
+                    {/* Render items if section is expanded */}
+                    {expandedSections[group.heading.name] && group.items.map((item) => {
+                      const normalizedPathname = location.pathname.replace(/\/$/, '') || '/';
+                      const normalizedHref = item.href.replace(/\/$/, '') || '/';
+                      const componentInfo = getComponentInfo(item.href);
+                      let isActive;
+                      if (componentInfo) {
+                        const activeTab = tabs.find(tab => tab.id === activeTabId);
+                        const isActiveByTab = activeTab && activeTab.path === item.href;
+                        const isActiveByLocation = normalizedPathname === normalizedHref;
+                        isActive = isActiveByTab || isActiveByLocation;
+                      } else {
+                        isActive = normalizedPathname === normalizedHref;
+                      }
 
-              // Check if item has component in registry
-              const componentInfo = getComponentInfo(item.href);
-
-              // If item is in registry (opens as tab), check active tab
-              // If item is not in registry (like Dashboard), check location only
-              let isActive;
-              if (componentInfo) {
-                const activeTab = tabs.find(tab => tab.id === activeTabId);
-                const isActiveByTab = activeTab && activeTab.path === item.href;
-                const isActiveByLocation = normalizedPathname === normalizedHref;
-                isActive = isActiveByTab || isActiveByLocation;
-              } else {
-                // For items not in registry (Dashboard, etc.), only check location
-                isActive = normalizedPathname === normalizedHref;
-              }
-
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => handleNavigationClick(item)}
-                  className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md ${isActive
-                    ? 'bg-primary-100 text-primary-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </button>
-              );
-            })}
+                      return (
+                        <button
+                          key={item.name}
+                          onClick={() => handleNavigationClick(item)}
+                          className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md ${isActive
+                            ? 'bg-primary-100 text-primary-900'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            }`}
+                        >
+                          <item.icon className="mr-3 h-5 w-5" />
+                          {item.name}
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            ))}
           </nav>
         </div>
       </div>
