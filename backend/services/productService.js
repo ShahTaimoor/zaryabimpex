@@ -1,6 +1,7 @@
 const productRepository = require('../repositories/ProductRepository');
 const investorRepository = require('../repositories/InvestorRepository');
 const purchaseInvoiceRepository = require('../repositories/PurchaseInvoiceRepository');
+const salesRepository = require('../repositories/SalesRepository');
 const Inventory = require('../models/Inventory');
 const auditLogService = require('./auditLogService');
 const costingService = require('./costingService');
@@ -526,6 +527,21 @@ class ProductService {
       throw new Error('Product not found');
     }
 
+    // Check if product has been sold in any sales invoice
+    const salesWithProduct = await salesRepository.findByProducts([id], {
+      lean: true,
+      limit: 1
+    });
+
+    if (salesWithProduct && salesWithProduct.length > 0) {
+      const productName = product.name || 'Product';
+      throw new Error(
+        `Cannot delete "${productName}". This product has been sold through sale invoice(s). ` +
+        `Deleting products that have been sold would affect historical sales records and data integrity. ` +
+        `If you need to discontinue this product, consider marking it as inactive instead.`
+      );
+    }
+
     await productRepository.softDelete(id);
 
     // Log audit trail
@@ -569,6 +585,55 @@ class ProductService {
   async bulkDeleteProducts(productIds) {
     if (!Array.isArray(productIds) || productIds.length === 0) {
       throw new Error('Product IDs are required');
+    }
+
+    // Check which products have been sold
+    const salesWithProducts = await salesRepository.findByProducts(productIds, {
+      lean: true
+    });
+
+    if (salesWithProducts && salesWithProducts.length > 0) {
+      // Get unique product IDs that have been sold
+      const soldProductIds = new Set();
+      const productIdStrings = productIds.map(id => id.toString());
+      
+      salesWithProducts.forEach(sale => {
+        if (sale.items && Array.isArray(sale.items)) {
+          sale.items.forEach(item => {
+            if (item.product) {
+              // Handle both populated and non-populated product references
+              const productId = item.product._id 
+                ? item.product._id.toString() 
+                : item.product.toString();
+              
+              // Check if this product ID is in our list to delete
+              if (productIdStrings.includes(productId)) {
+                soldProductIds.add(productId);
+              }
+            }
+          });
+        }
+      });
+
+      if (soldProductIds.size > 0) {
+        // Convert Set to Array and get product names for better error message
+        const soldProductIdsArray = Array.from(soldProductIds);
+        const soldProducts = await productRepository.findAll({
+          _id: { $in: soldProductIdsArray }
+        }, {
+          select: 'name',
+          lean: true
+        });
+
+        const productNames = soldProducts.map(p => p.name).join(', ');
+        const count = soldProductIds.size;
+        throw new Error(
+          `Cannot delete ${count} product(s): ${productNames}. ` +
+          `These products have been sold through sale invoice(s). ` +
+          `Deleting products that have been sold would affect historical sales records and data integrity. ` +
+          `If you need to discontinue these products, consider marking them as inactive instead.`
+        );
+      }
     }
 
     const result = await productRepository.bulkDelete(productIds);
