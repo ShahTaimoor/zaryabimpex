@@ -271,7 +271,9 @@ router.delete('/:id', [
     res.json(result);
   } catch (error) {
     console.error('Delete product error:', error);
-    res.status(500).json({ message: 'Server error' });
+    // Return appropriate status code based on error type
+    const statusCode = error.message && error.message.includes('Cannot delete') ? 400 : 500;
+    res.status(statusCode).json({ message: error.message || 'Server error' });
   }
 });
 
@@ -370,7 +372,9 @@ router.delete('/bulk', [
     res.json(result);
   } catch (error) {
     console.error('Bulk delete products error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    // Return appropriate status code based on error type
+    const statusCode = error.message && error.message.includes('Cannot delete') ? 400 : 500;
+    res.status(statusCode).json({ message: error.message || 'Server error' });
   }
 });
 
