@@ -2453,7 +2453,7 @@ export const Settings2 = () => {
                   return acc;
                 }, []).map((section, sIdx) => (
                   <div key={sIdx} className="space-y-4">
-                    <h3 className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded inline-block ${section.heading.color || 'bg-gray-100 text-gray-600'}`}>
+                    <h3 className={`text-xs font-bold uppercase tracking-wider px-3 py-2 mt-3 mb-1 rounded-md shadow-sm ${section.heading.color || 'bg-gray-100 text-gray-600'} ${section.heading.color ? 'text-white' : ''}`}>
                       {section.heading.name}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
