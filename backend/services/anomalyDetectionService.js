@@ -17,11 +17,29 @@ class AnomalyDetectionService {
    */
   static async detectSalesAnomalies(options = {}) {
     try {
-      const {
-        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-        endDate = new Date(),
-        minSeverity = 'low'
-      } = options;
+      const { getStartOfDayPakistan, getEndOfDayPakistan, formatDatePakistan } = require('../utils/dateFilter');
+      
+      // Use Pakistan timezone for date filtering
+      let startDate, endDate;
+      if (options.startDate) {
+        startDate = typeof options.startDate === 'string' 
+          ? getStartOfDayPakistan(options.startDate)
+          : getStartOfDayPakistan(formatDatePakistan(options.startDate));
+      } else {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        startDate = getStartOfDayPakistan(formatDatePakistan(thirtyDaysAgo));
+      }
+      
+      if (options.endDate) {
+        endDate = typeof options.endDate === 'string'
+          ? getEndOfDayPakistan(options.endDate)
+          : getEndOfDayPakistan(formatDatePakistan(options.endDate));
+      } else {
+        endDate = getEndOfDayPakistan(formatDatePakistan(new Date()));
+      }
+      
+      const minSeverity = options.minSeverity || 'low';
 
       const anomalies = [];
 
@@ -551,10 +569,27 @@ class AnomalyDetectionService {
    */
   static async detectPaymentAnomalies(options = {}) {
     try {
-      const {
-        startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        endDate = new Date()
-      } = options;
+      const { getStartOfDayPakistan, getEndOfDayPakistan, formatDatePakistan } = require('../utils/dateFilter');
+      
+      // Use Pakistan timezone for date filtering
+      let startDate, endDate;
+      if (options.startDate) {
+        startDate = typeof options.startDate === 'string' 
+          ? getStartOfDayPakistan(options.startDate)
+          : getStartOfDayPakistan(formatDatePakistan(options.startDate));
+      } else {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        startDate = getStartOfDayPakistan(formatDatePakistan(thirtyDaysAgo));
+      }
+      
+      if (options.endDate) {
+        endDate = typeof options.endDate === 'string'
+          ? getEndOfDayPakistan(options.endDate)
+          : getEndOfDayPakistan(formatDatePakistan(options.endDate));
+      } else {
+        endDate = getEndOfDayPakistan(formatDatePakistan(new Date()));
+      }
 
       const anomalies = [];
 

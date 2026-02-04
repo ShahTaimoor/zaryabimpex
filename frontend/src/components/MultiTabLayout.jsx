@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  Users, 
-  ShoppingCart, 
-  Warehouse, 
-  BarChart3, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Package,
+  Users,
+  ShoppingCart,
+  Warehouse,
+  BarChart3,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -43,22 +43,22 @@ import MobileNavigation from './MobileNavigation';
 import { useResponsive } from './ResponsiveContainer';
 import { useGetAlertSummaryQuery } from '../store/services/inventoryAlertsApi';
 
-const navigation = [
+export const navigation = [
   // Dashboard
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, permission: null, allowMultiple: true },
-  
+
   // Sales Section
   { type: 'heading', name: 'Sales Section', color: 'bg-blue-500' },
   { name: 'Sales Orders', href: '/sales-orders', icon: FileText, permission: 'view_sales_orders' },
   { name: 'Sales', href: '/sales', icon: CreditCard, permission: 'view_sales_orders' },
   { name: 'Sales Invoices', href: '/sales-invoices', icon: Search, permission: 'view_sales_invoices' },
-  
+
   // Purchase Section
   { type: 'heading', name: 'Purchase Section', color: 'bg-green-500' },
   { name: 'Purchase Orders', href: '/purchase-orders', icon: FileText, permission: 'view_purchase_orders' },
   { name: 'Purchase', href: '/purchase', icon: Truck, permission: 'view_purchase_orders' },
   { name: 'Purchase Invoices', href: '/purchase-invoices', icon: Search, permission: 'view_purchase_invoices' },
-  
+
   // Operations Section
   { type: 'heading', name: 'Operations Section', color: 'bg-teal-500' },
   { name: 'Sale Returns', href: '/sale-returns', icon: RotateCcw, permission: 'view_returns' },
@@ -66,7 +66,7 @@ const navigation = [
   { name: 'Returns', href: '/returns', icon: RotateCcw, permission: 'view_returns' },
   { name: 'Discounts', href: '/discounts', icon: Tag, permission: 'view_discounts' },
   { name: 'CCTV Access', href: '/cctv-access', icon: Camera, permission: 'view_sales_invoices', allowMultiple: true },
-  
+
   // Financial Transactions Section
   { type: 'heading', name: 'Financial Transactions', color: 'bg-yellow-500' },
   { name: 'Cash Receipts', href: '/cash-receipts', icon: Receipt, permission: 'view_reports' },
@@ -74,7 +74,7 @@ const navigation = [
   { name: 'Bank Receipts', href: '/bank-receipts', icon: Building, permission: 'view_reports' },
   { name: 'Bank Payments', href: '/bank-payments', icon: ArrowUpDown, permission: 'view_reports' },
   { name: 'Record Expense', href: '/expenses', icon: Wallet, permission: null },
-  
+
   // Master Data Section
   { type: 'heading', name: 'Master Data Section', color: 'bg-purple-500' },
   { name: 'Products', href: '/products', icon: Package, permission: 'view_products' },
@@ -87,20 +87,21 @@ const navigation = [
   { name: 'Investors', href: '/investors', icon: TrendingUp, permission: 'view_investors' },
   { name: 'Drop Shipping', href: '/drop-shipping', icon: ArrowRight, permission: 'create_drop_shipping' },
   { name: 'Cities', href: '/cities', icon: MapPin, permission: 'manage_users' },
-  
+
   // Inventory Section
   { type: 'heading', name: 'Inventory Section', color: 'bg-orange-500' },
   { name: 'Inventory', href: '/inventory', icon: Warehouse, permission: 'view_inventory' },
   { name: 'Inventory Alerts', href: '/inventory-alerts', icon: AlertTriangle, permission: 'view_inventory' },
   { name: 'Warehouses', href: '/warehouses', icon: Warehouse, permission: 'view_inventory' },
   { name: 'Stock Movements', href: '/stock-movements', icon: ArrowUpDown, permission: 'view_stock_movements' },
-  
+  { name: 'Stock Ledger', href: '/stock-ledger', icon: FileText, permission: 'view_reports' },
+
   // Accounting Section
   { type: 'heading', name: 'Accounting Section', color: 'bg-pink-500' },
   { name: 'Chart of Accounts', href: '/chart-of-accounts', icon: FolderTree, permission: 'view_chart_of_accounts' },
   { name: 'Journal Vouchers', href: '/journal-vouchers', icon: FileText, permission: 'view_reports', allowMultiple: true },
   { name: 'Account Ledger Summary', href: '/account-ledger', icon: FileText, permission: 'view_reports', allowMultiple: true },
-  
+
   // Reports & Analytics Section
   { type: 'heading', name: 'Reports & Analytics', color: 'bg-indigo-500' },
   { name: 'P&L Statements', href: '/pl-statements', icon: BarChart3, permission: 'view_pl_statements' },
@@ -110,12 +111,12 @@ const navigation = [
   { name: 'Anomaly Detection', href: '/anomaly-detection', icon: AlertTriangle, permission: 'view_anomaly_detection' },
   { name: 'Reports', href: '/reports', icon: BarChart3, permission: 'view_general_reports' },
   { name: 'Backdate Report', href: '/backdate-report', icon: Clock, permission: 'view_backdate_report' },
-  
+
   // HR/Admin Section
   { type: 'heading', name: 'HR/Admin Section', color: 'bg-cyan-500' },
   { name: 'Employees', href: '/employees', icon: Users, permission: 'manage_users', allowMultiple: true },
   { name: 'Attendance', href: '/attendance', icon: Clock, permission: 'view_own_attendance' },
-  
+
   // System/Utilities Section
   { type: 'heading', name: 'System/Utilities', color: 'bg-red-500' },
   { name: 'Settings', href: '/settings2', icon: Settings, permission: 'manage_users' },
@@ -160,6 +161,25 @@ export const MultiTabLayout = ({ children }) => {
   const { isMobile, isTablet } = useResponsive();
   const { openTab, tabs, switchToTab, triggerTabHighlight, activeTabId } = useTab();
 
+  // Sidebar visibility state
+  const [sidebarConfig, setSidebarConfig] = useState(() => {
+    const saved = localStorage.getItem('sidebarConfig');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Listener for sidebar configuration changes
+  useEffect(() => {
+    const handleSidebarChange = () => {
+      const saved = localStorage.getItem('sidebarConfig');
+      if (saved) {
+        setSidebarConfig(JSON.parse(saved));
+      }
+    };
+
+    window.addEventListener('sidebarConfigChanged', handleSidebarChange);
+    return () => window.removeEventListener('sidebarConfigChanged', handleSidebarChange);
+  }, []);
+
   // Get alert summary for mobile bottom navbar
   const { data: summaryData } = useGetAlertSummaryQuery(undefined, {
     pollingInterval: 60000,
@@ -170,43 +190,74 @@ export const MultiTabLayout = ({ children }) => {
   const totalAlerts = summary.total || 0;
   const displayCount = criticalCount > 0 ? criticalCount : (totalAlerts > 0 ? totalAlerts : 3);
 
-  // Filter navigation based on user permissions
-  const filteredNavigationItems = navigation.filter(item => {
-    if (item.type === 'divider' || item.type === 'heading') return true; // Keep all dividers and headings for now
-    if (!item.permission) return true; // Always show items without permission requirement (like Dashboard)
-    if (user?.role === 'admin') return true; // Admin users see everything
-    return hasPermission(item.permission);
-  });
+  // Filtered navigation (using useMemo for performance)
+  const filteredNavigation = React.useMemo(() => {
+    return navigation.reduce((acc, item, index) => {
+      if (item.type === 'heading') {
+        const subItems = [];
+        for (let i = index + 1; i < navigation.length; i++) {
+          if (navigation[i].type === 'heading') break;
+          if (navigation[i].name) subItems.push(navigation[i]);
+        }
 
-  // Now filter out headings that have no visible items underneath
-  const filteredNavigation = [];
-  for (let i = 0; i < filteredNavigationItems.length; i++) {
-    const item = filteredNavigationItems[i];
-    
-    if (item.type === 'heading') {
-      // Check if there are any visible items after this heading (until next heading)
-      let hasVisibleItems = false;
-      for (let j = i + 1; j < filteredNavigationItems.length; j++) {
-        const nextItem = filteredNavigationItems[j];
-        // Stop at next heading (dividers don't stop the search, they're just separators)
-        if (nextItem.type === 'heading') {
-          break;
+        // Hide heading if no visible sub-items OR if the heading itself is hidden (though headings aren't usually in config)
+        const hasVisibleSubItem = subItems.some(subItem => sidebarConfig[subItem.name] !== false);
+
+        // Check permissions for sub-items too
+        const hasPermittedVisibleSubItem = subItems.some(subItem => {
+          const isVisible = sidebarConfig[subItem.name] !== false;
+          const isPermitted = !subItem.permission || user?.role === 'admin' || hasPermission(subItem.permission);
+          return isVisible && isPermitted;
+        });
+
+        if (hasPermittedVisibleSubItem) {
+          acc.push(item);
         }
-        // If we find a visible item (non-heading, non-divider), this heading should be shown
-        if (nextItem.type !== 'heading' && nextItem.type !== 'divider') {
-          hasVisibleItems = true;
-          break;
+      } else if (item.name) {
+        const isVisible = sidebarConfig[item.name] !== false;
+        const isPermitted = !item.permission || user?.role === 'admin' || hasPermission(item.permission);
+        if (isVisible && isPermitted) {
+          acc.push(item);
         }
+      } else {
+        acc.push(item);
       }
-      // Only add heading if it has visible items
-      if (hasVisibleItems) {
-        filteredNavigation.push(item);
-      }
-    } else {
-      // Add all non-heading items (dividers and regular items)
-      filteredNavigation.push(item);
+      return acc;
+    }, []);
+  }, [sidebarConfig, user, hasPermission]);
+
+  // Redirect if current page is hidden
+  useEffect(() => {
+    // Only run if we have a user and navigation items loaded
+    if (!user || filteredNavigation.length === 0) return;
+
+    const currentPath = location.pathname;
+
+    // Don't redirect if we are on settings, login, or any other critical page
+    if (currentPath === '/settings' || currentPath === '/settings2' || currentPath === '/login' || currentPath === '/profile') {
+      return;
     }
-  }
+
+    // Check if the current path is hidden in sidebarConfig
+    const currentNavItem = navigation.find(item => item.href === currentPath);
+
+    // If the item exists in navigation but is NOT in filteredNavigation, it means it's hidden or restricted
+    if (currentNavItem && currentNavItem.name) {
+      const isVisible = sidebarConfig[currentNavItem.name] !== false;
+      const isPermitted = !currentNavItem.permission || user?.role === 'admin' || hasPermission(currentNavItem.permission);
+
+      if (!isVisible || !isPermitted) {
+        // Find the first visible and permitted page (non-heading, non-divider)
+        const firstVisiblePage = filteredNavigation.find(item => item.href && item.name && item.type !== 'heading' && item.type !== 'divider');
+
+        if (firstVisiblePage && firstVisiblePage.href !== currentPath) {
+          navigate(firstVisiblePage.href);
+          toast.error(`"${currentNavItem.name}" is hidden. Redirecting to ${firstVisiblePage.name}.`, { id: 'nav-redirect' });
+        }
+      }
+    }
+  }, [location.pathname, sidebarConfig, filteredNavigation, user, hasPermission, navigate]);
+
 
   const handleLogout = () => {
     logout();
@@ -226,7 +277,7 @@ export const MultiTabLayout = ({ children }) => {
     const componentInfo = getComponentInfo(item.href);
     if (componentInfo) {
       const existingTab = tabs.find(tab => tab.path === item.href);
-      
+
       // If allowMultiple is true, always open a new tab
       // If allowMultiple is false and tab exists, switch to existing tab (or reuse if in reuseNavigationPaths)
       if (!componentInfo.allowMultiple && existingTab) {
@@ -240,7 +291,7 @@ export const MultiTabLayout = ({ children }) => {
         triggerTabHighlight(existingTab.id);
         return;
       }
-      
+
       // Open new tab (either because allowMultiple is true, or no existing tab)
       const tabId = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       openTab({
@@ -278,7 +329,7 @@ export const MultiTabLayout = ({ children }) => {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Navigation */}
       <MobileNavigation user={user} onLogout={handleLogout} />
-      
+
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
@@ -299,7 +350,7 @@ export const MultiTabLayout = ({ children }) => {
                   <div key={`divider-${index}`} className="my-2 border-t border-gray-200"></div>
                 );
               }
-              
+
               if (item.type === 'heading') {
                 return (
                   <div key={`heading-${index}`} className={`${item.color} text-white px-3 py-2 mt-3 mb-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm`}>
@@ -307,14 +358,14 @@ export const MultiTabLayout = ({ children }) => {
                   </div>
                 );
               }
-              
+
               // Normalize paths for comparison (remove trailing slashes)
               const normalizedPathname = location.pathname.replace(/\/$/, '') || '/';
               const normalizedHref = item.href.replace(/\/$/, '') || '/';
-              
+
               // Check if item has component in registry
               const componentInfo = getComponentInfo(item.href);
-              
+
               // If item is in registry (opens as tab), check active tab
               // If item is not in registry (like Dashboard), check location only
               let isActive;
@@ -327,7 +378,7 @@ export const MultiTabLayout = ({ children }) => {
                 // For items not in registry (Dashboard, etc.), only check location
                 isActive = normalizedPathname === normalizedHref;
               }
-              
+
               return (
                 <button
                   key={item.name}
@@ -335,11 +386,10 @@ export const MultiTabLayout = ({ children }) => {
                     handleNavigationClick(item);
                     setSidebarOpen(false);
                   }}
-                  className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'bg-primary-100 text-primary-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+                  className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md ${isActive
+                    ? 'bg-primary-100 text-primary-900'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
                 >
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
@@ -363,7 +413,7 @@ export const MultiTabLayout = ({ children }) => {
                   <div key={`divider-${index}`} className="my-2 border-t border-gray-200"></div>
                 );
               }
-              
+
               if (item.type === 'heading') {
                 return (
                   <div key={`heading-${index}`} className={`${item.color} text-white px-3 py-2 mt-3 mb-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm`}>
@@ -371,14 +421,14 @@ export const MultiTabLayout = ({ children }) => {
                   </div>
                 );
               }
-              
+
               // Normalize paths for comparison (remove trailing slashes)
               const normalizedPathname = location.pathname.replace(/\/$/, '') || '/';
               const normalizedHref = item.href.replace(/\/$/, '') || '/';
-              
+
               // Check if item has component in registry
               const componentInfo = getComponentInfo(item.href);
-              
+
               // If item is in registry (opens as tab), check active tab
               // If item is not in registry (like Dashboard), check location only
               let isActive;
@@ -391,16 +441,15 @@ export const MultiTabLayout = ({ children }) => {
                 // For items not in registry (Dashboard, etc.), only check location
                 isActive = normalizedPathname === normalizedHref;
               }
-              
+
               return (
                 <button
                   key={item.name}
                   onClick={() => handleNavigationClick(item)}
-                  className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md ${
-                    isActive
-                      ? 'bg-primary-100 text-primary-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+                  className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md ${isActive
+                    ? 'bg-primary-100 text-primary-900'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
                 >
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
@@ -427,76 +476,93 @@ export const MultiTabLayout = ({ children }) => {
           {/* Main Navigation Container */}
           <div className="flex flex-1 items-center gap-2 sm:gap-3 lg:gap-4 min-w-0">
             {/* Alerts Button - Left Aligned - Always visible on top */}
-            <div className="flex-shrink-0">
-              <InventoryAlertsBadge onNavigate={handleNavigationClick} />
-            </div>
-            
+            {sidebarConfig['Inventory Alerts'] !== false && (
+              <div className="flex-shrink-0">
+                <InventoryAlertsBadge onNavigate={handleNavigationClick} />
+              </div>
+            )}
+
             {/* Mobile Top Bar Buttons - Cash Receiving and Record Expense */}
             <div className="flex-shrink-0 lg:hidden flex items-center gap-2">
-              <button
-                onClick={() => handleNavigationClick({ href: '/cash-receiving', name: 'Cash Receiving' })}
-                className="bg-green-600 hover:bg-green-700 text-white px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
-              >
-                <Receipt className="h-3.5 w-3.5 flex-shrink-0" />
-                <span>Receiving</span>
-              </button>
-              <button
-                onClick={() => handleNavigationClick({ href: '/expenses', name: 'Record Expense' })}
-                className="bg-red-500 hover:bg-red-600 text-white px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
-              >
-                <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
-                <span>Expense</span>
-              </button>
+              {sidebarConfig['Cash Receipts'] !== false && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/cash-receipts', name: 'Cash Receipts' })}
+                  className="bg-green-600 hover:bg-green-700 text-white px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
+                >
+                  <Receipt className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>Receiving</span>
+                </button>
+              )}
+              {sidebarConfig['Record Expense'] !== false && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/expenses', name: 'Record Expense' })}
+                  className="bg-red-500 hover:bg-red-600 text-white px-2.5 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
+                >
+                  <CreditCard className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>Expense</span>
+                </button>
+              )}
             </div>
-            
+
             {/* Action Buttons Container - Center/Mid-Left with Horizontal Scroll - Hidden on Mobile */}
             <div className="hidden lg:flex items-center gap-1.5 sm:gap-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide overflow-y-visible">
               {/* Green Buttons - Receipt related */}
-              <button
-                onClick={() => handleNavigationClick({ href: '/cash-receipts', name: 'Cash Receipts' })}
-                className="bg-green-500 hover:bg-green-600 text-white px-2.5 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
-              >
-                <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Cash Receipt</span>
-                <span className="sm:hidden">Cash R.</span>
-              </button>
-              <button
-                onClick={() => handleNavigationClick({ href: '/bank-receipts', name: 'Bank Receipts' })}
-                className="bg-green-500 hover:bg-green-600 text-white px-2.5 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
-              >
-                <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Bank Receipt</span>
-                <span className="sm:hidden">Bank R.</span>
-              </button>
-              
+              {sidebarConfig['Cash Receipts'] !== false && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/cash-receipts', name: 'Cash Receipts' })}
+                  className="bg-green-500 hover:bg-green-600 text-white px-2.5 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
+                >
+                  <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Cash Receipt</span>
+                  <span className="sm:hidden">Cash R.</span>
+                </button>
+              )}
+              {sidebarConfig['Bank Receipts'] !== false && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/bank-receipts', name: 'Bank Receipts' })}
+                  className="bg-green-500 hover:bg-green-600 text-white px-2.5 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
+                >
+                  <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Bank Receipt</span>
+                  <span className="sm:hidden">Bank R.</span>
+                </button>
+              )}
+
               {/* Blue Buttons - Payment related */}
-              <button
-                onClick={() => handleNavigationClick({ href: '/cash-payments', name: 'Cash Payments' })}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-2.5 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
-              >
-                <ArrowUpDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Cash Payment</span>
-                <span className="sm:hidden">Cash P.</span>
-              </button>
-              <button
-                onClick={() => handleNavigationClick({ href: '/bank-payments', name: 'Bank Payments' })}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-2.5 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
-              >
-                <ArrowUpDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Bank Payment</span>
-                <span className="sm:hidden">Bank P.</span>
-              </button>
-              
+              {sidebarConfig['Cash Payments'] !== false && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/cash-payments', name: 'Cash Payments' })}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-2.5 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
+                >
+                  <ArrowUpDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Cash Payment</span>
+                  <span className="sm:hidden">Cash P.</span>
+                </button>
+              )}
+              {sidebarConfig['Bank Payments'] !== false && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/bank-payments', name: 'Bank Payments' })}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-2.5 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
+                >
+                  <ArrowUpDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Bank Payment</span>
+                  <span className="sm:hidden">Bank P.</span>
+                </button>
+              )}
+
               {/* Record Expense Button - Right side next to Bank Payment */}
-              <button
-                onClick={() => handleNavigationClick({ href: '/expenses', name: 'Record Expense' })}
-                className="bg-red-500 hover:bg-red-600 text-white px-2.5 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
-              >
-                <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Record Expense</span>
-                <span className="sm:hidden">Expense</span>
-              </button>
+              {sidebarConfig['Record Expense'] !== false && (
+                <button
+                  onClick={() => handleNavigationClick({ href: '/expenses', name: 'Record Expense' })}
+                  className="bg-red-500 hover:bg-red-600 text-white px-2.5 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
+                >
+                  <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">Record Expense</span>
+                  <span className="sm:hidden">Expense</span>
+                </button>
+              )}
             </div>
+
 
             {/* User Profile Section - Right Aligned with Dropdown */}
             <div className="relative flex items-center gap-2 sm:gap-3 ml-auto flex-shrink-0 overflow-visible" ref={userMenuRef}>
@@ -577,37 +643,46 @@ export const MultiTabLayout = ({ children }) => {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
         <div className="flex items-center justify-center gap-1 px-1 py-1.5 overflow-x-auto scrollbar-hide">
           {/* Green Buttons - Receipt related */}
-          <button
-            onClick={() => handleNavigationClick({ href: '/cash-receipts', name: 'Cash Receipts' })}
-            className="flex flex-col items-center justify-center px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md shadow-sm transition-all duration-200 flex-1 max-w-[80px] flex-shrink-0"
-            title="Cash Receipt"
-          >
-            <span className="text-[10px] font-medium whitespace-nowrap leading-tight">Cash R.</span>
-          </button>
-          <button
-            onClick={() => handleNavigationClick({ href: '/bank-receipts', name: 'Bank Receipts' })}
-            className="flex flex-col items-center justify-center px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md shadow-sm transition-all duration-200 flex-1 max-w-[80px] flex-shrink-0"
-            title="Bank Receipt"
-          >
-            <span className="text-[10px] font-medium whitespace-nowrap leading-tight">Bank R.</span>
-          </button>
-          
+          {sidebarConfig['Cash Receipts'] !== false && (
+            <button
+              onClick={() => handleNavigationClick({ href: '/cash-receipts', name: 'Cash Receipts' })}
+              className="flex flex-col items-center justify-center px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md shadow-sm transition-all duration-200 flex-1 max-w-[80px] flex-shrink-0"
+              title="Cash Receipt"
+            >
+              <span className="text-[10px] font-medium whitespace-nowrap leading-tight">Cash R.</span>
+            </button>
+          )}
+          {sidebarConfig['Bank Receipts'] !== false && (
+            <button
+              onClick={() => handleNavigationClick({ href: '/bank-receipts', name: 'Bank Receipts' })}
+              className="flex flex-col items-center justify-center px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md shadow-sm transition-all duration-200 flex-1 max-w-[80px] flex-shrink-0"
+              title="Bank Receipt"
+            >
+              <span className="text-[10px] font-medium whitespace-nowrap leading-tight">Bank R.</span>
+            </button>
+          )}
+
           {/* Blue Buttons - Payment related */}
-          <button
-            onClick={() => handleNavigationClick({ href: '/cash-payments', name: 'Cash Payments' })}
-            className="flex flex-col items-center justify-center px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition-all duration-200 flex-1 max-w-[80px] flex-shrink-0"
-            title="Cash Payment"
-          >
-            <span className="text-[10px] font-medium whitespace-nowrap leading-tight">Cash P.</span>
-          </button>
-          <button
-            onClick={() => handleNavigationClick({ href: '/bank-payments', name: 'Bank Payments' })}
-            className="flex flex-col items-center justify-center px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition-all duration-200 flex-1 max-w-[80px] flex-shrink-0"
-            title="Bank Payment"
-          >
-            <span className="text-[10px] font-medium whitespace-nowrap leading-tight">Bank P.</span>
-          </button>
+          {sidebarConfig['Cash Payments'] !== false && (
+            <button
+              onClick={() => handleNavigationClick({ href: '/cash-payments', name: 'Cash Payments' })}
+              className="flex flex-col items-center justify-center px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition-all duration-200 flex-1 max-w-[80px] flex-shrink-0"
+              title="Cash Payment"
+            >
+              <span className="text-[10px] font-medium whitespace-nowrap leading-tight">Cash P.</span>
+            </button>
+          )}
+          {sidebarConfig['Bank Payments'] !== false && (
+            <button
+              onClick={() => handleNavigationClick({ href: '/bank-payments', name: 'Bank Payments' })}
+              className="flex flex-col items-center justify-center px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition-all duration-200 flex-1 max-w-[80px] flex-shrink-0"
+              title="Bank Payment"
+            >
+              <span className="text-[10px] font-medium whitespace-nowrap leading-tight">Bank P.</span>
+            </button>
+          )}
         </div>
+
       </div>
     </div>
   );

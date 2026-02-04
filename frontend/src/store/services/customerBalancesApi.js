@@ -20,7 +20,13 @@ export const customerBalancesApi = api.injectEndpoints({
       }),
       invalidatesTags: (_res, _err, { customerId }) => [
         { type: 'Customers', id: customerId },
+        { type: 'Customers', id: 'LIST' },
         { type: 'Accounting', id: 'CUSTOMER_BALANCE' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
         { type: 'CashReceipts', id: 'LIST' },
       ],
     }),
@@ -32,7 +38,13 @@ export const customerBalancesApi = api.injectEndpoints({
       }),
       invalidatesTags: (_res, _err, { customerId }) => [
         { type: 'Customers', id: customerId },
+        { type: 'Customers', id: 'LIST' },
         { type: 'Accounting', id: 'CUSTOMER_BALANCE' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
       ],
     }),
     recalculateBalance: builder.mutation({
@@ -42,7 +54,13 @@ export const customerBalancesApi = api.injectEndpoints({
       }),
       invalidatesTags: (_res, _err, customerId) => [
         { type: 'Customers', id: customerId },
+        { type: 'Customers', id: 'LIST' },
         { type: 'Accounting', id: 'CUSTOMER_BALANCE' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
       ],
     }),
     canMakePurchase: builder.query({

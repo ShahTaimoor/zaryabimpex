@@ -76,6 +76,22 @@ const settingsSchema = new mongoose.Schema({
     max: 100
   },
 
+  // Print Settings
+  printSettings: {
+    showLogo: { type: Boolean, default: true },
+    showCompanyDetails: { type: Boolean, default: true },
+    showTax: { type: Boolean, default: true },
+    showDiscount: { type: Boolean, default: true },
+    showDate: { type: Boolean, default: true }, // Keeping existing one
+    showFooter: { type: Boolean, default: true }, // Added matching PrintModal
+    showEmail: { type: Boolean, default: true }, // Added for email visibility
+    showCameraTime: { type: Boolean, default: false }, // Added matching PrintModal
+    showDescription: { type: Boolean, default: true }, // Added for item description visibility
+    headerText: { type: String, trim: true, default: '' },
+    footerText: { type: String, trim: true, default: '' },
+    invoiceLayout: { type: String, enum: ['standard', 'compact', 'detailed'], default: 'standard' }
+  },
+
   // Singleton pattern - only one settings document should exist
   _id: {
     type: String,

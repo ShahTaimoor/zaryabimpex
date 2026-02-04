@@ -1,6 +1,8 @@
 const express = require('express');
 const { auth, requirePermission } = require('../middleware/auth');
 const { query, param } = require('express-validator');
+const { handleValidationErrors } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const exportService = require('../services/exportService');
 const accountLedgerService = require('../services/accountLedgerService');
 const chartOfAccountsRepository = require('../repositories/ChartOfAccountsRepository');
@@ -26,19 +28,18 @@ const router = express.Router();
 router.get('/', [
   auth,
   requirePermission('view_reports'),
-  query('startDate').optional().isISO8601().withMessage('Invalid start date'),
-  query('endDate').optional().isISO8601().withMessage('Invalid end date'),
+  ...validateDateParams,
   query('accountCode').optional().isString().withMessage('Invalid account code'),
   query('accountName').optional().isString().withMessage('Invalid account name'),
   query('search').optional().isString().withMessage('Invalid search text'),
   query('limit').optional().isInt({ min: 1, max: 1000 }).withMessage('Limit must be between 1 and 1000'),
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be at least 1'),
-  query('export').optional().isIn(['csv', 'excel', 'xlsx', 'pdf', 'json']).withMessage('Export format must be csv, excel, pdf, or json')
+  query('export').optional().isIn(['csv', 'excel', 'xlsx', 'pdf', 'json']).withMessage('Export format must be csv, excel, pdf, or json'),
+  handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
   try {
     const {
-      startDate,
-      endDate,
       accountCode,
       accountName,
       search,
@@ -49,10 +50,8 @@ router.get('/', [
       page = 1
     } = req.query;
 
-    // Get account ledger data from service
-    const result = await accountLedgerService.getAccountLedger({
-      startDate,
-      endDate,
+    // Use dateRange from middleware (Pakistan timezone)
+    const queryParams = {
       accountCode,
       accountName,
       search,
@@ -60,12 +59,23 @@ router.get('/', [
       summary,
       limit,
       page
-    });
+    };
+    
+    if (req.dateRange) {
+      queryParams.startDate = req.dateRange.startDate || undefined;
+      queryParams.endDate = req.dateRange.endDate || undefined;
+    }
+
+    // Get account ledger data from service
+    const result = await accountLedgerService.getAccountLedger(queryParams);
 
     // If export requested, handle it
     if (exportFormat) {
       const { account: accountInfo, entries: ledgerEntries, summary: ledgerSummary } = result.data;
-      const { start, end } = accountLedgerService.clampDateRange(startDate, endDate);
+      const { start, end } = accountLedgerService.clampDateRange(
+        queryParams.startDate, 
+        queryParams.endDate
+      );
 
       // Export functionality (CSV, Excel, PDF, JSON)
       try {

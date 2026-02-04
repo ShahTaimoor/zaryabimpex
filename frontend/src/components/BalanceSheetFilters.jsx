@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Filter, X, Calendar, FileText } from 'lucide-react';
+import DateFilter from './DateFilter';
 
 const BalanceSheetFilters = ({ filters, onFilterChange, isLoading }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -127,42 +128,17 @@ const BalanceSheetFilters = ({ filters, onFilterChange, isLoading }) => {
         {showAdvanced && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <h4 className="text-sm font-medium text-gray-900 mb-3">Date Range</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
+            <div className="col-span-2">
+              <DateFilter
+                startDate={filters.startDate}
+                endDate={filters.endDate}
+                onDateChange={(start, end) => {
+                  handleFilterChange('startDate', start || '');
+                  handleFilterChange('endDate', end || '');
+                }}
+                compact={true}
+                showPresets={true}
+              />
             </div>
           </div>
         )}

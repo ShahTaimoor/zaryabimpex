@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Building,
   Phone,
@@ -23,7 +23,8 @@ import {
   Check,
   BarChart3,
   Clock,
-  TrendingUp
+  TrendingUp,
+  LayoutDashboard
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -39,8 +40,10 @@ import {
   useResetPasswordMutation,
   useUpdateRolePermissionsMutation,
 } from '../store/services/usersApi';
+import { navigation } from '../components/MultiTabLayout';
 import { useChangePasswordMutation } from '../store/services/authApi';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
+import PrintDocument from '../components/PrintDocument';
 import { handleApiError } from '../utils/errorHandler';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -90,13 +93,42 @@ export const Settings2 = () => {
   // Print Preview Settings State
   const [printSettings, setPrintSettings] = useState({
     showLogo: true,
+    showCompanyDetails: true,
     showDiscount: true,
     showTax: true,
     showDate: true,
+    showFooter: true,
+    showCameraTime: false,
+    showDescription: true,
+    showEmail: true,
     headerText: '',
     footerText: '',
     invoiceLayout: 'standard'
   });
+
+  const sampleOrderData = useMemo(() => ({
+    invoiceNumber: 'INV-PREVIEW',
+    createdAt: new Date(),
+    customer: {
+      name: 'Walk-in Customer',
+      phone: '555-0123'
+    },
+    items: [
+      { name: 'Sample Item 1', quantity: 2, unitPrice: 50.00, total: 100.00 },
+      { name: 'Sample Item 2', quantity: 1, unitPrice: 25.00, total: 25.00 }
+    ],
+    subtotal: 125.00,
+    tax: 12.50,
+    discount: 5.00,
+    total: 132.50,
+    payment: {
+      method: 'Cash',
+      status: 'Paid',
+      amountPaid: 132.50
+    },
+    billStartTime: new Date(Date.now() - 300000), // 5 min ago
+    billEndTime: new Date()
+  }), []);
 
   // Permission categories (matching backend User model enum)
   const permissionCategories = {
@@ -636,6 +668,24 @@ export const Settings2 = () => {
         taxRegistrationNumber: settings.taxId || '' // Map taxId back to taxRegistrationNumber
       };
       setCompanyData(mappedData);
+
+      if (settings.printSettings) {
+        setPrintSettings(prev => ({
+          ...prev,
+          showLogo: settings.printSettings.showLogo ?? true,
+          showCompanyDetails: settings.printSettings.showCompanyDetails ?? true,
+          showTax: settings.printSettings.showTax ?? true,
+          showDiscount: settings.printSettings.showDiscount ?? true,
+          showDate: settings.printSettings.showDate ?? true,
+          showFooter: settings.printSettings.showFooter ?? true,
+          showEmail: settings.printSettings.showEmail ?? true,
+          showCameraTime: settings.printSettings.showCameraTime ?? false,
+          showDescription: settings.printSettings.showDescription ?? true,
+          headerText: settings.printSettings.headerText || '',
+          footerText: settings.printSettings.footerText || '',
+          invoiceLayout: settings.printSettings.invoiceLayout || 'standard'
+        }));
+      }
     }
   }, [settings]);
 
@@ -720,6 +770,30 @@ export const Settings2 = () => {
         // Only update if data has changed
         if (JSON.stringify(prev) !== JSON.stringify(newData)) {
           return newData;
+        }
+        return prev;
+      });
+
+      setPrintSettings(prev => {
+        const ps = settings.data.data.printSettings || {};
+        const newPs = {
+          showLogo: ps.showLogo ?? true,
+          showCompanyDetails: ps.showCompanyDetails ?? true,
+          showTax: ps.showTax ?? true,
+          showDiscount: ps.showDiscount ?? true,
+          showDate: ps.showDate ?? true,
+          showFooter: ps.showFooter ?? true,
+          showEmail: ps.showEmail ?? true,
+          showCameraTime: ps.showCameraTime ?? false,
+          showDescription: ps.showDescription ?? true,
+          headerText: ps.headerText || prev.headerText || '',
+          footerText: ps.footerText || prev.footerText || '',
+          invoiceLayout: ps.invoiceLayout || prev.invoiceLayout || 'standard'
+        };
+
+        // Only update if changed prevents verify infinite loop
+        if (JSON.stringify(prev) !== JSON.stringify(newPs)) {
+          return newPs;
         }
         return prev;
       });
@@ -1167,6 +1241,12 @@ export const Settings2 = () => {
     setShowActivityModal(true);
   };
 
+  // Sidebar Configuration State
+  const [sidebarConfig, setSidebarConfig] = useState(() => {
+    const saved = localStorage.getItem('sidebarConfig');
+    return saved ? JSON.parse(saved) : {};
+  });
+
   // Load company settings on component mount
   useEffect(() => {
     refetchSettings();
@@ -1175,7 +1255,8 @@ export const Settings2 = () => {
   const tabs = [
     { id: 'company', name: 'Company Information', shortName: 'Company', icon: Building },
     { id: 'users', name: 'Users Control', shortName: 'Users', icon: Users },
-    { id: 'print', name: 'Print Preview Settings', shortName: 'Print', icon: Printer }
+    { id: 'print', name: 'Print Preview Settings', shortName: 'Print', icon: Printer },
+    { id: 'sidebar', name: 'Sidebar Configuration', shortName: 'Sidebar', icon: LayoutDashboard }
   ];
 
   return (
@@ -2179,6 +2260,20 @@ export const Settings2 = () => {
                     <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                       <input
                         type="checkbox"
+                        name="showCompanyDetails"
+                        checked={printSettings.showCompanyDetails}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Company Details</div>
+                        <div className="text-xs text-gray-500">Display address and phone number</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
                         name="showDiscount"
                         checked={printSettings.showDiscount}
                         onChange={handlePrintSettingsChange}
@@ -2217,7 +2312,66 @@ export const Settings2 = () => {
                         <div className="text-xs text-gray-500">Display transaction date on receipts</div>
                       </div>
                     </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showFooter"
+                        checked={printSettings.showFooter}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Footer</div>
+                        <div className="text-xs text-gray-500">Display footer text and generation info</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showCameraTime"
+                        checked={printSettings.showCameraTime}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Camera Time</div>
+                        <div className="text-xs text-gray-500">Display camera interval information</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showEmail"
+                        checked={printSettings.showEmail}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Email</div>
+                        <div className="text-xs text-gray-500">Display customer email address on receipts</div>
+                      </div>
+                    </label>
                   </div>
+                </div>
+
+                {/* Show Description Checkbox */}
+                <div className="mt-4">
+                  <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      name="showDescription"
+                      checked={printSettings.showDescription}
+                      onChange={handlePrintSettingsChange}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">Show Description</div>
+                      <div className="text-xs text-gray-500">Display item descriptions in table</div>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Print Preview */}
@@ -2231,123 +2385,113 @@ export const Settings2 = () => {
                       <span className="text-orange-600 font-medium"> Please save your company information first to see the preview.</span>
                     )}
                   </p>
-                  <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8">
-                    <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-sm">
-                      {/* Header */}
-                      {printSettings.headerText && (
-                        <div className="text-center text-sm text-gray-600 mb-4 border-b pb-2">
-                          {printSettings.headerText}
-                        </div>
-                      )}
-
-                      {/* Company Info */}
-                      <div className="text-center mb-4">
-                        {printSettings.showLogo && (
-                          <div className="h-12 w-12 bg-gray-200 rounded mx-auto mb-2 flex items-center justify-center">
-                            <Building className="h-6 w-6 text-gray-400" />
-                          </div>
-                        )}
-                        <div className="text-lg font-bold text-gray-900">
-                          {companyData.companyName || 'Your Company Name'}
-                        </div>
-                        {!companyData.companyName && (
-                          <div className="text-xs text-orange-600 mt-1">
-                            (Company name not set)
-                          </div>
-                        )}
-                        {companyData.address && (
-                          <div className="text-sm text-gray-700">
-                            {companyData.address}
-                          </div>
-                        )}
-                        {companyData.contactNumber && (
-                          <div className="text-sm text-gray-700">
-                            Phone: {companyData.contactNumber}
-                          </div>
-                        )}
-                        {companyData.email && (
-                          <div className="text-sm text-gray-700">
-                            Email: {companyData.email}
-                          </div>
-                        )}
-                        {companyData.taxRegistrationNumber && (
-                          <div className="text-sm text-gray-700">
-                            Tax ID: {companyData.taxRegistrationNumber}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Sample Receipt Content */}
-                      <div className="border-t pt-4">
-                        <div className="text-center text-sm font-medium text-gray-900 mb-2">
-                          SAMPLE RECEIPT
-                        </div>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span>Item 1</span>
-                            <span>10.00</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Item 2</span>
-                            <span>15.00</span>
-                          </div>
-                          {printSettings.showDiscount && (
-                            <div className="flex justify-between text-red-600">
-                              <span>Discount</span>
-                              <span>-2.50</span>
-                            </div>
-                          )}
-                          {printSettings.showTax && (
-                            <div className="flex justify-between">
-                              <span>Tax</span>
-                              <span>2.25</span>
-                            </div>
-                          )}
-                          <div className="border-t pt-1 flex justify-between font-bold">
-                            <span>Total</span>
-                            <span>24.75</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="border-t pt-3 mt-4">
-                        {printSettings.footerText && (
-                          <div className="text-center text-xs text-gray-600 mb-2">
-                            {printSettings.footerText}
-                          </div>
-                        )}
-
-                        {/* Additional Company Info in Footer */}
-                        <div className="text-center text-xs text-gray-500 space-y-1">
-                          {companyData.email && (
-                            <div>Email: {companyData.email}</div>
-                          )}
-                          {companyData.taxRegistrationNumber && (
-                            <div>Tax ID: {companyData.taxRegistrationNumber}</div>
-                          )}
-                        </div>
-
-                        {printSettings.showDate && (
-                          <div className="text-center text-xs text-gray-500 mt-2">
-                            Date: {new Date().toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
+                  <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 overflow-hidden flex justify-center items-start min-h-[600px]">
+                    <div style={{ transform: 'scale(0.55)', transformOrigin: 'top center', marginBottom: '-500px' }}>
+                      <PrintDocument
+                        companySettings={companyData}
+                        orderData={sampleOrderData}
+                        printSettings={printSettings}
+                        documentTitle="Receipt Preview"
+                      />
                     </div>
                   </div>
                 </div>
 
                 {/* Save Button */}
                 <div className="flex justify-end pt-4 border-t">
-                  <button
+                  <LoadingButton
                     type="button"
-                    onClick={() => toast.success('Print settings saved!')}
+                    isLoading={savingCompanySettings}
+                    onClick={() => {
+                      const dataToSend = {
+                        companyName: companyData.companyName,
+                        contactNumber: companyData.contactNumber,
+                        address: companyData.address,
+                        email: companyData.email,
+                        taxId: companyData.taxRegistrationNumber,
+                        logo: companyData.logo,
+                        printSettings: printSettings
+                      };
+                      handleSaveCompanySettings(dataToSend);
+                    }}
                     className="btn btn-primary"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     Save Print Settings
-                  </button>
+                  </LoadingButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sidebar Configuration Tab */}
+        {activeTab === 'sidebar' && (
+          <div className="card">
+            <div className="card-header">
+              <div className="flex items-center space-x-2">
+                <LayoutDashboard className="h-5 w-5 text-gray-600" />
+                <h2 className="text-lg font-semibold">Sidebar Configuration</h2>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">
+                Choose which items you want to see in the left sidebar
+              </p>
+            </div>
+            <div className="card-content">
+              <div className="space-y-8">
+                {/* Organize by Headings */}
+                {navigation.reduce((acc, current) => {
+                  if (current.type === 'heading') {
+                    acc.push({ heading: current, items: [] });
+                  } else if (current.name) {
+                    if (acc.length === 0) {
+                      acc.push({ heading: { name: 'General' }, items: [current] });
+                    } else {
+                      acc[acc.length - 1].items.push(current);
+                    }
+                  }
+                  return acc;
+                }, []).map((section, sIdx) => (
+                  <div key={sIdx} className="space-y-4">
+                    <h3 className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded inline-block ${section.heading.color || 'bg-gray-100 text-gray-600'}`}>
+                      {section.heading.name}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {section.items.map(item => (
+                        <div key={item.name} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg border border-gray-100 transition-colors">
+                          <input
+                            type="checkbox"
+                            id={`sidebar-${item.name}`}
+                            checked={sidebarConfig[item.name] !== false}
+                            onChange={(e) => {
+                              const newConfig = { ...sidebarConfig, [item.name]: e.target.checked };
+                              setSidebarConfig(newConfig);
+                              localStorage.setItem('sidebarConfig', JSON.stringify(newConfig));
+                              toast.success(`${item.name} ${e.target.checked ? 'shown' : 'hidden'} in sidebar`);
+                              window.dispatchEvent(new Event('sidebarConfigChanged'));
+                            }}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                          />
+                          <label htmlFor={`sidebar-${item.name}`} className="text-sm font-medium text-gray-700 cursor-pointer flex-1 flex items-center">
+                            {item.icon && <item.icon className="h-4 w-4 mr-2 text-gray-400" />}
+                            {item.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-blue-900">Pro Tip</h4>
+                    <p className="text-xs text-blue-800 mt-1">
+                      Unchecking an item only hides it from the sidebar menu. You can still access these pages directly via links or URL if you have the required permissions.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

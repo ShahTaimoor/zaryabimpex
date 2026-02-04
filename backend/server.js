@@ -11,6 +11,8 @@ const { v4: uuidv4 } = require('uuid');
 // Load environment variables
 require('dotenv').config();
 
+
+
 const app = express();
 
 // Security middleware
@@ -43,29 +45,18 @@ app.use('/api/auth', createRateLimiter({
   max: 5 // 5 requests per minute (prevents brute force)
 }));
 
-// CORS configuration
+// CORS configuration - use environment variable for allowed origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : [
+    'https://sa.wiserconsulting.info',
+    'http://localhost:3000', // Allow local development
+    'http://localhost:5173', // Allow Vite dev server
+    process.env.FRONTEND_URL // Allow from environment variable if set
+  ].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-
-    // Check if the origin is in the allowed list
-    const allowedOrigins = [
-      'https://sa.wiserconsulting.info',
-      'https://barakzai.wiserconsulting.info',
-      'https://www.barakzai.wiserconsulting.info',
-      'http://localhost:3000',
-      'http://localhost:5173',
-      process.env.FRONTEND_URL
-    ].filter(Boolean);
-
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-      callback(null, true);
-    } else {
-      console.log('Blocked by CORS:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key', 'Idempotency-Key', 'idempotency-key'],
   credentials: true
@@ -129,9 +120,8 @@ app.use('/api/images', express.static(path.join(__dirname, 'uploads/images/optim
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/auth/users', require('./routes/users'));
-// app.use('/api/developer', require('./routes/developer')); // Removed for single tenant
-// app.use('/api/shops', require('./routes/shops')); // Removed for single tenant
-// app.use('/api/plans', require('./routes/plans')); // Removed for single tenant
+
+
 app.use('/api/products', require('./routes/products'));
 app.use('/api/product-variants', require('./routes/productVariants'));
 app.use('/api/product-transformations', require('./routes/productTransformations'));
@@ -179,6 +169,7 @@ app.use('/api/account-ledger', require('./routes/accountLedger'));
 app.use('/api/images', require('./routes/images'));
 app.use('/api/backdate-report', require('./routes/backdateReport'));
 app.use('/api/stock-movements', require('./routes/stockMovements'));
+app.use('/api/stock-ledger', require('./routes/stockLedger'));
 app.use('/api/warehouses', require('./routes/warehouses'));
 app.use('/api/employees', require('./routes/employees'));
 app.use('/api/attendance', require('./routes/attendance'));

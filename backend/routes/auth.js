@@ -55,7 +55,7 @@ router.post('/register', [
 // @route   POST /api/auth/login
 // @desc    Login user (legacy - for backward compatibility)
 //          For Admin login, use /api/auth/admin/login
-//          For Developer login, use /api/developer/login
+
 // @access  Public
 router.post('/login', [
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),

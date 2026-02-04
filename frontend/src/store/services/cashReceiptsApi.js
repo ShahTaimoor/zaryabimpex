@@ -11,12 +11,12 @@ export const cashReceiptsApi = api.injectEndpoints({
       providesTags: (result) =>
         result?.data?.receipts
           ? [
-              ...result.data.receipts.map(({ _id, id }) => ({
-                type: 'CashReceipts',
-                id: _id || id,
-              })),
-              { type: 'CashReceipts', id: 'LIST' },
-            ]
+            ...result.data.receipts.map(({ _id, id }) => ({
+              type: 'CashReceipts',
+              id: _id || id,
+            })),
+            { type: 'CashReceipts', id: 'LIST' },
+          ]
           : [{ type: 'CashReceipts', id: 'LIST' }],
     }),
     createCashReceipt: builder.mutation({
@@ -26,17 +26,20 @@ export const cashReceiptsApi = api.injectEndpoints({
         data,
       }),
       invalidatesTags: (_r, _e, data) => {
-        const tags = [{ type: 'CashReceipts', id: 'LIST' }];
-        // Invalidate customer cache if customer is involved
-        if (data?.customer) {
-          tags.push({ type: 'Customers', id: data.customer });
-          tags.push({ type: 'Customers', id: 'LIST' });
-        }
-        // Invalidate supplier cache if supplier is involved
-        if (data?.supplier) {
-          tags.push({ type: 'Suppliers', id: data.supplier });
-          tags.push({ type: 'Suppliers', id: 'LIST' });
-        }
+        const tags = [
+          { type: 'CashReceipts', id: 'LIST' },
+          { type: 'Customers', id: 'LIST' },
+          { type: 'Suppliers', id: 'LIST' },
+          { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+          { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+          { type: 'Accounting', id: 'ALL_ENTRIES' },
+          { type: 'ChartOfAccounts', id: 'LIST' },
+          { type: 'ChartOfAccounts', id: 'STATS' },
+          { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+        ];
+        // Invalidate specific customer/supplier cache if involved
+        if (data?.customer) tags.push({ type: 'Customers', id: data.customer });
+        if (data?.supplier) tags.push({ type: 'Suppliers', id: data.supplier });
         return tags;
       },
     }),
@@ -50,17 +53,18 @@ export const cashReceiptsApi = api.injectEndpoints({
         const tags = [
           { type: 'CashReceipts', id },
           { type: 'CashReceipts', id: 'LIST' },
+          { type: 'Customers', id: 'LIST' },
+          { type: 'Suppliers', id: 'LIST' },
+          { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+          { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+          { type: 'Accounting', id: 'ALL_ENTRIES' },
+          { type: 'ChartOfAccounts', id: 'LIST' },
+          { type: 'ChartOfAccounts', id: 'STATS' },
+          { type: 'ChartOfAccounts', id: 'HIERARCHY' },
         ];
-        // Invalidate customer cache if customer is involved
-        if (data?.customer) {
-          tags.push({ type: 'Customers', id: data.customer });
-          tags.push({ type: 'Customers', id: 'LIST' });
-        }
-        // Invalidate supplier cache if supplier is involved
-        if (data?.supplier) {
-          tags.push({ type: 'Suppliers', id: data.supplier });
-          tags.push({ type: 'Suppliers', id: 'LIST' });
-        }
+        // Invalidate specific customer/supplier cache if involved
+        if (data?.customer) tags.push({ type: 'Customers', id: data.customer });
+        if (data?.supplier) tags.push({ type: 'Suppliers', id: data.supplier });
         return tags;
       },
     }),
@@ -69,17 +73,18 @@ export const cashReceiptsApi = api.injectEndpoints({
         url: `cash-receipts/${id}`,
         method: 'delete',
       }),
-      invalidatesTags: (_r, _e, id, originalArg) => {
-        const tags = [
-          { type: 'CashReceipts', id },
-          { type: 'CashReceipts', id: 'LIST' },
-        ];
-        // Note: We can't get customer/supplier from delete mutation easily
-        // So we invalidate all customers/suppliers lists
-        tags.push({ type: 'Customers', id: 'LIST' });
-        tags.push({ type: 'Suppliers', id: 'LIST' });
-        return tags;
-      },
+      invalidatesTags: (_r, _e, id) => [
+        { type: 'CashReceipts', id },
+        { type: 'CashReceipts', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+      ],
     }),
     createBatchCashReceipts: builder.mutation({
       query: (data) => ({
@@ -87,7 +92,16 @@ export const cashReceiptsApi = api.injectEndpoints({
         method: 'post',
         data,
       }),
-      invalidatesTags: [{ type: 'CashReceipts', id: 'LIST' }, { type: 'Customers', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'CashReceipts', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+      ],
     }),
     exportExcel: builder.mutation({
       query: (filters) => ({

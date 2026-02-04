@@ -87,19 +87,30 @@ class PurchaseInvoiceService {
       filter.invoiceType = queryParams.invoiceType;
     }
 
-    // Date range filter
-    if (queryParams.dateFrom || queryParams.dateTo) {
-      filter.createdAt = {};
-      if (queryParams.dateFrom) {
-        const dateFrom = new Date(queryParams.dateFrom);
-        dateFrom.setHours(0, 0, 0, 0);
-        filter.createdAt.$gte = dateFrom;
+    // Date range filter - use dateFilter from middleware if available (Pakistan timezone)
+    if (queryParams.dateFilter && Object.keys(queryParams.dateFilter).length > 0) {
+      // dateFilter may contain $or condition for multiple fields
+      if (queryParams.dateFilter.$or) {
+        if (filter.$and) {
+          filter.$and.push(queryParams.dateFilter);
+        } else {
+          filter.$and = [queryParams.dateFilter];
+        }
+      } else {
+        Object.assign(filter, queryParams.dateFilter);
       }
-      if (queryParams.dateTo) {
-        const dateTo = new Date(queryParams.dateTo);
-        dateTo.setDate(dateTo.getDate() + 1);
-        dateTo.setHours(0, 0, 0, 0);
-        filter.createdAt.$lt = dateTo;
+    } else if (queryParams.dateFrom || queryParams.dateTo) {
+      // Legacy date filtering (for backward compatibility)
+      const { buildMultiFieldDateFilter } = require('../utils/dateFilter');
+      const dateFilter = buildMultiFieldDateFilter(queryParams.dateFrom, queryParams.dateTo, ['invoiceDate', 'createdAt']);
+      if (dateFilter.$or) {
+        if (filter.$and) {
+          filter.$and.push(dateFilter);
+        } else {
+          filter.$and = [dateFilter];
+        }
+      } else {
+        Object.assign(filter, dateFilter);
       }
     }
 

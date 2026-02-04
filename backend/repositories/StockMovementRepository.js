@@ -27,11 +27,11 @@ class StockMovementRepository extends BaseRepository {
     const skip = getAll ? 0 : (page - 1) * limit;
     const finalLimit = getAll ? 999999 : limit;
 
-    const finalQuery = this.model.schema.paths.isDeleted 
+    const finalQuery = this.Model.schema.paths.isDeleted 
       ? { ...filter, isDeleted: { $ne: true } } 
       : filter;
 
-    let queryBuilder = this.model.find(finalQuery);
+    let queryBuilder = this.Model.find(finalQuery);
     
     if (populate && populate.length > 0) {
       populate.forEach(pop => {
@@ -53,7 +53,7 @@ class StockMovementRepository extends BaseRepository {
 
     const [movements, total] = await Promise.all([
       queryBuilder,
-      this.model.countDocuments(finalQuery)
+      this.Model.countDocuments(finalQuery)
     ]);
 
     return {
@@ -101,7 +101,7 @@ class StockMovementRepository extends BaseRepository {
    * @returns {Promise<Array>}
    */
   async aggregate(pipeline) {
-    return await this.model.aggregate(pipeline);
+    return await this.Model.aggregate(pipeline);
   }
 }
 

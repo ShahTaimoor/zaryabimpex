@@ -46,14 +46,8 @@ import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../utils/componentUtils';
 import { formatDate, formatCurrency } from '../utils/formatters';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
-
-// Helper function to get local date in YYYY-MM-DD format (avoids timezone issues with toISOString)
-const getLocalDateString = (date = new Date()) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+import DateFilter from '../components/DateFilter';
+import { getCurrentDatePakistan, getDateDaysAgo } from '../utils/dateUtils';
 
 // Helper function to safely render values
 const safeRender = (value) => {
@@ -225,10 +219,8 @@ export const PurchaseOrders = ({ tabId }) => {
   const resolvedCompanyPhone = companySettings.contactNumber || '';
   
   // Calculate default date range (14 days ago to today)
-  const today = getLocalDateString();
-  const fourteenDaysAgo = new Date();
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-  const fromDateDefault = getLocalDateString(fourteenDaysAgo);
+  const today = getCurrentDatePakistan();
+  const fromDateDefault = getDateDaysAgo(14);
   
   // State for filters and pagination
   const [filters, setFilters] = useState({
@@ -2607,26 +2599,16 @@ export const PurchaseOrders = ({ tabId }) => {
         <div className="card-content">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
             {/* Date Range */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                From Date
-              </label>
-              <input
-                type="date"
-                value={filters.fromDate}
-                onChange={(e) => handleFilterChange('fromDate', e.target.value)}
-                className="input h-[42px]"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                To Date
-              </label>
-              <input
-                type="date"
-                value={filters.toDate}
-                onChange={(e) => handleFilterChange('toDate', e.target.value)}
-                className="input h-[42px]"
+            <div className="col-span-2">
+              <DateFilter
+                startDate={filters.fromDate}
+                endDate={filters.toDate}
+                onDateChange={(start, end) => {
+                  handleFilterChange('fromDate', start || '');
+                  handleFilterChange('toDate', end || '');
+                }}
+                compact={true}
+                showPresets={true}
               />
             </div>
 

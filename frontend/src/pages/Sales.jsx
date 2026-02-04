@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { 
-  ShoppingCart, 
-  Search, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  User, 
-  CreditCard, 
-  TrendingUp, 
-  Calculator, 
-  Receipt, 
+import {
+  ShoppingCart,
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  User,
+  CreditCard,
+  TrendingUp,
+  Calculator,
+  Receipt,
   Printer,
   History,
   RotateCcw,
@@ -46,6 +46,14 @@ import { useAuth } from '../contexts/AuthContext';
 import BarcodeScanner from '../components/BarcodeScanner';
 import { Camera } from 'lucide-react';
 
+// Helper function to get local date in YYYY-MM-DD format (avoids timezone issues with toISOString)
+const getLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // ProductSearch Component
 const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPurchasePriceFetched, hasCostPricePermission, priceType, onRefetchReady }) => {
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -63,7 +71,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
   // Fetch all products (or a larger set) for client-side fuzzy search
   const [getLastPurchasePrice] = useLazyGetLastPurchasePriceQuery();
   const [getLastPurchasePrices] = useGetLastPurchasePricesMutation();
-  
+
   const { data: productsData, isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useGetProductsQuery(
     { limit: 100, status: 'active' },
     {
@@ -145,11 +153,13 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
 
   const calculatePrice = (product, priceType) => {
     if (!product) return 0;
-    
+
     // Handle both regular products and variants
     const pricing = product.pricing || {};
-    
-    if (priceType === 'wholesale') {
+
+    if (priceType === 'distributor') {
+      return pricing.distributor || pricing.wholesale || pricing.retail || 0;
+    } else if (priceType === 'wholesale') {
       return pricing.wholesale || pricing.retail || 0;
     } else if (priceType === 'retail') {
       return pricing.retail || 0;
@@ -163,17 +173,17 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
     setSelectedProduct(product);
     setQuantity(1);
     setIsAddingProduct(true);
-    
+
     // Show selected product/variant name in search field
-    const displayName = product.isVariant 
+    const displayName = product.isVariant
       ? (product.displayName || product.variantName || product.name)
       : product.name;
     setProductSearchTerm(displayName);
-    
+
     // Fetch last purchase price (always, for loss alerts)
     // For variants, use the base product ID to get purchase price
     const productIdForPrice = product.isVariant ? product.baseProductId : product._id;
-    
+
     if (productIdForPrice) {
       try {
         const response = await getLastPurchasePrice(productIdForPrice).unwrap();
@@ -192,10 +202,10 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
     } else {
       setLastPurchasePrice(null);
     }
-    
+
     // Calculate the rate based on selected price type
     const calculatedPrice = calculatePrice(product, priceType);
-    
+
     setCalculatedRate(calculatedPrice);
     setCustomRate(calculatedPrice.toString());
   };
@@ -218,36 +228,36 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
 
   const handleAddToCart = async () => {
     if (!selectedProduct) return;
-    
+
     // Validate that rate is filled
     if (!customRate || parseInt(customRate) <= 0) {
       toast.error('Please enter a valid rate');
       return;
     }
-    
+
     // Get display name for error messages
-    const displayName = selectedProduct.isVariant 
+    const displayName = selectedProduct.isVariant
       ? (selectedProduct.displayName || selectedProduct.variantName || selectedProduct.name)
       : selectedProduct.name;
-    
+
     // Check if product/variant is out of stock
     const currentStock = selectedProduct.inventory?.currentStock || 0;
     if (currentStock === 0) {
       toast.error(`${displayName} is out of stock and cannot be added to the invoice.`);
       return;
     }
-    
+
     // Check if requested quantity exceeds available stock
     if (quantity > currentStock) {
       toast.error(`Cannot add ${quantity} units. Only ${currentStock} units available in stock.`);
       return;
     }
-    
+
     setIsAddingToCart(true);
     try {
       // Use the rate from the input field
       const unitPrice = parseInt(customRate) || Math.round(calculatedRate);
-      
+
       // Check if sale price is less than cost price (always check, regardless of showCostPrice)
       if (lastPurchasePrice !== null && unitPrice < lastPurchasePrice) {
         const loss = lastPurchasePrice - unitPrice;
@@ -267,34 +277,34 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
           { duration: 6000 }
         );
       }
-      
+
       onAddProduct({
         product: selectedProduct,
         quantity: quantity,
         unitPrice: unitPrice
       });
-      
+
       // Reset form
       setSelectedProduct(null);
       setQuantity(1);
       setCustomRate('');
       setCalculatedRate(0);
       setIsAddingProduct(false);
-      
+
       // Clear search term and force re-render
       setProductSearchTerm('');
       setSearchKey(prev => prev + 1);
-      
+
       // Focus back to product search input
       setTimeout(() => {
         if (productSearchRef.current) {
           productSearchRef.current.focus();
         }
       }, 100);
-      
+
       // Show success message
       const priceLabel = selectedCustomer?.businessType === 'wholesale' ? 'wholesale' :
-                         selectedCustomer?.businessType === 'distributor' ? 'distributor' : 'retail';
+        selectedCustomer?.businessType === 'distributor' ? 'distributor' : 'retail';
       toast.success(`${selectedProduct.name} added to cart at ${priceLabel} price: ${Math.round(unitPrice)}`);
     } catch (error) {
       handleApiError(error, 'Product Price Check');
@@ -321,17 +331,17 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
     const inventory = product.inventory || {};
     const isLowStock = inventory.currentStock <= inventory.reorderPoint;
     const isOutOfStock = inventory.currentStock === 0;
-    
+
     // Get display name - use variant display name if it's a variant
-    const displayName = product.isVariant 
+    const displayName = product.isVariant
       ? (product.displayName || product.variantName || product.name)
       : product.name;
-    
+
     // Get pricing based on selected price type
     const pricing = product.pricing || {};
     let unitPrice = pricing.wholesale || pricing.retail || 0;
     let priceLabel = 'Wholesale';
-    
+
     if (priceType === 'wholesale') {
       unitPrice = pricing.wholesale || pricing.retail || 0;
       priceLabel = 'Wholesale';
@@ -339,14 +349,14 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
       unitPrice = pricing.retail || 0;
       priceLabel = 'Retail';
     }
-    
+
     const purchasePrice = pricing?.cost || 0;
-    
+
     // Show variant indicator
-    const variantInfo = product.isVariant 
+    const variantInfo = product.isVariant
       ? <span className="text-xs text-blue-600 font-semibold">({product.variantType}: {product.variantValue})</span>
       : null;
-    
+
     return (
       <div className="flex items-center justify-between w-full">
         <div className="flex flex-col">
@@ -417,7 +427,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
                 {selectedProduct ? selectedProduct.inventory.currentStock : '0'}
               </span>
             </div>
-            
+
             {/* Amount */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -427,7 +437,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
                 {isAddingProduct ? Math.round(quantity * parseInt(customRate || 0)) : 0}
               </span>
             </div>
-            
+
             {/* Quantity */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -446,7 +456,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
                 autoFocus={isAddingProduct}
               />
             </div>
-            
+
             {/* Rate */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -464,7 +474,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
                 required
               />
             </div>
-            
+
             {/* Cost - Full width if shown */}
             {showCostPrice && hasCostPricePermission && (
               <div className="col-span-2">
@@ -472,10 +482,10 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
                   Cost
                 </label>
                 <span className="text-sm font-semibold text-red-700 bg-red-50 px-2 py-2 rounded border border-red-200 block text-center h-10 flex items-center justify-center" title="Cost Price">
-                  {lastPurchasePrice !== null 
-                    ? `${Math.round(lastPurchasePrice)}` 
-                    : selectedProduct?.pricing?.cost 
-                      ? `${Math.round(selectedProduct.pricing.cost)}` 
+                  {lastPurchasePrice !== null
+                    ? `${Math.round(lastPurchasePrice)}`
+                    : selectedProduct?.pricing?.cost
+                      ? `${Math.round(selectedProduct.pricing.cost)}`
                       : selectedProduct ? 'N/A' : '0'}
                 </span>
               </div>
@@ -531,7 +541,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
               </button>
             </div>
           </div>
-          
+
           {/* Stock - 1 column */}
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -541,7 +551,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
               {selectedProduct ? selectedProduct.inventory.currentStock : '0'}
             </span>
           </div>
-          
+
           {/* Quantity - 1 column */}
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -560,7 +570,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
               autoFocus={isAddingProduct}
             />
           </div>
-          
+
           {/* Purchase Price - 1 column (conditional) - Between Quantity and Rate */}
           {showCostPrice && hasCostPricePermission && (
             <div className="col-span-1">
@@ -568,15 +578,15 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
                 Cost
               </label>
               <span className="text-sm font-semibold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200 block text-center h-10 flex items-center justify-center" title="Cost Price">
-                {lastPurchasePrice !== null 
-                  ? `${Math.round(lastPurchasePrice)}` 
-                  : selectedProduct?.pricing?.cost 
-                    ? `${Math.round(selectedProduct.pricing.cost)}` 
+                {lastPurchasePrice !== null
+                  ? `${Math.round(lastPurchasePrice)}`
+                  : selectedProduct?.pricing?.cost
+                    ? `${Math.round(selectedProduct.pricing.cost)}`
                     : selectedProduct ? 'N/A' : '0'}
               </span>
             </div>
           )}
-          
+
           {/* Rate - 1 column (reduced from 2) */}
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -594,7 +604,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
               required
             />
           </div>
-          
+
           {/* Amount - 1 column */}
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -604,7 +614,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
               {isAddingProduct ? Math.round(quantity * parseInt(customRate || 0)) : 0}
             </span>
           </div>
-          
+
           {/* Add Button - 1 column */}
           <div className="col-span-1 flex items-end">
             <LoadingButton
@@ -628,10 +638,10 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
         onClose={() => setShowBarcodeScanner(false)}
         onScan={(barcodeValue) => {
           // Search for product by barcode
-          const foundProduct = allProducts.find(p => 
+          const foundProduct = allProducts.find(p =>
             p.barcode === barcodeValue || p.sku === barcodeValue
           );
-          
+
           if (foundProduct) {
             handleProductSelect(foundProduct);
             toast.success(`Product found: ${foundProduct.name}`);
@@ -651,7 +661,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
 export const Sales = ({ tabId, editData }) => {
   // Store refetch function from ProductSearch component
   const [refetchProducts, setRefetchProducts] = useState(null);
-  
+
   const [cart, setCart] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
@@ -667,7 +677,7 @@ export const Sales = ({ tabId, editData }) => {
   const [isAdvancePayment, setIsAdvancePayment] = useState(false);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [autoGenerateInvoice, setAutoGenerateInvoice] = useState(true);
-  const [billDate, setBillDate] = useState(new Date().toISOString().split('T')[0]); // Default to current date for backdating invoices
+  const [billDate, setBillDate] = useState(getLocalDateString()); // Default to current date for backdating invoices
   const [notes, setNotes] = useState('');
   const [isLoadingLastPrices, setIsLoadingLastPrices] = useState(false);
   const [isRestoringPrices, setIsRestoringPrices] = useState(false);
@@ -682,26 +692,26 @@ export const Sales = ({ tabId, editData }) => {
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFormat, setExportFormat] = useState('pdf');
   const [isExporting, setIsExporting] = useState(false);
-  
+
   // Calculate default date range (one month ago to today)
   const getDefaultDateRange = () => {
     const today = new Date();
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(today.getMonth() - 1);
-    
+
     const formatDate = (date) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     };
-    
+
     return {
       from: formatDate(oneMonthAgo),
       to: formatDate(today)
     };
   };
-  
+
   const defaultDateRange = getDefaultDateRange();
   const [exportDateFrom, setExportDateFrom] = useState(defaultDateRange.from);
   const [exportDateTo, setExportDateTo] = useState(defaultDateRange.to);
@@ -742,20 +752,20 @@ export const Sales = ({ tabId, editData }) => {
   // Generate invoice number
   const generateInvoiceNumber = (customer) => {
     if (!customer) return '';
-    
+
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
     const time = String(now.getTime()).slice(-4); // Last 4 digits of timestamp
-    
+
     // Format: CUSTOMER-INITIALS-YYYYMMDD-XXXX
     const customerInitials = customer.displayName
       .split(' ')
       .map(word => word.charAt(0).toUpperCase())
       .join('')
       .substring(0, 3);
-    
+
     return `INV-${customerInitials}-${year}${month}${day}-${time}`;
   };
 
@@ -766,18 +776,18 @@ export const Sales = ({ tabId, editData }) => {
       if (editData.customer) {
         setSelectedCustomer(editData.customer);
       }
-      
+
       // Set the invoice number
       if (editData.orderNumber) {
         setInvoiceNumber(editData.orderNumber);
         setAutoGenerateInvoice(false); // Don't auto-generate when editing
       }
-      
+
       // Set the notes
       if (editData.notes) {
         setNotes(editData.notes);
       }
-      
+
       // Set the cart items
       if (editData.items && editData.items.length > 0) {
         const formattedItems = editData.items.map(item => ({
@@ -788,12 +798,12 @@ export const Sales = ({ tabId, editData }) => {
         }));
         setCart(formattedItems);
       }
-      
+
       // Set tax exempt status
       if (editData.isTaxExempt !== undefined) {
         setIsTaxExempt(editData.isTaxExempt);
       }
-      
+
       // Set payment method and amount paid if available
       if (editData.payment) {
         setPaymentMethod(editData.payment.method || 'cash');
@@ -804,12 +814,12 @@ export const Sales = ({ tabId, editData }) => {
           setSelectedBankAccount('');
         }
       }
-      
+
       // Set order type
       if (editData.orderType) {
         // Order type is handled by customer selection
       }
-      
+
       // Data loaded successfully (no toast needed as Orders already shows opening message)
     }
   }, [editData?.orderId]); // Only depend on orderId to prevent multiple executions
@@ -819,33 +829,33 @@ export const Sales = ({ tabId, editData }) => {
     { isActive: true },
     { staleTime: 5 * 60_000 }
   );
-  
+
   const { data: customersData, isLoading: customersLoading, refetch: refetchCustomers } = useGetCustomersQuery(
     { limit: 1000 },
-    { 
+    {
       staleTime: 0, // Always consider data stale to get fresh credit information
       refetchOnMountOrArgChange: true // Refetch when component mounts or params change
     }
   );
-  
+
   // Lazy query hooks for fetching last purchase prices
   const [getLastPurchasePrice] = useLazyGetLastPurchasePriceQuery();
   const [getLastPurchasePrices] = useGetLastPurchasePricesMutation();
-  
+
   // Sales mutations
   const [createSale, { isLoading: isCreatingSale }] = useCreateSaleMutation();
   const [updateOrder, { isLoading: isUpdatingOrder }] = useUpdateOrderMutation();
-  
+
   // Duplicate prevention: use BOTH ref (synchronous check) and state (button disable)
   const isSubmittingRef = useRef(false); // For immediate synchronous checks
   const [isSubmitting, setIsSubmitting] = useState(false); // For button disabled state
-  
+
   // Helper function to reset submitting state (ensures both ref and state are reset)
   const resetSubmittingState = useCallback(() => {
     isSubmittingRef.current = false;
     setIsSubmitting(false);
   }, []);
-  
+
   // Extract customers array from RTK Query response
   const customers = useMemo(() => {
     return customersData?.data?.customers || customersData?.customers || customersData?.data || customersData || [];
@@ -889,7 +899,7 @@ export const Sales = ({ tabId, editData }) => {
 
   const subtotal = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
   const codeDiscountAmount = appliedDiscounts.reduce((sum, discount) => sum + discount.amount, 0);
-  
+
   let directDiscountAmount = 0;
   if (directDiscount.value > 0) {
     if (directDiscount.type === 'percentage') {
@@ -898,7 +908,7 @@ export const Sales = ({ tabId, editData }) => {
       directDiscountAmount = Math.min(directDiscount.value, subtotal);
     }
   }
-  
+
   const totalDiscountAmount = codeDiscountAmount + directDiscountAmount;
   const subtotalAfterDiscount = subtotal - totalDiscountAmount;
   const tax = isTaxExempt ? 0 : subtotalAfterDiscount * 0.08;
@@ -918,17 +928,28 @@ export const Sales = ({ tabId, editData }) => {
 
   const handleCustomerSelect = async (customer) => {
     setSelectedCustomer(customer);
-    
+
     // Reset price states when customer changes
     setOriginalPrices({});
     setIsLastPricesApplied(false);
     setPriceStatus({});
-    
+
+    // Auto-set price type based on customer business type
+    if (customer?.businessType) {
+      if (customer.businessType === 'retail' || customer.businessType === 'individual') {
+        setPriceType('retail');
+      } else if (customer.businessType === 'wholesale') {
+        setPriceType('wholesale');
+      } else if (customer.businessType === 'distributor') {
+        setPriceType('distributor');
+      }
+    }
+
     // Auto-generate invoice number if enabled
     if (autoGenerateInvoice && customer) {
       setInvoiceNumber(generateInvoiceNumber(customer));
     }
-    
+
     // Update tab title to show customer name
     const activeTab = getActiveTab();
     if (activeTab && customer) {
@@ -946,10 +967,10 @@ export const Sales = ({ tabId, editData }) => {
   useEffect(() => {
     const fetchLastPurchasePrices = async () => {
       if (cart.length === 0) return;
-      
+
       const productIds = cart.map(item => item.product._id);
       if (productIds.length === 0) return;
-      
+
       try {
         const response = await getLastPurchasePrices({ productIds }).unwrap();
         if (response && response.prices) {
@@ -963,7 +984,7 @@ export const Sales = ({ tabId, editData }) => {
         // Silently fail - last purchase prices are optional
       }
     };
-    
+
     fetchLastPurchasePrices();
   }, [cart]);
 
@@ -972,20 +993,20 @@ export const Sales = ({ tabId, editData }) => {
       // For variants, use variant _id; for products, use product _id
       const itemId = newItem.product._id;
       const existingItem = prevCart.find(item => item.product._id === itemId);
-      
+
       if (existingItem) {
         // Check if combined quantity exceeds available stock
         const combinedQuantity = existingItem.quantity + newItem.quantity;
         const availableStock = newItem.product.inventory?.currentStock || 0;
-        
+
         if (combinedQuantity > availableStock) {
-          const displayName = newItem.product.isVariant 
+          const displayName = newItem.product.isVariant
             ? (newItem.product.displayName || newItem.product.variantName || newItem.product.name)
             : newItem.product.name;
           toast.error(`Cannot add ${newItem.quantity} more units. Only ${availableStock - existingItem.quantity} additional units available (${existingItem.quantity} already in cart).`);
           return prevCart; // Return unchanged cart
         }
-        
+
         // If this is an existing item and we have original price stored, keep it
         // Otherwise, if last prices were applied and original price exists, preserve it
         const updatedCart = prevCart.map(item =>
@@ -993,16 +1014,16 @@ export const Sales = ({ tabId, editData }) => {
             ? { ...item, quantity: item.quantity + newItem.quantity, unitPrice: newItem.unitPrice }
             : item
         );
-        
+
         return updatedCart;
       }
-      
+
       // New item added - fetch its last purchase price (always, for loss alerts)
       // For variants, use base product ID to get purchase price
-      const productIdForPrice = newItem.product.isVariant 
-        ? newItem.product.baseProductId 
+      const productIdForPrice = newItem.product.isVariant
+        ? newItem.product.baseProductId
         : newItem.product._id;
-      
+
       if (productIdForPrice) {
         getLastPurchasePrice(productIdForPrice)
           .unwrap()
@@ -1018,7 +1039,7 @@ export const Sales = ({ tabId, editData }) => {
             // Silently fail - last purchase price is optional
           });
       }
-      
+
       // New item added - don't store in originalPrices since it wasn't there before
       // applying last prices, so there's nothing to restore
       return [...prevCart, newItem];
@@ -1030,19 +1051,19 @@ export const Sales = ({ tabId, editData }) => {
       removeFromCart(productId);
       return;
     }
-    
+
     setCart(prevCart => {
       const cartItem = prevCart.find(item => item.product._id === productId);
       if (!cartItem) return prevCart;
-      
+
       // Check if new quantity exceeds available stock
       const availableStock = cartItem.product.inventory?.currentStock || 0;
-      
+
       if (newQuantity > availableStock) {
         toast.error(`Cannot set quantity to ${newQuantity}. Only ${availableStock} units available in stock.`);
         return prevCart; // Return unchanged cart
       }
-      
+
       return prevCart.map(item =>
         item.product._id === productId
           ? { ...item, quantity: newQuantity }
@@ -1053,7 +1074,7 @@ export const Sales = ({ tabId, editData }) => {
 
   const updateUnitPrice = (productId, newPrice) => {
     if (newPrice < 0) return;
-    
+
     // Check if sale price is less than cost price (always check, regardless of showCostPrice)
     const cartItem = cart.find(item => item.product._id === productId);
     if (cartItem) {
@@ -1071,7 +1092,7 @@ export const Sales = ({ tabId, editData }) => {
         );
       }
     }
-    
+
     setCart(prevCart =>
       prevCart.map(cartItem =>
         cartItem.product._id === productId
@@ -1192,7 +1213,7 @@ export const Sales = ({ tabId, editData }) => {
         if (prices[productId]) {
           const lastPrice = prices[productId].unitPrice;
           const currentPrice = cartItem.unitPrice;
-          
+
           if (lastPrice !== currentPrice) {
             // Price changed
             updatedCount++;
@@ -1267,7 +1288,7 @@ export const Sales = ({ tabId, editData }) => {
       setIsLastPricesApplied(false);
       setOriginalPrices({});
       setPriceStatus({});
-      
+
       if (restoredCount > 0) {
         showSuccessToast(`Restored original prices for ${restoredCount} product(s).`);
       } else {
@@ -1279,7 +1300,7 @@ export const Sales = ({ tabId, editData }) => {
   };
 
   const { confirmation: clearConfirmation, confirmClear, handleConfirm: handleClearConfirm, handleCancel: handleClearCancel } = useClearConfirmation();
-  
+
   const handleClearCart = () => {
     if (cart.length > 0) {
       setIsClearingCart(true);
@@ -1300,13 +1321,13 @@ export const Sales = ({ tabId, editData }) => {
           setIsLastPricesApplied(false);
           setPriceStatus({});
           setPriceType('wholesale');
-          
+
           // Reset tab title to default
           const activeTab = getActiveTab();
           if (activeTab) {
             updateTabTitle(activeTab.id, 'Sales');
           }
-          
+
           toast.success('Cart cleared');
         } finally {
           setIsClearingCart(false);
@@ -1344,13 +1365,13 @@ export const Sales = ({ tabId, editData }) => {
 
       if (response?.data?.filename) {
         const filename = response.data.filename;
-        
+
         try {
           // Add a small delay to ensure file is written (PDF generation is async)
           if (exportFormat === 'pdf') {
             await new Promise(resolve => setTimeout(resolve, 500));
           }
-          
+
           // Download the file
           let downloadResponse;
           try {
@@ -1383,31 +1404,31 @@ export const Sales = ({ tabId, editData }) => {
             }
             return;
           }
-          
+
           // Check if response is successful
           if (!downloadResponse) {
             showErrorToast('Download failed: No response received');
             return;
           }
-          
+
           if (downloadResponse.status !== 200) {
             showErrorToast(`Download failed with status ${downloadResponse.status}`);
             return;
           }
-          
+
           // Check if data exists
           if (!downloadResponse.data) {
             showErrorToast('Download failed: No data received from server');
             return;
           }
-          
+
           // Check content type from headers
           const contentType = downloadResponse.headers?.['content-type'] || downloadResponse.headers?.['Content-Type'] || '';
-          
+
           if (exportFormat === 'pdf') {
             // For PDF, open in new tab for preview
             const blob = downloadResponse.data;
-            
+
             // Check if blob is valid
             if (!blob || !(blob instanceof Blob)) {
               // Handle different response types
@@ -1416,7 +1437,7 @@ export const Sales = ({ tabId, editData }) => {
               } else if (blob && typeof blob === 'object') {
                 // Try to extract error message from object
                 let errorMsg = blob.message || blob.error;
-                
+
                 // If no message property, try to stringify but check if it's meaningful
                 if (!errorMsg) {
                   try {
@@ -1432,14 +1453,14 @@ export const Sales = ({ tabId, editData }) => {
                     errorMsg = 'Invalid response format';
                   }
                 }
-                
+
                 showErrorToast(`Server error: ${errorMsg || 'Unknown error'}`);
               } else {
                 showErrorToast('Invalid PDF file received - expected Blob. Response type: ' + typeof blob);
               }
               return;
             }
-            
+
             // Check if content type indicates an error (JSON error response)
             if (contentType.includes('application/json') || contentType.includes('text/html')) {
               // Read the blob to see the error message
@@ -1456,82 +1477,82 @@ export const Sales = ({ tabId, editData }) => {
               reader.readAsText(blob);
               return;
             }
-          
-          // Check if blob has content
-          if (blob.size === 0) {
-            showErrorToast('PDF file is empty');
-            return;
-          }
-          
-          // Check if blob type is PDF (or at least not HTML/JSON error)
-          if (blob.type && !blob.type.includes('pdf') && !blob.type.includes('application/octet-stream')) {
-            // Might be an error response, try to read it
-            const reader = new FileReader();
-            reader.onload = () => {
-              const text = reader.result;
-              if (text.includes('<!DOCTYPE') || text.includes('{"error"') || text.includes('{"message"')) {
-                showErrorToast('Server returned an error instead of PDF file');
-              } else {
-                // Try to open anyway
-                const url = URL.createObjectURL(blob);
-                const newWindow = window.open(url, '_blank');
-                if (!newWindow) {
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = filename;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  showSuccessToast('PDF downloaded (popup was blocked)');
+
+            // Check if blob has content
+            if (blob.size === 0) {
+              showErrorToast('PDF file is empty');
+              return;
+            }
+
+            // Check if blob type is PDF (or at least not HTML/JSON error)
+            if (blob.type && !blob.type.includes('pdf') && !blob.type.includes('application/octet-stream')) {
+              // Might be an error response, try to read it
+              const reader = new FileReader();
+              reader.onload = () => {
+                const text = reader.result;
+                if (text.includes('<!DOCTYPE') || text.includes('{"error"') || text.includes('{"message"')) {
+                  showErrorToast('Server returned an error instead of PDF file');
                 } else {
-                  showSuccessToast('PDF opened in new tab');
+                  // Try to open anyway
+                  const url = URL.createObjectURL(blob);
+                  const newWindow = window.open(url, '_blank');
+                  if (!newWindow) {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showSuccessToast('PDF downloaded (popup was blocked)');
+                  } else {
+                    showSuccessToast('PDF opened in new tab');
+                  }
+                  setTimeout(() => URL.revokeObjectURL(url), 10000);
                 }
-                setTimeout(() => URL.revokeObjectURL(url), 10000);
-              }
-            };
-            reader.readAsText(blob.slice(0, 100)); // Read first 100 bytes to check
-            return;
-          }
-          
-          // Valid PDF blob, proceed with opening
-          const url = URL.createObjectURL(blob);
-          const newWindow = window.open(url, '_blank');
-          
-          if (!newWindow) {
-            // Popup blocked, fallback to download
+              };
+              reader.readAsText(blob.slice(0, 100)); // Read first 100 bytes to check
+              return;
+            }
+
+            // Valid PDF blob, proceed with opening
+            const url = URL.createObjectURL(blob);
+            const newWindow = window.open(url, '_blank');
+
+            if (!newWindow) {
+              // Popup blocked, fallback to download
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              showSuccessToast('PDF downloaded (popup was blocked)');
+            } else {
+              showSuccessToast('PDF opened in new tab');
+            }
+
+            // Revoke URL after a delay to ensure it loads
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+          } else {
+            // For other formats, download directly
+            const blob = new Blob([downloadResponse.data], {
+              type: exportFormat === 'excel'
+                ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                : exportFormat === 'csv'
+                  ? 'text/csv'
+                  : 'application/json'
+            });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.download = filename;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showSuccessToast('PDF downloaded (popup was blocked)');
-          } else {
-            showSuccessToast('PDF opened in new tab');
+            URL.revokeObjectURL(url);
+
+            showSuccessToast(`${exportFormat.toUpperCase()} file downloaded successfully`);
           }
-          
-          // Revoke URL after a delay to ensure it loads
-          setTimeout(() => URL.revokeObjectURL(url), 10000);
-        } else {
-          // For other formats, download directly
-          const blob = new Blob([downloadResponse.data], { 
-            type: exportFormat === 'excel' 
-              ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-              : exportFormat === 'csv'
-              ? 'text/csv'
-              : 'application/json'
-          });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          
-          showSuccessToast(`${exportFormat.toUpperCase()} file downloaded successfully`);
-        }
         } catch (downloadError) {
           // Handle download errors
           if (downloadError.response) {
@@ -1573,19 +1594,19 @@ export const Sales = ({ tabId, editData }) => {
       // Silently ignore duplicate calls - this is expected behavior
       return;
     }
-    
+
     // Set flag immediately before async operation
     isSubmittingRef.current = true;
     setIsSubmitting(true);
-    
+
     try {
       const result = await createSale({ payload: orderData }).unwrap();
       showSuccessToast('Sale created successfully');
-      
+
       // RTK Query invalidatesTags will automatically refetch Products and Customers
       // No need to manually refetch - it happens automatically via cache invalidation
       // This prevents React warnings about updating components during render
-      
+
       // Reset cart and form
       setCart([]);
       // Don't reset selectedCustomer immediately - let it update from refetched data
@@ -1595,12 +1616,12 @@ export const Sales = ({ tabId, editData }) => {
       setDirectDiscount({ type: 'amount', value: 0 });
       setNotes('');
       setInvoiceNumber('');
-      setBillDate(new Date().toISOString().split('T')[0]); // Reset to current date
+      setBillDate(getLocalDateString()); // Reset to current date
       setLastPurchasePrices({});
       setOriginalPrices({});
       setIsLastPricesApplied(false);
       setPriceStatus({});
-      
+
       // Show print modal if order was created
       if (result?.order) {
         setCurrentOrder(result.order);
@@ -1613,7 +1634,7 @@ export const Sales = ({ tabId, editData }) => {
         const retryAfter = error?.data?.error?.retryAfter || 1;
         toast(
           `Your request is being processed. Please wait ${retryAfter} second${retryAfter > 1 ? 's' : ''}...`,
-          { 
+          {
             duration: 3000,
             icon: 'ℹ️'
           }
@@ -1636,19 +1657,19 @@ export const Sales = ({ tabId, editData }) => {
       // Silently ignore duplicate calls - this is expected behavior
       return;
     }
-    
+
     // Set flag immediately before async operation
     isSubmittingRef.current = true;
     setIsSubmitting(true);
-    
+
     try {
       const result = await updateOrder({ id: orderId, ...updateData }).unwrap();
       showSuccessToast('Order updated successfully');
-      
+
       // RTK Query invalidatesTags will automatically refetch Products and Customers
       // No need to manually refetch - it happens automatically via cache invalidation
       // This prevents React warnings about updating components during render
-      
+
       // Reset cart and form
       setCart([]);
       // Don't reset selectedCustomer immediately - let it update from refetched data
@@ -1662,7 +1683,7 @@ export const Sales = ({ tabId, editData }) => {
       setOriginalPrices({});
       setIsLastPricesApplied(false);
       setPriceStatus({});
-      
+
       // Show print modal if order was updated
       if (result?.order) {
         setCurrentOrder(result.order);
@@ -1675,7 +1696,7 @@ export const Sales = ({ tabId, editData }) => {
         const retryAfter = error?.data?.error?.retryAfter || 1;
         toast(
           `Your request is being processed. Please wait ${retryAfter} second${retryAfter > 1 ? 's' : ''}...`,
-          { 
+          {
             duration: 3000,
             icon: 'ℹ️'
           }
@@ -1697,36 +1718,36 @@ export const Sales = ({ tabId, editData }) => {
       e.preventDefault();
       e.stopPropagation();
     }
-    
+
     // Prevent duplicate submissions - check ref FIRST (synchronous, no delay)
     if (isSubmittingRef.current || isSubmitting || isCreatingSale || isUpdatingOrder) {
       // Silently ignore duplicate calls - this is expected behavior
       return;
     }
-    
+
     // NOTE: Don't set flags here - let handleCreateOrder/handleUpdateOrder set them
     // This prevents the double-check guard in those functions from triggering
-    
+
     if (cart.length === 0) {
       // No need to reset state since we don't set it in handleCheckout
       showErrorToast({ message: 'Cart is empty' });
       return;
     }
-    
+
     // Check credit limit before proceeding
     if (selectedCustomer && selectedCustomer.creditLimit > 0) {
       const currentPaymentMethod = paymentMethod || 'cash';
       const currentAmountPaid = amountPaid || 0;
       const unpaidAmount = total - currentAmountPaid;
-      
+
       // For account payments or partial payments, check credit limit
       if (currentPaymentMethod === 'account' || unpaidAmount > 0) {
         const currentBalance = selectedCustomer.currentBalance || 0;
         const pendingBalance = selectedCustomer.pendingBalance || 0;
-        const totalOutstanding = currentBalance + pendingBalance;
+        const totalOutstanding = currentBalance;
         const newBalanceAfterOrder = totalOutstanding + unpaidAmount;
         const availableCredit = selectedCustomer.creditLimit - totalOutstanding;
-        
+
         if (newBalanceAfterOrder > selectedCustomer.creditLimit) {
           // Show simple and clear message when credit limit is exceeded
           toast.error(`Your credit limit is full. Credit limit: $${selectedCustomer.creditLimit.toFixed(2)}. Please collect payment or reduce the order amount.`, {
@@ -1740,7 +1761,7 @@ export const Sales = ({ tabId, editData }) => {
           const warningMessage = `Warning: ${selectedCustomer.displayName || selectedCustomer.name} is near credit limit. ` +
             `Available credit: $${availableCredit.toFixed(2)}, ` +
             `After this order: $${(availableCredit - unpaidAmount).toFixed(2)} remaining.`;
-          
+
           toast.warning(warningMessage, {
             duration: 6000,
             position: 'top-center'
@@ -1748,7 +1769,7 @@ export const Sales = ({ tabId, editData }) => {
         }
       }
     }
-    
+
     if (paymentMethod === 'bank' && !selectedBankAccount) {
       // Don't reset state here since we never set it in handleCheckout
       showErrorToast({ message: 'Please select a bank account for bank payments' });
@@ -1783,7 +1804,7 @@ export const Sales = ({ tabId, editData }) => {
         advanceAmount: isAdvancePayment ? (amountPaid - total) : 0
       }
     };
-    
+
     // Use appropriate mutation based on edit mode
     if (editData?.isEditMode) {
       const orderId = editData.orderId;
@@ -1796,7 +1817,7 @@ export const Sales = ({ tabId, editData }) => {
           const itemDiscountAmount = 0; // Can be calculated if needed
           const itemTaxAmount = 0; // Can be calculated if needed
           const itemTotal = itemSubtotal - itemDiscountAmount + itemTaxAmount;
-          
+
           return {
             product: item.product._id,
             quantity: item.quantity,
@@ -1922,6 +1943,7 @@ export const Sales = ({ tabId, editData }) => {
                   >
                     <option value="wholesale">Wholesale</option>
                     <option value="retail">Retail</option>
+                    <option value="distributor">Distributor</option>
                     <option value="custom">Custom</option>
                   </select>
                 </div>
@@ -1935,13 +1957,13 @@ export const Sales = ({ tabId, editData }) => {
               selectedItem={selectedCustomer}
               displayKey={(customer) => {
                 // Calculate total balance: currentBalance (which is net balance)
-                const totalBalance = customer.currentBalance !== undefined 
-                  ? customer.currentBalance 
+                const totalBalance = customer.currentBalance !== undefined
+                  ? customer.currentBalance
                   : ((customer.pendingBalance || 0) - (customer.advanceBalance || 0));
                 const hasBalance = totalBalance !== 0;
                 const isPayable = totalBalance < 0;
                 const isReceivable = totalBalance > 0;
-                
+
                 return (
                   <div>
                     <div className="font-medium">{customer.displayName}</div>
@@ -1971,21 +1993,19 @@ export const Sales = ({ tabId, editData }) => {
                     </p>
                     <div className="flex items-center space-x-4 mt-2">
                       {(() => {
-                        // Calculate total balance: currentBalance (which is net balance) or currentBalance + pendingBalance
-                        // Total balance = currentBalance (net of pendingBalance - advanceBalance)
-                        const totalBalance = selectedCustomer.currentBalance !== undefined 
-                          ? selectedCustomer.currentBalance 
+                        // Calculate total balance: currentBalance (which is the net total balance)
+                        const totalBalance = selectedCustomer.currentBalance !== undefined
+                          ? selectedCustomer.currentBalance
                           : ((selectedCustomer.pendingBalance || 0) - (selectedCustomer.advanceBalance || 0));
                         const hasBalance = totalBalance !== 0;
                         const isPayable = totalBalance < 0;
                         const isReceivable = totalBalance > 0;
-                        
+
                         return hasBalance ? (
                           <div className="flex items-center space-x-1">
                             <span className="text-xs text-gray-500">Total Balance:</span>
-                            <span className={`text-sm font-medium ${
-                              isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'
-                            }`}>
+                            <span className={`text-sm font-medium ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'
+                              }`}>
                               {isPayable ? '-' : '+'}${Math.abs(totalBalance).toFixed(2)}
                             </span>
                           </div>
@@ -1993,34 +2013,32 @@ export const Sales = ({ tabId, editData }) => {
                       })()}
                       <div className="flex items-center space-x-1">
                         <span className="text-xs text-gray-500">Credit Limit:</span>
-                        <span className={`text-sm font-medium ${
-                          selectedCustomer.creditLimit > 0 ? (
-                            ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0)) >= selectedCustomer.creditLimit * 0.9 
-                              ? 'text-red-600' 
-                              : ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0)) >= selectedCustomer.creditLimit * 0.7
+                        <span className={`text-sm font-medium ${selectedCustomer.creditLimit > 0 ? (
+                          (selectedCustomer.currentBalance || 0) >= selectedCustomer.creditLimit * 0.9
+                            ? 'text-red-600'
+                            : (selectedCustomer.currentBalance || 0) >= selectedCustomer.creditLimit * 0.7
                               ? 'text-yellow-600'
                               : 'text-blue-600'
-                          ) : 'text-gray-600'
-                        }`}>
+                        ) : 'text-gray-600'
+                          }`}>
                           ${(selectedCustomer.creditLimit || 0).toFixed(2)}
                         </span>
-                        {selectedCustomer.creditLimit > 0 && 
-                         ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0)) >= selectedCustomer.creditLimit * 0.9 && (
-                          <span className="text-xs text-red-600 font-bold ml-1">⚠️</span>
-                        )}
+                        {selectedCustomer.creditLimit > 0 &&
+                          (selectedCustomer.currentBalance || 0) >= selectedCustomer.creditLimit * 0.9 && (
+                            <span className="text-xs text-red-600 font-bold ml-1">⚠️</span>
+                          )}
                       </div>
                       <div className="flex items-center space-x-1">
                         <span className="text-xs text-gray-500">Available Credit:</span>
-                        <span className={`text-sm font-medium ${
-                          selectedCustomer.creditLimit > 0 ? (
-                            (selectedCustomer.creditLimit - ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0))) <= selectedCustomer.creditLimit * 0.1
-                              ? 'text-red-600'
-                              : (selectedCustomer.creditLimit - ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0))) <= selectedCustomer.creditLimit * 0.3
+                        <span className={`text-sm font-medium ${selectedCustomer.creditLimit > 0 ? (
+                          (selectedCustomer.creditLimit - (selectedCustomer.currentBalance || 0)) <= selectedCustomer.creditLimit * 0.1
+                            ? 'text-red-600'
+                            : (selectedCustomer.creditLimit - (selectedCustomer.currentBalance || 0)) <= selectedCustomer.creditLimit * 0.3
                               ? 'text-yellow-600'
                               : 'text-green-600'
-                          ) : 'text-gray-600'
-                        }`}>
-                          ${(selectedCustomer.creditLimit - ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0))).toFixed(2)}
+                        ) : 'text-gray-600'
+                          }`}>
+                          ${(selectedCustomer.creditLimit - (selectedCustomer.currentBalance || 0)).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -2072,9 +2090,8 @@ export const Sales = ({ tabId, editData }) => {
                       </button>
                       {showProfit && (
                         <span
-                          className={`text-sm font-semibold ${
-                            totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}
+                          className={`text-sm font-semibold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}
                         >
                           {new Intl.NumberFormat('en-US', {
                             style: 'currency',
@@ -2116,8 +2133,8 @@ export const Sales = ({ tabId, editData }) => {
           <div className="card-content">
             {/* Product Search */}
             <div className="mb-6">
-              <ProductSearch 
-                onAddProduct={addToCart} 
+              <ProductSearch
+                onAddProduct={addToCart}
                 selectedCustomer={selectedCustomer}
                 showCostPrice={showCostPrice}
                 hasCostPricePermission={hasPermission('view_cost_prices')}
@@ -2171,7 +2188,7 @@ export const Sales = ({ tabId, editData }) => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Desktop Table Header Row */}
                 <div className="hidden md:grid grid-cols-12 gap-4 items-center pb-2 border-b border-gray-300 mb-2">
                   <div className="col-span-1">
@@ -2201,11 +2218,11 @@ export const Sales = ({ tabId, editData }) => {
                     <span className="text-xs font-semibold text-gray-600 uppercase">Action</span>
                   </div>
                 </div>
-                
+
                 {cart.map((item, index) => {
                   const totalPrice = item.unitPrice * item.quantity;
                   const isLowStock = item.product.inventory?.currentStock <= item.product.inventory?.reorderPoint;
-                  
+
                   return (
                     <div key={item.product._id}>
                       {/* Mobile Card View */}
@@ -2215,7 +2232,7 @@ export const Sales = ({ tabId, editData }) => {
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">#{index + 1}</span>
                               <span className="font-medium text-sm truncate">
-                                {item.product.isVariant 
+                                {item.product.isVariant
                                   ? (item.product.displayName || item.product.variantName || item.product.name)
                                   : item.product.name}
                               </span>
@@ -2227,25 +2244,24 @@ export const Sales = ({ tabId, editData }) => {
                             )}
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                               {isLowStock && <span className="text-yellow-600 text-xs">⚠️ Low Stock</span>}
-                              {lastPurchasePrices[item.product._id] !== undefined && 
-                               item.unitPrice < lastPurchasePrices[item.product._id] && (
-                                <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold">
-                                  ⚠️ Loss
-                                </span>
-                              )}
+                              {lastPurchasePrices[item.product._id] !== undefined &&
+                                item.unitPrice < lastPurchasePrices[item.product._id] && (
+                                  <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold">
+                                    ⚠️ Loss
+                                  </span>
+                                )}
                               {isLastPricesApplied && priceStatus[item.product._id] && (
-                                <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                  priceStatus[item.product._id] === 'updated'
-                                    ? 'bg-green-100 text-green-700'
-                                    : priceStatus[item.product._id] === 'unchanged'
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${priceStatus[item.product._id] === 'updated'
+                                  ? 'bg-green-100 text-green-700'
+                                  : priceStatus[item.product._id] === 'unchanged'
                                     ? 'bg-blue-100 text-blue-700'
                                     : 'bg-yellow-100 text-yellow-700'
-                                }`}>
+                                  }`}>
                                   {priceStatus[item.product._id] === 'updated'
                                     ? 'Updated'
                                     : priceStatus[item.product._id] === 'unchanged'
-                                    ? 'Same Price'
-                                    : 'Not in Last Order'}
+                                      ? 'Same Price'
+                                      : 'Not in Last Order'}
                                 </span>
                               )}
                             </div>
@@ -2262,13 +2278,12 @@ export const Sales = ({ tabId, editData }) => {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Stock</label>
-                            <span className={`text-sm font-semibold px-2 py-1 rounded border block text-center ${
-                              (item.product.inventory?.currentStock || 0) === 0
-                                ? 'text-red-700 bg-red-50 border-red-200'
-                                : (item.product.inventory?.currentStock || 0) <= (item.product.inventory?.reorderPoint || 0)
+                            <span className={`text-sm font-semibold px-2 py-1 rounded border block text-center ${(item.product.inventory?.currentStock || 0) === 0
+                              ? 'text-red-700 bg-red-50 border-red-200'
+                              : (item.product.inventory?.currentStock || 0) <= (item.product.inventory?.reorderPoint || 0)
                                 ? 'text-yellow-700 bg-yellow-50 border-yellow-200'
                                 : 'text-gray-700 bg-gray-100 border-gray-200'
-                            }`}>
+                              }`}>
                               {item.product.inventory?.currentStock || 0}
                             </span>
                           </div>
@@ -2296,12 +2311,11 @@ export const Sales = ({ tabId, editData }) => {
                               step="1"
                               value={Math.round(item.unitPrice)}
                               onChange={(e) => updateUnitPrice(item.product._id, parseInt(e.target.value) || 0)}
-                              className={`input text-center h-8 w-full ${
-                                (lastPurchasePrices[item.product._id] !== undefined && 
-                                 item.unitPrice < lastPurchasePrices[item.product._id])
-                                  ? 'bg-red-50 border-red-400 ring-2 ring-red-300'
-                                  : ''
-                              }`}
+                              className={`input text-center h-8 w-full ${(lastPurchasePrices[item.product._id] !== undefined &&
+                                item.unitPrice < lastPurchasePrices[item.product._id])
+                                ? 'bg-red-50 border-red-400 ring-2 ring-red-300'
+                                : ''
+                                }`}
                               min="0"
                             />
                           </div>
@@ -2309,8 +2323,8 @@ export const Sales = ({ tabId, editData }) => {
                             <div className="col-span-2">
                               <label className="block text-xs font-medium text-gray-500 mb-1">Cost</label>
                               <span className="text-sm font-semibold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200 block text-center">
-                                {lastPurchasePrices[item.product._id] !== undefined 
-                                  ? `$${Math.round(lastPurchasePrices[item.product._id])}` 
+                                {lastPurchasePrices[item.product._id] !== undefined
+                                  ? `$${Math.round(lastPurchasePrices[item.product._id])}`
                                   : 'N/A'}
                               </span>
                             </div>
@@ -2327,37 +2341,36 @@ export const Sales = ({ tabId, editData }) => {
                               {index + 1}
                             </span>
                           </div>
-                          
+
                           {/* Product Name - mirror Sales Order layout (6 columns normally, 5 when cost column shown) */}
                           <div className={`${showCostPrice && hasPermission('view_cost_prices') ? 'col-span-5' : 'col-span-6'} flex items-center h-8`}>
                             <div className="flex flex-col">
                               <span className="font-medium text-sm truncate">
-                                {item.product.isVariant 
+                                {item.product.isVariant
                                   ? (item.product.displayName || item.product.variantName || item.product.name)
                                   : item.product.name}
                                 {isLowStock && <span className="text-yellow-600 text-xs ml-2">⚠️ Low Stock</span>}
-                              {/* Warning if sale price is below cost price (always show, regardless of showCostPrice) */}
-                              {lastPurchasePrices[item.product._id] !== undefined && 
-                               item.unitPrice < lastPurchasePrices[item.product._id] && (
-                                <span className="text-xs ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold" title={`Sale price below cost! Loss: $${Math.round(lastPurchasePrices[item.product._id] - item.unitPrice)} per unit`}>
-                                  ⚠️ Loss
-                                </span>
-                              )}
-                              {isLastPricesApplied && priceStatus[item.product._id] && (
-                                <span className={`text-xs ml-2 px-1.5 py-0.5 rounded ${
-                                  priceStatus[item.product._id] === 'updated'
+                                {/* Warning if sale price is below cost price (always show, regardless of showCostPrice) */}
+                                {lastPurchasePrices[item.product._id] !== undefined &&
+                                  item.unitPrice < lastPurchasePrices[item.product._id] && (
+                                    <span className="text-xs ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold" title={`Sale price below cost! Loss: $${Math.round(lastPurchasePrices[item.product._id] - item.unitPrice)} per unit`}>
+                                      ⚠️ Loss
+                                    </span>
+                                  )}
+                                {isLastPricesApplied && priceStatus[item.product._id] && (
+                                  <span className={`text-xs ml-2 px-1.5 py-0.5 rounded ${priceStatus[item.product._id] === 'updated'
                                     ? 'bg-green-100 text-green-700'
                                     : priceStatus[item.product._id] === 'unchanged'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-yellow-100 text-yellow-700'
-                                }`}>
-                                  {priceStatus[item.product._id] === 'updated'
-                                    ? 'Updated'
-                                    : priceStatus[item.product._id] === 'unchanged'
-                                    ? 'Same Price'
-                                    : 'Not in Last Order'}
-                                </span>
-                              )}
+                                      ? 'bg-blue-100 text-blue-700'
+                                      : 'bg-yellow-100 text-yellow-700'
+                                    }`}>
+                                    {priceStatus[item.product._id] === 'updated'
+                                      ? 'Updated'
+                                      : priceStatus[item.product._id] === 'unchanged'
+                                        ? 'Same Price'
+                                        : 'Not in Last Order'}
+                                  </span>
+                                )}
                               </span>
                               {item.product.isVariant && (
                                 <span className="text-xs text-gray-500">
@@ -2366,20 +2379,19 @@ export const Sales = ({ tabId, editData }) => {
                               )}
                             </div>
                           </div>
-                          
+
                           {/* Stock - 1 column */}
                           <div className="col-span-1">
-                            <span className={`text-sm font-semibold px-2 py-1 rounded border block text-center h-8 flex items-center justify-center ${
-                              (item.product.inventory?.currentStock || 0) === 0
-                                ? 'text-red-700 bg-red-50 border-red-200'
-                                : (item.product.inventory?.currentStock || 0) <= (item.product.inventory?.reorderPoint || 0)
+                            <span className={`text-sm font-semibold px-2 py-1 rounded border block text-center h-8 flex items-center justify-center ${(item.product.inventory?.currentStock || 0) === 0
+                              ? 'text-red-700 bg-red-50 border-red-200'
+                              : (item.product.inventory?.currentStock || 0) <= (item.product.inventory?.reorderPoint || 0)
                                 ? 'text-yellow-700 bg-yellow-50 border-yellow-200'
                                 : 'text-gray-700 bg-gray-100 border-gray-200'
-                            }`}>
+                              }`}>
                               {item.product.inventory?.currentStock || 0}
                             </span>
                           </div>
-                          
+
                           {/* Quantity - 1 column */}
                           <div className="col-span-1">
                             <input
@@ -2392,18 +2404,18 @@ export const Sales = ({ tabId, editData }) => {
                               title={`Maximum available: ${item.product.inventory?.currentStock || 0}`}
                             />
                           </div>
-                          
+
                           {/* Purchase Price (Cost) - 1 column (conditional) - Between Quantity and Rate */}
                           {showCostPrice && hasPermission('view_cost_prices') && (
                             <div className="col-span-1">
                               <span className="text-sm font-semibold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200 block text-center h-8 flex items-center justify-center" title="Last Purchase Price">
-                                {lastPurchasePrices[item.product._id] !== undefined 
-                                  ? `$${Math.round(lastPurchasePrices[item.product._id])}` 
+                                {lastPurchasePrices[item.product._id] !== undefined
+                                  ? `$${Math.round(lastPurchasePrices[item.product._id])}`
                                   : 'N/A'}
                               </span>
                             </div>
                           )}
-                          
+
                           {/* Rate - 1 column */}
                           <div className="col-span-1 relative">
                             <input
@@ -2413,34 +2425,34 @@ export const Sales = ({ tabId, editData }) => {
                               onChange={(e) => updateUnitPrice(item.product._id, parseInt(e.target.value) || 0)}
                               className={`input text-center h-8 ${
                                 // Check if sale price is less than cost price - highest priority styling (always check)
-                                (lastPurchasePrices[item.product._id] !== undefined && 
-                                 item.unitPrice < lastPurchasePrices[item.product._id])
+                                (lastPurchasePrices[item.product._id] !== undefined &&
+                                  item.unitPrice < lastPurchasePrices[item.product._id])
                                   ? 'bg-red-50 border-red-400 ring-2 ring-red-300'
-                                  : priceStatus[item.product._id] === 'updated' 
-                                  ? 'bg-green-50 border-green-300 ring-1 ring-green-200' 
-                                  : priceStatus[item.product._id] === 'not-found'
-                                  ? 'bg-yellow-50 border-yellow-300 ring-1 ring-yellow-200'
-                                  : priceStatus[item.product._id] === 'unchanged'
-                                  ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-200'
-                                  : ''
-                              }`}
+                                  : priceStatus[item.product._id] === 'updated'
+                                    ? 'bg-green-50 border-green-300 ring-1 ring-green-200'
+                                    : priceStatus[item.product._id] === 'not-found'
+                                      ? 'bg-yellow-50 border-yellow-300 ring-1 ring-yellow-200'
+                                      : priceStatus[item.product._id] === 'unchanged'
+                                        ? 'bg-blue-50 border-blue-300 ring-1 ring-blue-200'
+                                        : ''
+                                }`}
                               min="0"
                               title={
-                                (lastPurchasePrices[item.product._id] !== undefined && 
-                                 item.unitPrice < lastPurchasePrices[item.product._id])
+                                (lastPurchasePrices[item.product._id] !== undefined &&
+                                  item.unitPrice < lastPurchasePrices[item.product._id])
                                   ? `⚠️ WARNING: Sale price ($${Math.round(item.unitPrice)}) is below cost price ($${Math.round(lastPurchasePrices[item.product._id])})`
                                   : ''
                               }
                             />
                             {isLastPricesApplied && priceStatus[item.product._id] && (
-                              <div 
+                              <div
                                 className="absolute -right-7 top-1/2 transform -translate-y-1/2 flex items-center z-10"
                                 title={
                                   priceStatus[item.product._id] === 'updated'
                                     ? 'Price updated from last order'
                                     : priceStatus[item.product._id] === 'unchanged'
-                                    ? 'Price same as last order'
-                                    : 'Product not found in previous order'
+                                      ? 'Price same as last order'
+                                      : 'Product not found in previous order'
                                 }
                               >
                                 {priceStatus[item.product._id] === 'updated' && (
@@ -2455,14 +2467,14 @@ export const Sales = ({ tabId, editData }) => {
                               </div>
                             )}
                           </div>
-                          
+
                           {/* Total - 1 column */}
                           <div className="col-span-1">
                             <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center h-8 flex items-center justify-center">
                               {Math.round(totalPrice)}
                             </span>
                           </div>
-                          
+
                           {/* Delete Button - 1 column */}
                           <div className="col-span-1">
                             <LoadingButton
@@ -2489,7 +2501,7 @@ export const Sales = ({ tabId, editData }) => {
             {/* Sales Details Section */}
             <div className="px-4 sm:px-6 py-4 border-b border-blue-200">
               <h3 className="text-base sm:text-lg font-medium text-gray-900 text-left sm:text-right mb-4">Sales Details</h3>
-              
+
               {/* Mobile Layout - Stacked */}
               <div className="md:hidden space-y-3">
                 {/* Order Type */}
@@ -2595,7 +2607,7 @@ export const Sales = ({ tabId, editData }) => {
                     value={billDate}
                     onChange={(e) => setBillDate(e.target.value)}
                     className="input h-10 text-sm w-full"
-                    max={new Date().toISOString().split('T')[0]} // Prevent future dates
+                    max={getLocalDateString()} // Prevent future dates
                   />
                   {billDate && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -2724,7 +2736,7 @@ export const Sales = ({ tabId, editData }) => {
                     value={billDate}
                     onChange={(e) => setBillDate(e.target.value)}
                     className="input h-8 text-sm"
-                    max={new Date().toISOString().split('T')[0]} // Prevent future dates
+                    max={getLocalDateString()} // Prevent future dates
                   />
                   {billDate && (
                     <p className="text-[10px] text-gray-500 mt-0.5">
@@ -2773,13 +2785,13 @@ export const Sales = ({ tabId, editData }) => {
                 )}
                 {selectedCustomer && (() => {
                   // Calculate total balance: currentBalance (which is net balance)
-                  const totalBalance = selectedCustomer.currentBalance !== undefined 
-                    ? selectedCustomer.currentBalance 
+                  const totalBalance = selectedCustomer.currentBalance !== undefined
+                    ? selectedCustomer.currentBalance
                     : ((selectedCustomer.pendingBalance || 0) - (selectedCustomer.advanceBalance || 0));
                   const hasPreviousBalance = totalBalance !== 0;
-                  
+
                   if (!hasPreviousBalance) return null;
-                  
+
                   return (
                     <div className="flex justify-between items-center mt-2">
                       <span className="text-gray-800 font-semibold">
@@ -2797,16 +2809,16 @@ export const Sales = ({ tabId, editData }) => {
                 </div>
                 {selectedCustomer && (() => {
                   // Calculate total balance: currentBalance (which is net balance)
-                  const totalBalance = selectedCustomer.currentBalance !== undefined 
-                    ? selectedCustomer.currentBalance 
+                  const totalBalance = selectedCustomer.currentBalance !== undefined
+                    ? selectedCustomer.currentBalance
                     : ((selectedCustomer.pendingBalance || 0) - (selectedCustomer.advanceBalance || 0));
                   const hasPreviousBalance = totalBalance !== 0;
-                  
+
                   if (!hasPreviousBalance) return null;
-                  
+
                   const totalBalanceAfterOrder = total + totalBalance;
                   const isPayable = totalBalanceAfterOrder < 0;
-                  
+
                   return (
                     <div className="flex justify-between items-center text-lg font-bold border-t-2 border-red-400 pt-3 mt-2">
                       <span className={isPayable ? 'text-red-700' : 'text-green-700'}>
@@ -2852,7 +2864,7 @@ export const Sales = ({ tabId, editData }) => {
                     </div>
                     {directDiscount.value > 0 && (
                       <div className="text-sm text-green-700 font-semibold mt-2 bg-green-50 px-2 py-1 rounded">
-                        {directDiscount.type === 'percentage' 
+                        {directDiscount.type === 'percentage'
                           ? `${directDiscount.value}% = ${Math.round(directDiscountAmount)} off`
                           : `${Math.round(directDiscount.value)} off`
                         }
@@ -2878,11 +2890,11 @@ export const Sales = ({ tabId, editData }) => {
                     >
                       <option value="cash">Cash</option>
                       <option value="bank">Bank Transfer</option>
-                    <option value="credit_card">Credit Card</option>
-                    <option value="debit_card">Debit Card</option>
-                    <option value="check">Check</option>
-                    <option value="account">Account</option>
-                    <option value="split">Split Payment</option>
+                      <option value="credit_card">Credit Card</option>
+                      <option value="debit_card">Debit Card</option>
+                      <option value="check">Check</option>
+                      <option value="account">Account</option>
+                      <option value="split">Split Payment</option>
                     </select>
                     {paymentMethod === 'bank' && (
                       <div className="mt-3">
@@ -2930,7 +2942,7 @@ export const Sales = ({ tabId, editData }) => {
                     />
                   </div>
                 </div>
-                
+
                 {/* Clear Discount Button */}
                 {directDiscount.value > 0 && (
                   <div className="mt-2">
@@ -3012,7 +3024,7 @@ export const Sales = ({ tabId, editData }) => {
                   className="btn btn-primary btn-lg flex-2"
                 >
                   <Receipt className="h-4 w-4 mr-2" />
-                  {editData?.isEditMode 
+                  {editData?.isEditMode
                     ? (amountPaid === 0 ? 'Update Invoice' : 'Update Sale')
                     : (amountPaid === 0 ? 'Create Invoice' : 'Complete Sale')
                   }
@@ -3095,7 +3107,7 @@ export const Sales = ({ tabId, editData }) => {
                 <XCircle className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div className="space-y-6">
                 {/* Export Format */}
@@ -3118,7 +3130,7 @@ export const Sales = ({ tabId, editData }) => {
                         <div className="text-sm text-gray-500">Print-ready format</div>
                       </div>
                     </label>
-                    
+
                     <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                       <input
                         type="radio"
@@ -3133,7 +3145,7 @@ export const Sales = ({ tabId, editData }) => {
                         <div className="text-sm text-gray-500">Spreadsheet format</div>
                       </div>
                     </label>
-                    
+
                     <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                       <input
                         type="radio"
@@ -3148,7 +3160,7 @@ export const Sales = ({ tabId, editData }) => {
                         <div className="text-sm text-gray-500">Comma-separated values</div>
                       </div>
                     </label>
-                    
+
                     <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                       <input
                         type="radio"

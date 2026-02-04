@@ -11,12 +11,12 @@ export const cashPaymentsApi = api.injectEndpoints({
       providesTags: (result) =>
         result?.data?.payments
           ? [
-              ...result.data.payments.map(({ _id, id }) => ({
-                type: 'CashPayments',
-                id: _id || id,
-              })),
-              { type: 'CashPayments', id: 'LIST' },
-            ]
+            ...result.data.payments.map(({ _id, id }) => ({
+              type: 'CashPayments',
+              id: _id || id,
+            })),
+            { type: 'CashPayments', id: 'LIST' },
+          ]
           : [{ type: 'CashPayments', id: 'LIST' }],
     }),
     createCashPayment: builder.mutation({
@@ -25,7 +25,17 @@ export const cashPaymentsApi = api.injectEndpoints({
         method: 'post',
         data,
       }),
-      invalidatesTags: [{ type: 'CashPayments', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'CashPayments', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+      ],
     }),
     updateCashPayment: builder.mutation({
       query: ({ id, ...data }) => ({
@@ -36,6 +46,14 @@ export const cashPaymentsApi = api.injectEndpoints({
       invalidatesTags: (_r, _e, { id }) => [
         { type: 'CashPayments', id },
         { type: 'CashPayments', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
       ],
     }),
     deleteCashPayment: builder.mutation({
@@ -46,6 +64,14 @@ export const cashPaymentsApi = api.injectEndpoints({
       invalidatesTags: (_r, _e, id) => [
         { type: 'CashPayments', id },
         { type: 'CashPayments', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
       ],
     }),
     exportExcel: builder.mutation({

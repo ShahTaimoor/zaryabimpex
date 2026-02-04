@@ -64,20 +64,14 @@ class PurchaseOrderService {
       filter.supplier = queryParams.supplier;
     }
 
-    // Date range filter
-    if (queryParams.dateFrom || queryParams.dateTo) {
-      filter.createdAt = {};
-      if (queryParams.dateFrom) {
-        const dateFrom = new Date(queryParams.dateFrom);
-        dateFrom.setHours(0, 0, 0, 0);
-        filter.createdAt.$gte = dateFrom;
-      }
-      if (queryParams.dateTo) {
-        const dateTo = new Date(queryParams.dateTo);
-        dateTo.setDate(dateTo.getDate() + 1);
-        dateTo.setHours(0, 0, 0, 0);
-        filter.createdAt.$lt = dateTo;
-      }
+    // Date range filter - use dateFilter from middleware if available (Pakistan timezone)
+    if (queryParams.dateFilter && Object.keys(queryParams.dateFilter).length > 0) {
+      Object.assign(filter, queryParams.dateFilter);
+    } else if (queryParams.dateFrom || queryParams.dateTo) {
+      // Legacy date filtering (for backward compatibility)
+      const { buildDateRangeFilter } = require('../utils/dateFilter');
+      const dateFilter = buildDateRangeFilter(queryParams.dateFrom, queryParams.dateTo, 'createdAt');
+      Object.assign(filter, dateFilter);
     }
 
     return filter;

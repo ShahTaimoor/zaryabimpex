@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Filter, X, Calendar } from 'lucide-react';
+import DateFilter from './DateFilter';
 
 const ReturnFilters = ({ filters, onFilterChange, isLoading }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -120,34 +121,17 @@ const ReturnFilters = ({ filters, onFilterChange, isLoading }) => {
         </div>
 
         {/* Date Range - Always Visible */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 border-t pt-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <Calendar className="inline h-4 w-4 mr-1" />
-              From Date
-            </label>
-            <input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => handleInputChange('startDate', e.target.value)}
-              className="input"
-              disabled={isLoading}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <Calendar className="inline h-4 w-4 mr-1" />
-              To Date
-            </label>
-            <input
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => handleInputChange('endDate', e.target.value)}
-              className="input"
-              disabled={isLoading}
-            />
-          </div>
+        <div className="mb-4 border-t pt-4">
+          <DateFilter
+            startDate={filters.startDate}
+            endDate={filters.endDate}
+            onDateChange={(start, end) => {
+              handleInputChange('startDate', start || '');
+              handleInputChange('endDate', end || '');
+            }}
+            compact={true}
+            showPresets={true}
+          />
         </div>
 
 

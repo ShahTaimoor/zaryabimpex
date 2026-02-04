@@ -1,6 +1,8 @@
 const express = require('express');
 const { query, validationResult } = require('express-validator');
 const { auth, requirePermission } = require('../middleware/auth');
+const { handleValidationErrors } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const reportsService = require('../services/reportsService');
 
 const router = express.Router();
@@ -11,10 +13,11 @@ const router = express.Router();
 router.get('/sales', [
   auth,
   requirePermission('view_reports'),
-  query('dateFrom').optional().isISO8601(),
-  query('dateTo').optional().isISO8601(),
+  ...validateDateParams,
   query('groupBy').optional().isIn(['day', 'week', 'month', 'year']),
-  query('orderType').optional().isIn(['retail', 'wholesale', 'return', 'exchange'])
+  query('orderType').optional().isIn(['retail', 'wholesale', 'return', 'exchange']),
+  handleValidationErrors,
+  processDateFilter(['billDate', 'createdAt']),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -22,7 +25,14 @@ router.get('/sales', [
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const report = await reportsService.getSalesReport(req.query);
+    // Merge date filter from middleware if present (for Pakistan timezone)
+    const queryParams = { ...req.query };
+    if (req.dateRange) {
+      queryParams.dateFrom = req.dateRange.startDate || undefined;
+      queryParams.dateTo = req.dateRange.endDate || undefined;
+    }
+    
+    const report = await reportsService.getSalesReport(queryParams);
     
     res.json(report);
   } catch (error) {
@@ -37,9 +47,10 @@ router.get('/sales', [
 router.get('/products', [
   auth,
   requirePermission('view_reports'),
-  query('dateFrom').optional().isISO8601(),
-  query('dateTo').optional().isISO8601(),
-  query('limit').optional().isInt({ min: 1, max: 100 })
+  ...validateDateParams,
+  query('limit').optional().isInt({ min: 1, max: 100 }),
+  handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -47,7 +58,14 @@ router.get('/products', [
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const report = await reportsService.getProductReport(req.query);
+    // Merge date filter from middleware if present (for Pakistan timezone)
+    const queryParams = { ...req.query };
+    if (req.dateRange) {
+      queryParams.dateFrom = req.dateRange.startDate || undefined;
+      queryParams.dateTo = req.dateRange.endDate || undefined;
+    }
+    
+    const report = await reportsService.getProductReport(queryParams);
     
     res.json(report);
   } catch (error) {
@@ -62,10 +80,11 @@ router.get('/products', [
 router.get('/customers', [
   auth,
   requirePermission('view_reports'),
-  query('dateFrom').optional().isISO8601(),
-  query('dateTo').optional().isISO8601(),
+  ...validateDateParams,
   query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('businessType').optional().isIn(['retail', 'wholesale', 'distributor', 'individual'])
+  query('businessType').optional().isIn(['retail', 'wholesale', 'distributor', 'individual']),
+  handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -73,7 +92,14 @@ router.get('/customers', [
       return res.status(400).json({ errors: errors.array() });
     }
     
-    const report = await reportsService.getCustomerReport(req.query);
+    // Merge date filter from middleware if present (for Pakistan timezone)
+    const queryParams = { ...req.query };
+    if (req.dateRange) {
+      queryParams.dateFrom = req.dateRange.startDate || undefined;
+      queryParams.dateTo = req.dateRange.endDate || undefined;
+    }
+    
+    const report = await reportsService.getCustomerReport(queryParams);
     
     res.json(report);
   } catch (error) {

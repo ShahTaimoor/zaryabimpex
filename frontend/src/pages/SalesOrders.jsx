@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useQuery } from 'react-query';
-import { 
-  Calendar, 
-  Search, 
-  Filter, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Calendar,
+  Search,
+  Filter,
+  Plus,
+  Edit,
+  Trash2,
   Eye,
   Download,
   RefreshCw,
@@ -60,14 +60,8 @@ import { useAuth } from '../contexts/AuthContext';
 import PrintModal from '../components/PrintModal';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import NotesPanel from '../components/NotesPanel';
-
-// Helper function to get local date in YYYY-MM-DD format (avoids timezone issues with toISOString)
-const getLocalDateString = (date = new Date()) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+import DateFilter from '../components/DateFilter';
+import { getCurrentDatePakistan, getDateDaysAgo } from '../utils/dateUtils';
 
 // Helper function to safely render values
 const safeRender = (value) => {
@@ -85,13 +79,11 @@ const SalesOrders = () => {
   const resolvedCompanyName = companySettings.companyName || 'Company Name';
   const resolvedCompanyAddress = companySettings.address || companySettings.billingAddress || '';
   const resolvedCompanyPhone = companySettings.contactNumber || '';
-  
-  // Calculate default date range (14 days ago to today)
-  const today = getLocalDateString();
-  const fourteenDaysAgo = new Date();
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-  const fromDateDefault = getLocalDateString(fourteenDaysAgo);
-  
+
+  // Calculate default date range (14 days ago to today) using Pakistan timezone
+  const today = getCurrentDatePakistan();
+  const fromDateDefault = getDateDaysAgo(14);
+
   // State for filters and pagination
   const [filters, setFilters] = useState({
     fromDate: fromDateDefault, // 14 days ago
@@ -101,7 +93,7 @@ const SalesOrders = () => {
     status: '',
     orderType: ''
   });
-  
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 999999 // Get all sales orders without pagination
@@ -111,7 +103,7 @@ const SalesOrders = () => {
     key: 'createdAt',
     direction: 'desc'
   });
-  
+
   const [showNotes, setShowNotes] = useState(false);
   const [notesEntity, setNotesEntity] = useState(null);
 
@@ -146,10 +138,10 @@ const SalesOrders = () => {
 
       const customerInitials = customer
         ? (customer.businessName || customer.name || customer.displayName || '')
-            .split(' ')
-            .map((word) => word.charAt(0).toUpperCase())
-            .join('')
-            .substring(0, 3)
+          .split(' ')
+          .map((word) => word.charAt(0).toUpperCase())
+          .join('')
+          .substring(0, 3)
         : '';
 
       const prefix = 'SO';
@@ -172,82 +164,82 @@ const SalesOrders = () => {
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [selectedProductIndex, setSelectedProductIndex] = useState(-1);
   const [searchKey, setSearchKey] = useState(0); // Key to force re-render
-  
+
   // Last prices state
   const [isLoadingLastPrices, setIsLoadingLastPrices] = useState(false);
   const [originalPrices, setOriginalPrices] = useState({}); // Store original prices before applying last prices
   const [isLastPricesApplied, setIsLastPricesApplied] = useState(false);
   const [priceStatus, setPriceStatus] = useState({}); // Track price change status: 'updated', 'not-found', 'unchanged'
-  
+
   // Loading states for buttons
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isRestoringPrices, setIsRestoringPrices] = useState(false);
   const [isRemovingFromCart, setIsRemovingFromCart] = useState({});
   const [isSortingItems, setIsSortingItems] = useState(false);
-  
+
   // Cost price state
-const [showCostPrice, setShowCostPrice] = useState(false); // Toggle to show/hide cost prices
-const [lastPurchasePrice, setLastPurchasePrice] = useState(null); // Last purchase price for selected product
-const [lastPurchasePrices, setLastPurchasePrices] = useState({}); // Store last purchase prices for products in cart
-  
+  const [showCostPrice, setShowCostPrice] = useState(false); // Toggle to show/hide cost prices
+  const [lastPurchasePrice, setLastPurchasePrice] = useState(null); // Last purchase price for selected product
+  const [lastPurchasePrices, setLastPurchasePrices] = useState({}); // Store last purchase prices for products in cart
+
   // Export state
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFormat, setExportFormat] = useState('pdf');
   const [isExporting, setIsExporting] = useState(false);
-  
-// Auth context for permissions
+
+  // Auth context for permissions
   const { hasPermission, user } = useAuth();
   const canViewCostPrice = hasPermission('view_cost_prices');
-const [showProfit, setShowProfit] = useState(false);
-  
-const totalProfit = useMemo(() => {
-  if (!Array.isArray(formData.items) || formData.items.length === 0) return 0;
+  const [showProfit, setShowProfit] = useState(false);
 
-  const getProductIdFromItem = (item) => {
-    if (!item) return null;
-    if (item.product?._id) return item.product._id;
-    if (typeof item.product === 'string') return item.product;
-    if (item.productData?._id) return item.productData._id;
-    return null;
-  };
+  const totalProfit = useMemo(() => {
+    if (!Array.isArray(formData.items) || formData.items.length === 0) return 0;
 
-  const getProductData = (item) => {
-    if (!item) return null;
-    if (item.productData) return item.productData;
-    if (item.product && typeof item.product === 'object') return item.product;
-    return null;
-  };
+    const getProductIdFromItem = (item) => {
+      if (!item) return null;
+      if (item.product?._id) return item.product._id;
+      if (typeof item.product === 'string') return item.product;
+      if (item.productData?._id) return item.productData._id;
+      return null;
+    };
 
-  return formData.items.reduce((sum, item) => {
-    const quantity = Number(item.quantity) || 0;
-    const salePrice = Number(item.unitPrice) || 0;
-    const productId = getProductIdFromItem(item);
-    const productData = getProductData(item);
+    const getProductData = (item) => {
+      if (!item) return null;
+      if (item.productData) return item.productData;
+      if (item.product && typeof item.product === 'object') return item.product;
+      return null;
+    };
 
-    const lastCost =
-      productId && lastPurchasePrices[productId] !== undefined
-        ? Number(lastPurchasePrices[productId])
-        : null;
+    return formData.items.reduce((sum, item) => {
+      const quantity = Number(item.quantity) || 0;
+      const salePrice = Number(item.unitPrice) || 0;
+      const productId = getProductIdFromItem(item);
+      const productData = getProductData(item);
 
-    const fallbackCostCandidates = [
-      lastCost,
-      Number(productData?.pricing?.cost),
-      Number(productData?.pricing?.purchasePrice),
-      Number(productData?.pricing?.wholesaleCost),
-      Number(productData?.costPrice),
-      Number(productData?.purchasePrice),
-    ];
+      const lastCost =
+        productId && lastPurchasePrices[productId] !== undefined
+          ? Number(lastPurchasePrices[productId])
+          : null;
 
-    const cost = fallbackCostCandidates.find(
-      (value) => value !== null && value !== undefined && Number.isFinite(value)
-    ) || 0;
+      const fallbackCostCandidates = [
+        lastCost,
+        Number(productData?.pricing?.cost),
+        Number(productData?.pricing?.purchasePrice),
+        Number(productData?.pricing?.wholesaleCost),
+        Number(productData?.costPrice),
+        Number(productData?.purchasePrice),
+      ];
 
-    const profitPerUnit = salePrice - cost;
-    const lineProfit = profitPerUnit * quantity;
+      const cost = fallbackCostCandidates.find(
+        (value) => value !== null && value !== undefined && Number.isFinite(value)
+      ) || 0;
 
-    return sum + (Number.isFinite(lineProfit) ? lineProfit : 0);
-  }, 0);
-}, [formData.items, lastPurchasePrices]);
+      const profitPerUnit = salePrice - cost;
+      const lineProfit = profitPerUnit * quantity;
+
+      return sum + (Number.isFinite(lineProfit) ? lineProfit : 0);
+    }, 0);
+  }, [formData.items, lastPurchasePrices]);
 
   // Modal-specific product selection state
   const [modalProductSearchTerm, setModalProductSearchTerm] = useState('');
@@ -272,7 +264,7 @@ const totalProfit = useMemo(() => {
     if (showEditModal) {
       // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
-      
+
       // Focus on the first input field in the modal after a short delay
       const timer = setTimeout(() => {
         const modalInput = document.querySelector('.modal-product-search');
@@ -280,7 +272,7 @@ const totalProfit = useMemo(() => {
           modalInput.focus();
         }
       }, 100);
-      
+
       return () => {
         clearTimeout(timer);
         document.body.style.overflow = 'unset';
@@ -294,7 +286,7 @@ const totalProfit = useMemo(() => {
       setModalSelectedSuggestionIndex(-1);
     }
   }, [showEditModal]);
-  
+
   // Safety mechanism: Always restore scroll on component unmount
   useEffect(() => {
     return () => {
@@ -305,7 +297,7 @@ const totalProfit = useMemo(() => {
   // Update tab title when selectedCustomer changes (after render)
   useEffect(() => {
     if (!updateTabTitle || !activeTabId || !tabs) return;
-    
+
     const activeTab = tabs.find(tab => tab.id === activeTabId);
     if (!activeTab) return;
 
@@ -339,7 +331,7 @@ const totalProfit = useMemo(() => {
   // Fetch customers for dropdown
   const { data: customersData, isLoading: customersLoading } = useGetCustomersQuery(
     { limit: 1000 },
-    { 
+    {
       staleTime: 0, // Always consider data stale to get fresh credit information
       refetchOnMountOrArgChange: true // Refetch when component mounts or params change
     }
@@ -452,7 +444,7 @@ const totalProfit = useMemo(() => {
     // Reset customer first to avoid using stale customer in orderNumber generation
     setSelectedCustomer(null);
     setCustomerSearchTerm('');
-    
+
     // Reset product selection
     setSelectedProduct(null);
     setProductSearchTerm('');
@@ -462,7 +454,7 @@ const totalProfit = useMemo(() => {
     setCalculatedRate(0);
     setIsAddingProduct(false);
     setSearchKey(prev => prev + 1); // Force re-render of search components
-    
+
     // Reset form data with empty order number (will be generated by useEffect)
     setFormData({
       orderType: 'wholesale',
@@ -473,22 +465,22 @@ const totalProfit = useMemo(() => {
       orderNumber: '' // Will be auto-generated by useEffect after customer is reset
     });
     setAutoGenerateOrderNumber(true);
-    
+
     // Reset last prices state
     setOriginalPrices({});
     setIsLastPricesApplied(false);
     setPriceStatus({});
-    
+
     // Reset cost price state
     setLastPurchasePrice(null);
     setLastPurchasePrices({});
-    
+
     // Reset loading states
     setIsAddingToCart(false);
     setIsRestoringPrices(false);
     setIsRemovingFromCart({});
     setIsSortingItems(false);
-    
+
     // Tab title will be updated by useEffect when selectedCustomer changes
   };
 
@@ -499,7 +491,7 @@ const totalProfit = useMemo(() => {
     const isPayable = netBalance < 0;
     const isReceivable = netBalance > 0;
     const hasBalance = receivables > 0 || advance > 0;
-    
+
     return (
       <div>
         <div className="font-medium">{customer.displayName || customer.businessName || customer.name || 'Unknown'}</div>
@@ -517,7 +509,7 @@ const totalProfit = useMemo(() => {
     // SearchableDropdown passes the full customer object, not just the ID
     const customerId = typeof customer === 'string' ? customer : customer._id;
     const customerObj = typeof customer === 'object' ? customer : customers?.find(c => c._id === customerId);
-    
+
     setSelectedCustomer(customerObj);
     setFormData(prev => ({
       ...prev,
@@ -525,18 +517,24 @@ const totalProfit = useMemo(() => {
       orderNumber: autoGenerateOrderNumber ? generateOrderNumber(customerObj) : prev.orderNumber
     }));
     setCustomerSearchTerm(customerObj?.displayName || customerObj?.businessName || customerObj?.name || '');
-    
-    // Reset price states when customer changes
-    setOriginalPrices({});
-    setIsLastPricesApplied(false);
-    setPriceStatus({});
-    
+
+    // Auto-set price type based on customer business type
+    if (customerObj?.businessType) {
+      if (customerObj.businessType === 'retail' || customerObj.businessType === 'individual') {
+        setPriceType('retail');
+      } else if (customerObj.businessType === 'wholesale') {
+        setPriceType('wholesale');
+      } else if (customerObj.businessType === 'distributor') {
+        setPriceType('distributor');
+      }
+    }
+
     // Tab title will be updated by useEffect when selectedCustomer changes
   };
 
   const handleCustomerSearch = (searchTerm) => {
     setCustomerSearchTerm(searchTerm);
-    
+
     if (searchTerm === '') {
       setSelectedCustomer(null);
       setFormData(prev => ({
@@ -544,18 +542,20 @@ const totalProfit = useMemo(() => {
         customer: '',
         orderNumber: autoGenerateOrderNumber ? generateOrderNumber(null) : prev.orderNumber
       }));
-      
+
       // Tab title will be updated by useEffect when selectedCustomer changes
     }
   };
 
   const calculatePrice = (product, priceType) => {
     if (!product) return 0;
-    
+
     // Handle both regular products and variants
     const pricing = product.pricing || {};
-    
-    if (priceType === 'wholesale') {
+
+    if (priceType === 'distributor') {
+      return pricing.distributor || pricing.wholesale || pricing.retail || 0;
+    } else if (priceType === 'wholesale') {
       return pricing.wholesale || pricing.retail || 0;
     } else if (priceType === 'retail') {
       return pricing.retail || 0;
@@ -569,17 +569,17 @@ const totalProfit = useMemo(() => {
     setSelectedProduct(product);
     setQuantity(1);
     setIsAddingProduct(true);
-    
+
     // Show selected product/variant name in search field
-    const displayName = product.isVariant 
+    const displayName = product.isVariant
       ? (product.displayName || product.variantName || product.name)
       : product.name;
     setProductSearchTerm(displayName);
-    
+
     // Fetch last purchase price (always, for loss alerts)
     // For variants, use the base product ID to get purchase price
     const productIdForPrice = product.isVariant ? product.baseProductId : product._id;
-    
+
     if (productIdForPrice) {
       try {
         const response = await getLastPurchasePrice(productIdForPrice).unwrap();
@@ -595,7 +595,7 @@ const totalProfit = useMemo(() => {
     } else {
       setLastPurchasePrice(null);
     }
-    
+
     // Calculate the rate based on selected price type
     const calculatedPrice = calculatePrice(product, priceType);
     setCalculatedRate(calculatedPrice);
@@ -621,14 +621,14 @@ const totalProfit = useMemo(() => {
   const handleProductSearch = (searchTerm) => {
     setProductSearchTerm(searchTerm);
     setSelectedProductIndex(-1); // Reset selection when searching
-    
+
     // Clear selected product if search term doesn't match the selected product name
     if (selectedProduct && searchTerm !== selectedProduct.name) {
       setSelectedProduct(null);
       setCustomRate('');
       setIsAddingProduct(false);
     }
-    
+
     if (searchTerm === '') {
       setSelectedProduct(null);
       setCustomRate('');
@@ -661,17 +661,17 @@ const totalProfit = useMemo(() => {
     const inventory = product.inventory || {};
     const isLowStock = inventory.currentStock <= (inventory.reorderPoint || inventory.minStock || 0);
     const isOutOfStock = inventory.currentStock === 0;
-    
+
     // Get display name - use variant display name if it's a variant
-    const displayName = product.isVariant 
+    const displayName = product.isVariant
       ? (product.displayName || product.variantName || product.name)
       : product.name;
-    
+
     // Get pricing based on selected price type
     const pricing = product.pricing || {};
     let unitPrice = pricing.wholesale || pricing.retail || 0;
     let priceLabel = 'Wholesale';
-    
+
     if (priceType === 'wholesale') {
       unitPrice = pricing.wholesale || pricing.retail || 0;
       priceLabel = 'Wholesale';
@@ -679,12 +679,12 @@ const totalProfit = useMemo(() => {
       unitPrice = pricing.retail || 0;
       priceLabel = 'Retail';
     }
-    
+
     // Show variant indicator
-    const variantInfo = product.isVariant 
+    const variantInfo = product.isVariant
       ? <span className="text-xs text-blue-600 font-semibold">({product.variantType}: {product.variantValue})</span>
       : null;
-    
+
     return (
       <div className="flex items-center justify-between w-full">
         <div className="flex flex-col">
@@ -703,7 +703,7 @@ const totalProfit = useMemo(() => {
 
   const handleAddItem = async () => {
     if (!selectedProduct) return;
-    
+
     // Validate that rate is filled
     if (!customRate || parseFloat(customRate) <= 0) {
       showErrorToast('Please enter a valid rate');
@@ -711,28 +711,28 @@ const totalProfit = useMemo(() => {
     }
 
     // Get display name for error messages
-    const displayName = selectedProduct.isVariant 
+    const displayName = selectedProduct.isVariant
       ? (selectedProduct.displayName || selectedProduct.variantName || selectedProduct.name)
       : selectedProduct.name;
-    
+
     // Check if product/variant is out of stock
     const currentStock = selectedProduct.inventory?.currentStock || 0;
     if (currentStock === 0) {
       showErrorToast(`${displayName} is out of stock and cannot be added to the order.`);
       return;
     }
-    
+
     // Check if requested quantity exceeds available stock
     if (quantity > currentStock) {
       showErrorToast(`Cannot add ${quantity} units. Only ${currentStock} units available in stock.`);
       return;
     }
-    
+
     setIsAddingToCart(true);
     try {
       // Use the rate from the input field
       const unitPrice = parseFloat(customRate) || calculatedRate;
-      
+
       // Check if sale price is less than cost price (always check, regardless of showCostPrice)
       if (lastPurchasePrice !== null && unitPrice < lastPurchasePrice) {
         const loss = lastPurchasePrice - unitPrice;
@@ -747,64 +747,64 @@ const totalProfit = useMemo(() => {
           return;
         }
       }
-      
+
       const subtotal = unitPrice * quantity;
-    const discountAmount = 0; // Can be enhanced later
-    // For variants, use base product's tax settings if available, otherwise default to 0
-    const taxRate = selectedProduct.isVariant 
-      ? (selectedProduct.baseProduct?.taxSettings?.taxRate || 0)
-      : (selectedProduct.taxSettings?.taxRate || 0);
-    const taxAmount = formData.isTaxExempt ? 0 : (subtotal * taxRate / 100);
-    const total = subtotal - discountAmount + taxAmount;
+      const discountAmount = 0; // Can be enhanced later
+      // For variants, use base product's tax settings if available, otherwise default to 0
+      const taxRate = selectedProduct.isVariant
+        ? (selectedProduct.baseProduct?.taxSettings?.taxRate || 0)
+        : (selectedProduct.taxSettings?.taxRate || 0);
+      const taxAmount = formData.isTaxExempt ? 0 : (subtotal * taxRate / 100);
+      const total = subtotal - discountAmount + taxAmount;
 
-    // Store last purchase price for this product/variant
-    if (lastPurchasePrice !== null) {
-      setLastPurchasePrices(prev => ({
-        ...prev,
-        [selectedProduct._id]: lastPurchasePrice
-      }));
-    }
+      // Store last purchase price for this product/variant
+      if (lastPurchasePrice !== null) {
+        setLastPurchasePrices(prev => ({
+          ...prev,
+          [selectedProduct._id]: lastPurchasePrice
+        }));
+      }
 
-    const newItem = {
-      product: selectedProduct._id,
+      const newItem = {
+        product: selectedProduct._id,
         productData: selectedProduct, // Store full product/variant data for display
-      quantity,
+        quantity,
         unitPrice: unitPrice,
-      discountPercent: 0,
-      taxRate: taxRate,
-      subtotal,
-      discountAmount,
-      taxAmount,
-      total
-    };
+        discountPercent: 0,
+        taxRate: taxRate,
+        subtotal,
+        discountAmount,
+        taxAmount,
+        total
+      };
 
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, newItem]
-    }));
+      setFormData(prev => ({
+        ...prev,
+        items: [...prev.items, newItem]
+      }));
 
       // Reset form
-    setSelectedProduct(null);
-    setQuantity(1);
-    setCustomRate('');
+      setSelectedProduct(null);
+      setQuantity(1);
+      setCustomRate('');
       setCalculatedRate(0);
       setIsAddingProduct(false);
-      
+
       // Clear search term and force re-render
       setProductSearchTerm('');
       setSelectedProductIndex(-1);
       setSearchKey(prev => prev + 1);
-      
+
       // Focus back to product search input
       setTimeout(() => {
         if (productSearchRef.current) {
           productSearchRef.current.focus();
         }
       }, 100);
-      
+
       // Show success message
       const priceLabel = selectedCustomer?.businessType === 'wholesale' ? 'wholesale' :
-                         selectedCustomer?.businessType === 'distributor' ? 'distributor' : 'wholesale';
+        selectedCustomer?.businessType === 'distributor' ? 'distributor' : 'wholesale';
       showSuccessToast(`${displayName} added to order at ${priceLabel} price: ${Math.round(unitPrice)}`);
     } catch (error) {
       handleApiError(error, 'Product Price Check');
@@ -817,33 +817,33 @@ const totalProfit = useMemo(() => {
     // Get the item to be removed before updating state
     const itemToRemove = formData.items[index];
     const productId = itemToRemove?.product?.toString() || index.toString();
-    
+
     setIsRemovingFromCart(prev => ({ ...prev, [productId]: true }));
     try {
       setFormData(prev => ({
         ...prev,
         items: prev.items.filter((_, i) => i !== index)
       }));
-    
-    // If last prices were applied, update originalPrices when item is removed
-    if (isLastPricesApplied && itemToRemove) {
-      const productId = itemToRemove.product.toString();
-      const newOriginalPrices = { ...originalPrices };
-      delete newOriginalPrices[productId];
-      setOriginalPrices(newOriginalPrices);
-      
-      const newPriceStatus = { ...priceStatus };
-      delete newPriceStatus[productId];
-      setPriceStatus(newPriceStatus);
-    }
-    
-    // Clean up last purchase price for removed item
-    if (itemToRemove) {
-      const productId = itemToRemove.product.toString();
-      const newLastPurchasePrices = { ...lastPurchasePrices };
-      delete newLastPurchasePrices[productId];
-      setLastPurchasePrices(newLastPurchasePrices);
-    }
+
+      // If last prices were applied, update originalPrices when item is removed
+      if (isLastPricesApplied && itemToRemove) {
+        const productId = itemToRemove.product.toString();
+        const newOriginalPrices = { ...originalPrices };
+        delete newOriginalPrices[productId];
+        setOriginalPrices(newOriginalPrices);
+
+        const newPriceStatus = { ...priceStatus };
+        delete newPriceStatus[productId];
+        setPriceStatus(newPriceStatus);
+      }
+
+      // Clean up last purchase price for removed item
+      if (itemToRemove) {
+        const productId = itemToRemove.product.toString();
+        const newLastPurchasePrices = { ...lastPurchasePrices };
+        delete newLastPurchasePrices[productId];
+        setLastPurchasePrices(newLastPurchasePrices);
+      }
     } finally {
       setIsRemovingFromCart(prev => {
         const updated = { ...prev };
@@ -940,7 +940,7 @@ const totalProfit = useMemo(() => {
         if (prices[productId]) {
           const lastPrice = prices[productId].unitPrice;
           const currentPrice = item.unitPrice;
-          
+
           if (lastPrice !== currentPrice) {
             // Price changed
             updatedCount++;
@@ -948,7 +948,7 @@ const totalProfit = useMemo(() => {
             const newSubtotal = lastPrice * item.quantity;
             const newTaxAmount = formData.isTaxExempt ? 0 : (newSubtotal * (item.taxRate || 0) / 100);
             const newTotal = newSubtotal - (item.discountAmount || 0) + newTaxAmount;
-            
+
             return {
               ...item,
               unitPrice: lastPrice,
@@ -1017,7 +1017,7 @@ const totalProfit = useMemo(() => {
           const newSubtotal = restoredPrice * item.quantity;
           const newTaxAmount = formData.isTaxExempt ? 0 : (newSubtotal * (item.taxRate || 0) / 100);
           const newTotal = newSubtotal - (item.discountAmount || 0) + newTaxAmount;
-          
+
           return {
             ...item,
             unitPrice: restoredPrice,
@@ -1077,7 +1077,7 @@ const totalProfit = useMemo(() => {
 
     // Remove payment field as sales orders don't have payment information
     const { payment, ...orderDataWithoutPayment } = formData;
-    
+
     // Transform items to match backend expectations
     const transformedItems = formData.items.map(item => ({
       product: item.product,
@@ -1122,7 +1122,7 @@ const totalProfit = useMemo(() => {
         remainingQuantity: item.remainingQuantity || item.quantity
       }))
     };
-    
+
     updateSalesOrderMutation({ id: selectedOrder._id, ...cleanedData })
       .unwrap()
       .then(() => {
@@ -1197,8 +1197,8 @@ const totalProfit = useMemo(() => {
     try {
       // Build filters based on current filters
       const exportFilters = {
-        fromDate: filters.fromDate,
-        toDate: filters.toDate,
+        dateFrom: filters.fromDate,
+        dateTo: filters.toDate,
         status: filters.status,
         customer: filters.customer,
         orderNumber: filters.orderNumber,
@@ -1218,13 +1218,13 @@ const totalProfit = useMemo(() => {
 
       if (response?.filename) {
         const filename = response.filename;
-        
+
         try {
           // Add a small delay to ensure file is written (PDF generation is async)
           if (exportFormat === 'pdf') {
             await new Promise(resolve => setTimeout(resolve, 500));
           }
-          
+
           // Download the file
           let downloadResponse;
           try {
@@ -1233,23 +1233,23 @@ const totalProfit = useMemo(() => {
             showErrorToast('Download failed');
             return;
           }
-          
+
           // Check if response is successful
           if (!downloadResponse) {
             showErrorToast('Download failed: No response received');
             return;
           }
-          
+
           // Check if data exists
           if (!downloadResponse) {
             showErrorToast('Download failed: No data received from server');
             return;
           }
-          
+
           if (exportFormat === 'pdf') {
             // For PDF, open in new tab for preview
             const blob = downloadResponse;
-            
+
             // Check if blob is valid
             if (!blob || !(blob instanceof Blob)) {
               // Handle different response types
@@ -1258,7 +1258,7 @@ const totalProfit = useMemo(() => {
               } else if (blob && typeof blob === 'object') {
                 // Try to extract error message from object
                 let errorMsg = blob.message || blob.error;
-                
+
                 // If no message property, try to stringify but check if it's meaningful
                 if (!errorMsg) {
                   try {
@@ -1275,14 +1275,14 @@ const totalProfit = useMemo(() => {
                     errorMsg = 'Invalid response format';
                   }
                 }
-                
+
                 showErrorToast(`Server error: ${errorMsg || 'Unknown error'}`);
               } else {
                 showErrorToast('Invalid PDF file received - expected Blob. Response type: ' + typeof blob);
               }
               return;
             }
-            
+
             // Check if content type indicates an error (JSON/HTML response)
             const contentType = blob.type || '';
             if (contentType.includes('application/json') || contentType.includes('text/html')) {
@@ -1300,84 +1300,84 @@ const totalProfit = useMemo(() => {
               reader.readAsText(blob);
               return;
             }
-          
-          // Check if blob has content
-          if (blob.size === 0) {
-            showErrorToast('PDF file is empty');
-            return;
-          }
-          
-          // Check if blob type is PDF (or at least not HTML/JSON error)
-          if (blob.type && !blob.type.includes('pdf') && !blob.type.includes('application/octet-stream')) {
-            // Might be an error response, try to read it
-            const reader = new FileReader();
-            reader.onload = () => {
-              const text = reader.result;
-              if (text.includes('<!DOCTYPE') || text.includes('{"error"') || text.includes('{"message"')) {
-                showErrorToast('Server returned an error instead of PDF file');
-              } else {
-                // Try to open anyway
-                const url = URL.createObjectURL(blob);
-                const newWindow = window.open(url, '_blank');
-                if (!newWindow) {
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = filename;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  showSuccessToast('PDF downloaded (popup was blocked)');
+
+            // Check if blob has content
+            if (blob.size === 0) {
+              showErrorToast('PDF file is empty');
+              return;
+            }
+
+            // Check if blob type is PDF (or at least not HTML/JSON error)
+            if (blob.type && !blob.type.includes('pdf') && !blob.type.includes('application/octet-stream')) {
+              // Might be an error response, try to read it
+              const reader = new FileReader();
+              reader.onload = () => {
+                const text = reader.result;
+                if (text.includes('<!DOCTYPE') || text.includes('{"error"') || text.includes('{"message"')) {
+                  showErrorToast('Server returned an error instead of PDF file');
                 } else {
-                  showSuccessToast('PDF opened in new tab');
+                  // Try to open anyway
+                  const url = URL.createObjectURL(blob);
+                  const newWindow = window.open(url, '_blank');
+                  if (!newWindow) {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showSuccessToast('PDF downloaded (popup was blocked)');
+                  } else {
+                    showSuccessToast('PDF opened in new tab');
+                  }
+                  setTimeout(() => URL.revokeObjectURL(url), 10000);
                 }
-                setTimeout(() => URL.revokeObjectURL(url), 10000);
-              }
-            };
-            reader.readAsText(blob.slice(0, 100)); // Read first 100 bytes to check
-            return;
-          }
-          
-          // Valid PDF blob, proceed with opening
-          const url = URL.createObjectURL(blob);
-          const newWindow = window.open(url, '_blank');
-          
-          if (!newWindow) {
-            // Popup blocked, fallback to download
+              };
+              reader.readAsText(blob.slice(0, 100)); // Read first 100 bytes to check
+              return;
+            }
+
+            // Valid PDF blob, proceed with opening
+            const url = URL.createObjectURL(blob);
+            const newWindow = window.open(url, '_blank');
+
+            if (!newWindow) {
+              // Popup blocked, fallback to download
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = filename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              showSuccessToast('PDF downloaded (popup was blocked)');
+            } else {
+              showSuccessToast('PDF opened in new tab');
+            }
+
+            // Revoke URL after a delay to ensure it loads
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+          } else {
+            // For other formats, download directly
+            const blob = downloadResponse instanceof Blob
+              ? downloadResponse
+              : new Blob([downloadResponse], {
+                type: exportFormat === 'excel'
+                  ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                  : exportFormat === 'csv'
+                    ? 'text/csv'
+                    : 'application/json'
+              });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.download = filename;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showSuccessToast('PDF downloaded (popup was blocked)');
-          } else {
-            showSuccessToast('PDF opened in new tab');
+            URL.revokeObjectURL(url);
+
+            showSuccessToast(`${exportFormat.toUpperCase()} file downloaded successfully`);
           }
-          
-          // Revoke URL after a delay to ensure it loads
-          setTimeout(() => URL.revokeObjectURL(url), 10000);
-        } else {
-          // For other formats, download directly
-          const blob = downloadResponse instanceof Blob
-            ? downloadResponse
-            : new Blob([downloadResponse], { 
-                type: exportFormat === 'excel' 
-                  ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                  : exportFormat === 'csv'
-                  ? 'text/csv'
-                  : 'application/json'
-              });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-          
-          showSuccessToast(`${exportFormat.toUpperCase()} file downloaded successfully`);
-        }
         } catch (downloadError) {
           // Handle download errors
           if (downloadError.response) {
@@ -1416,13 +1416,13 @@ const totalProfit = useMemo(() => {
   const handleEdit = (order) => {
     setSelectedOrder(order);
     setShowEditModal(true);
-    
+
     // Process items to ensure productData is available
     const processedItems = (order.items || []).map(item => ({
       ...item,
       productData: item.product || null // Use the populated product data
     }));
-    
+
     setFormData({
       orderType: order.orderType,
       customer: order.customer?._id || '',
@@ -1433,7 +1433,7 @@ const totalProfit = useMemo(() => {
       orderNumber: order.soNumber || order.orderNumber || order.invoiceNumber || ''
     });
     setAutoGenerateOrderNumber(!(order.soNumber || order.orderNumber || order.invoiceNumber));
-    
+
     // Set the selected customer
     if (order.customer) {
       setSelectedCustomer(order.customer);
@@ -1444,7 +1444,7 @@ const totalProfit = useMemo(() => {
       setCustomerSearchTerm('');
       // Tab title will be updated by useEffect when selectedCustomer changes
     }
-    
+
     setShowEditModal(true);
   };
 
@@ -1533,16 +1533,16 @@ const totalProfit = useMemo(() => {
                 <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #e5e7eb;">
                   <p style="font-weight: 600; color: #059669;">
                     <span class="font-medium">${(() => {
-                      const receivables = order.customer?.pendingBalance || 0;
-                      const advance = order.customer?.advanceBalance || 0;
-                      const netBalance = receivables - advance;
-                      const isPayable = netBalance < 0;
-                      return isPayable ? 'Current Payables:' : 'Current Receivables:';
-                    })()}</span> ${Math.round((() => {
-                      const receivables = order.customer?.pendingBalance || 0;
-                      const advance = order.customer?.advanceBalance || 0;
-                      return Math.abs(receivables - advance);
-                    })())}
+        const receivables = order.customer?.pendingBalance || 0;
+        const advance = order.customer?.advanceBalance || 0;
+        const netBalance = receivables - advance;
+        const isPayable = netBalance < 0;
+        return isPayable ? 'Current Payables:' : 'Current Receivables:';
+      })()}</span> ${Math.round((() => {
+        const receivables = order.customer?.pendingBalance || 0;
+        const advance = order.customer?.advanceBalance || 0;
+        return Math.abs(receivables - advance);
+      })())}
                   </p>
                 </div>
               </div>
@@ -1606,29 +1606,29 @@ const totalProfit = useMemo(() => {
                   </div>
                   <div class="flex text-sm">
                     <span class="text-gray-600">${(() => {
-                      const receivables = order.customer?.pendingBalance || 0;
-                      const advance = order.customer?.advanceBalance || 0;
-                      const netBalance = receivables - advance;
-                      return netBalance < 0 ? 'Payables:' : 'Receivables:';
-                    })()}</span>
+        const receivables = order.customer?.pendingBalance || 0;
+        const advance = order.customer?.advanceBalance || 0;
+        const netBalance = receivables - advance;
+        return netBalance < 0 ? 'Payables:' : 'Receivables:';
+      })()}</span>
                     <span class="font-medium" style="color: #059669;">${Math.round((() => {
-                      const receivables = order.customer?.pendingBalance || 0;
-                      const advance = order.customer?.advanceBalance || 0;
-                      return Math.abs(receivables - advance);
-                    })())}</span>
+        const receivables = order.customer?.pendingBalance || 0;
+        const advance = order.customer?.advanceBalance || 0;
+        return Math.abs(receivables - advance);
+      })())}</span>
                   </div>
                   <div class="flex text-lg font-bold border-t pt-2">
                     <span>Total ${(() => {
-                      const receivables = order.customer?.pendingBalance || 0;
-                      const advance = order.customer?.advanceBalance || 0;
-                      const netBalance = receivables - advance;
-                      return netBalance < 0 ? 'Payables' : 'Receivables';
-                    })()}:</span>
+        const receivables = order.customer?.pendingBalance || 0;
+        const advance = order.customer?.advanceBalance || 0;
+        const netBalance = receivables - advance;
+        return netBalance < 0 ? 'Payables' : 'Receivables';
+      })()}:</span>
                     <span style="color: #dc2626;">${Math.round((order.total || 0) + (() => {
-                      const receivables = order.customer?.pendingBalance || 0;
-                      const advance = order.customer?.advanceBalance || 0;
-                      return Math.abs(receivables - advance);
-                    })())}</span>
+        const receivables = order.customer?.pendingBalance || 0;
+        const advance = order.customer?.advanceBalance || 0;
+        return Math.abs(receivables - advance);
+      })())}</span>
                   </div>
                 </div>
               </div>
@@ -1651,7 +1651,7 @@ const totalProfit = useMemo(() => {
         </body>
       </html>
     `;
-    
+
     const printWindow = window.open('', '_blank');
     printWindow.document.write(printContent);
     printWindow.document.close();
@@ -1669,31 +1669,31 @@ const totalProfit = useMemo(() => {
         selectedCustomer ||
         (order.customerInfo
           ? {
-              displayName: order.customerInfo.name,
-              email: order.customerInfo.email,
-              phone: order.customerInfo.phone,
-              address: order.customerInfo.address,
-              pendingBalance: order.customerInfo.pendingBalance
-            }
+            displayName: order.customerInfo.name,
+            email: order.customerInfo.email,
+            phone: order.customerInfo.phone,
+            address: order.customerInfo.address,
+            pendingBalance: order.customerInfo.pendingBalance
+          }
           : null);
 
       const customerInfo =
         order.customerInfo ||
         (customerData
           ? {
-              name:
-                customerData.displayName ||
-                customerData.businessName ||
-                customerData.name ||
-                'Customer',
-              email: customerData.email || '',
-              phone: customerData.phone || '',
-              address:
-                customerData.address ||
-                customerData.location ||
-                customerData.companyAddress ||
-                ''
-            }
+            name:
+              customerData.displayName ||
+              customerData.businessName ||
+              customerData.name ||
+              'Customer',
+            email: customerData.email || '',
+            phone: customerData.phone || '',
+            address:
+              customerData.address ||
+              customerData.location ||
+              customerData.companyAddress ||
+              ''
+          }
           : null);
 
       const itemsSource = order.items || formData.items || [];
@@ -1719,8 +1719,8 @@ const totalProfit = useMemo(() => {
               item.unitPrice !== undefined
                 ? item.unitPrice
                 : item.rate !== undefined
-                ? item.rate
-                : 0
+                  ? item.rate
+                  : 0
             ) || 0
         };
       });
@@ -1851,66 +1851,67 @@ const totalProfit = useMemo(() => {
 
       {/* Customer Selection and Information Row */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-start gap-4">
-              {/* Customer Selection */}
+        {/* Customer Selection */}
         <div className="w-full lg:w-[500px] lg:flex-shrink-0">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Select Customer
-                    </label>
-                    {selectedCustomer && (
-                      <button
-                        onClick={() => {
-                          setSelectedCustomer(null);
-                          setCustomerSearchTerm('');
-                          setFormData(prev => ({ ...prev, customer: '' }));
-                          
-                          // Reset last prices state when customer is cleared
-                          setOriginalPrices({});
-                          setIsLastPricesApplied(false);
-                          setPriceStatus({});
-                          
-                          // Tab title will be updated by useEffect when selectedCustomer changes
-                        }}
-                        className="text-xs text-blue-600 hover:text-blue-800 underline"
-                        title="Change customer"
-                      >
-                        Change Customer
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex items-center space-x-2">
-                      <label className="text-xs font-normal text-gray-400">Price Type:</label>
-                      <select
-                        value={priceType}
-                        onChange={(e) => setPriceType(e.target.value)}
-                        className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
-                      >
-                        <option value="wholesale">Wholesale</option>
-                        <option value="retail">Retail</option>
-                        <option value="custom">Custom</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <SearchableDropdown
-                  ref={customerSearchRef}
-                  placeholder="Search customers by name, email, or business..."
-                  items={customers || []}
-                  onSelect={handleCustomerSelect}
-                  onSearch={handleCustomerSearch}
-                  displayKey={customerDisplayKey}
-                  selectedItem={selectedCustomer}
-                  loading={customersLoading}
-                  emptyMessage={customerSearchTerm.length > 0 ? "No customers found" : "Start typing to search customers..."}
-                  value={customerSearchTerm}
-                />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Select Customer
+              </label>
+              {selectedCustomer && (
+                <button
+                  onClick={() => {
+                    setSelectedCustomer(null);
+                    setCustomerSearchTerm('');
+                    setFormData(prev => ({ ...prev, customer: '' }));
+
+                    // Reset last prices state when customer is cleared
+                    setOriginalPrices({});
+                    setIsLastPricesApplied(false);
+                    setPriceStatus({});
+
+                    // Tab title will be updated by useEffect when selectedCustomer changes
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  title="Change customer"
+                >
+                  Change Customer
+                </button>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
+                <label className="text-xs font-normal text-gray-400">Price Type:</label>
+                <select
+                  value={priceType}
+                  onChange={(e) => setPriceType(e.target.value)}
+                  className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400"
+                >
+                  <option value="wholesale">Wholesale</option>
+                  <option value="retail">Retail</option>
+                  <option value="distributor">Distributor</option>
+                  <option value="custom">Custom</option>
+                </select>
               </div>
+            </div>
+          </div>
+          <SearchableDropdown
+            ref={customerSearchRef}
+            placeholder="Search customers by name, email, or business..."
+            items={customers || []}
+            onSelect={handleCustomerSelect}
+            onSearch={handleCustomerSearch}
+            displayKey={customerDisplayKey}
+            selectedItem={selectedCustomer}
+            loading={customersLoading}
+            emptyMessage={customerSearchTerm.length > 0 ? "No customers found" : "Start typing to search customers..."}
+            value={customerSearchTerm}
+          />
+        </div>
 
         {/* Customer Information - Right Side */}
         <div className="flex-1">
-                {selectedCustomer ? (
+          {selectedCustomer ? (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
               <div className="flex items-center space-x-3">
                 <User className="h-5 w-5 text-gray-400" />
@@ -1930,13 +1931,12 @@ const totalProfit = useMemo(() => {
                       const isPayable = netBalance < 0;
                       const isReceivable = netBalance > 0;
                       const hasBalance = receivables > 0 || advance > 0;
-                      
+
                       return hasBalance ? (
                         <div className="flex items-center space-x-1">
                           <span className="text-xs text-gray-500">{isPayable ? 'Payables:' : 'Receivables:'}</span>
-                          <span className={`text-sm font-medium ${
-                            isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'
-                          }`}>
+                          <span className={`text-sm font-medium ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'
+                            }`}>
                             ${Math.abs(netBalance).toFixed(2)}
                           </span>
                         </div>
@@ -1944,34 +1944,32 @@ const totalProfit = useMemo(() => {
                     })()}
                     <div className="flex items-center space-x-1">
                       <span className="text-xs text-gray-500">Credit Limit:</span>
-                      <span className={`text-sm font-medium ${
-                        selectedCustomer.creditLimit > 0 ? (
-                          ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0)) >= selectedCustomer.creditLimit * 0.9 
-                            ? 'text-red-600' 
-                            : ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0)) >= selectedCustomer.creditLimit * 0.7
+                      <span className={`text-sm font-medium ${selectedCustomer.creditLimit > 0 ? (
+                        (selectedCustomer.currentBalance || 0) >= selectedCustomer.creditLimit * 0.9
+                          ? 'text-red-600'
+                          : (selectedCustomer.currentBalance || 0) >= selectedCustomer.creditLimit * 0.7
                             ? 'text-yellow-600'
                             : 'text-blue-600'
-                        ) : 'text-gray-600'
-                      }`}>
+                      ) : 'text-gray-600'
+                        }`}>
                         ${(selectedCustomer.creditLimit || 0).toFixed(2)}
                       </span>
-                      {selectedCustomer.creditLimit > 0 && 
-                       ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0)) >= selectedCustomer.creditLimit * 0.9 && (
-                        <span className="text-xs text-red-600 font-bold ml-1">⚠️</span>
-                      )}
+                      {selectedCustomer.creditLimit > 0 &&
+                        (selectedCustomer.currentBalance || 0) >= selectedCustomer.creditLimit * 0.9 && (
+                          <span className="text-xs text-red-600 font-bold ml-1">⚠️</span>
+                        )}
                     </div>
                     <div className="flex items-center space-x-1">
                       <span className="text-xs text-gray-500">Available Credit:</span>
-                      <span className={`text-sm font-medium ${
-                        selectedCustomer.creditLimit > 0 ? (
-                          (selectedCustomer.creditLimit - ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0))) <= selectedCustomer.creditLimit * 0.1
-                            ? 'text-red-600'
-                            : (selectedCustomer.creditLimit - ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0))) <= selectedCustomer.creditLimit * 0.3
+                      <span className={`text-sm font-medium ${selectedCustomer.creditLimit > 0 ? (
+                        (selectedCustomer.creditLimit - (selectedCustomer.currentBalance || 0)) <= selectedCustomer.creditLimit * 0.1
+                          ? 'text-red-600'
+                          : (selectedCustomer.creditLimit - (selectedCustomer.currentBalance || 0)) <= selectedCustomer.creditLimit * 0.3
                             ? 'text-yellow-600'
                             : 'text-green-600'
-                        ) : 'text-gray-600'
-                      }`}>
-                        ${(selectedCustomer.creditLimit - ((selectedCustomer.currentBalance || 0) + (selectedCustomer.pendingBalance || 0))).toFixed(2)}
+                      ) : 'text-gray-600'
+                        }`}>
+                        ${(selectedCustomer.creditLimit - (selectedCustomer.currentBalance || 0)).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -2023,9 +2021,8 @@ const totalProfit = useMemo(() => {
                     </button>
                     {showProfit && (
                       <span
-                        className={`text-sm font-semibold ${
-                          totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}
+                        className={`text-sm font-semibold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}
                       >
                         {formatCurrency(totalProfit || 0)}
                       </span>
@@ -2218,7 +2215,7 @@ const totalProfit = useMemo(() => {
                 const product = item.productData || item.product; // Use stored product data or fallback to product
                 const totalPrice = item.unitPrice * item.quantity;
                 const isLowStock = product?.inventory?.currentStock <= (product?.inventory?.reorderPoint || 0);
-                
+
                 return (
                   <div key={index} className={`py-1 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
                     {/* Desktop Grid Layout */}
@@ -2229,36 +2226,35 @@ const totalProfit = useMemo(() => {
                           {index + 1}
                         </span>
                       </div>
-                      
+
                       {/* Product Name - 5 columns (reduced from 6 to accommodate Cost column when shown) */}
                       <div className={`${showCostPrice && canViewCostPrice ? 'col-span-5' : 'col-span-6'} flex items-center h-8`}>
                         <div className="flex flex-col">
                           <span className="font-medium text-sm truncate">
-                            {product?.isVariant 
+                            {product?.isVariant
                               ? (safeRender(product?.displayName || product?.variantName || product?.name) || 'Unknown Variant')
                               : (safeRender(product?.name) || 'Unknown Product')}
                             {isLowStock && <span className="text-yellow-600 text-xs ml-2">⚠️ Low Stock</span>}
-                          {lastPurchasePrices[item.product?.toString()] !== undefined && 
-                           item.unitPrice < lastPurchasePrices[item.product?.toString()] && (
-                            <span className="text-xs ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold" title={`Sale price below cost! Loss: $${Math.round(lastPurchasePrices[item.product?.toString()] - item.unitPrice)} per unit`}>
-                              ⚠️ Below Cost
-                            </span>
-                          )}
-                          {isLastPricesApplied && priceStatus[item.product?.toString()] && (
-                            <span className={`text-xs ml-2 px-1.5 py-0.5 rounded ${
-                              priceStatus[item.product?.toString()] === 'updated'
+                            {lastPurchasePrices[item.product?.toString()] !== undefined &&
+                              item.unitPrice < lastPurchasePrices[item.product?.toString()] && (
+                                <span className="text-xs ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold" title={`Sale price below cost! Loss: $${Math.round(lastPurchasePrices[item.product?.toString()] - item.unitPrice)} per unit`}>
+                                  ⚠️ Below Cost
+                                </span>
+                              )}
+                            {isLastPricesApplied && priceStatus[item.product?.toString()] && (
+                              <span className={`text-xs ml-2 px-1.5 py-0.5 rounded ${priceStatus[item.product?.toString()] === 'updated'
                                 ? 'bg-green-100 text-green-700'
                                 : priceStatus[item.product?.toString()] === 'unchanged'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {priceStatus[item.product?.toString()] === 'updated'
-                                ? 'Updated'
-                                : priceStatus[item.product?.toString()] === 'unchanged'
-                                ? 'Same Price'
-                                : 'Not in Last Order'}
-                            </span>
-                          )}
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                {priceStatus[item.product?.toString()] === 'updated'
+                                  ? 'Updated'
+                                  : priceStatus[item.product?.toString()] === 'unchanged'
+                                    ? 'Same Price'
+                                    : 'Not in Last Order'}
+                              </span>
+                            )}
                           </span>
                           {product?.isVariant && (
                             <span className="text-xs text-gray-500">
@@ -2267,14 +2263,14 @@ const totalProfit = useMemo(() => {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Stock - 1 column */}
                       <div className="col-span-1">
                         <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center h-8 flex items-center justify-center">
                           {product?.inventory?.currentStock || 0}
                         </span>
                       </div>
-                      
+
                       {/* Quantity - 1 column */}
                       <div className="col-span-1">
                         <input
@@ -2288,7 +2284,7 @@ const totalProfit = useMemo(() => {
                             }
                             setFormData(prev => ({
                               ...prev,
-                              items: prev.items.map((itm, i) => 
+                              items: prev.items.map((itm, i) =>
                                 i === index ? { ...itm, quantity: newQuantity, total: newQuantity * itm.unitPrice } : itm
                               )
                             }));
@@ -2297,18 +2293,18 @@ const totalProfit = useMemo(() => {
                           min="1"
                         />
                       </div>
-                      
+
                       {/* Purchase Price (Cost) - 1 column (conditional) - Between Quantity and Rate */}
                       {showCostPrice && canViewCostPrice && (
                         <div className="col-span-1">
                           <span className="text-sm font-semibold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200 block text-center h-8 flex items-center justify-center" title="Last Purchase Price">
-                            {lastPurchasePrices[item.product?.toString()] !== undefined 
-                              ? `$${Math.round(lastPurchasePrices[item.product?.toString()])}` 
+                            {lastPurchasePrices[item.product?.toString()] !== undefined
+                              ? `$${Math.round(lastPurchasePrices[item.product?.toString()])}`
                               : 'N/A'}
                           </span>
                         </div>
                       )}
-                      
+
                       {/* Rate - 1 column */}
                       <div className="col-span-1">
                         <input
@@ -2318,7 +2314,7 @@ const totalProfit = useMemo(() => {
                           onChange={(e) => {
                             const newPrice = parseFloat(e.target.value) || 0;
                             const costPrice = lastPurchasePrices[item.product?.toString()];
-                            
+
                             // Check if new price is below cost (always check, regardless of showCostPrice)
                             if (costPrice !== undefined && newPrice < costPrice) {
                               const loss = costPrice - newPrice;
@@ -2333,37 +2329,36 @@ const totalProfit = useMemo(() => {
                                 return;
                               }
                             }
-                            
+
                             setFormData(prev => ({
                               ...prev,
-                              items: prev.items.map((itm, i) => 
+                              items: prev.items.map((itm, i) =>
                                 i === index ? { ...itm, unitPrice: newPrice, total: itm.quantity * newPrice } : itm
                               )
                             }));
                           }}
-                          className={`input text-center h-8 ${
-                            lastPurchasePrices[item.product?.toString()] !== undefined && 
-                            item.unitPrice < lastPurchasePrices[item.product?.toString()] 
-                              ? 'border-red-500 bg-red-50' 
-                              : ''
-                          }`}
+                          className={`input text-center h-8 ${lastPurchasePrices[item.product?.toString()] !== undefined &&
+                            item.unitPrice < lastPurchasePrices[item.product?.toString()]
+                            ? 'border-red-500 bg-red-50'
+                            : ''
+                            }`}
                           title={
-                            lastPurchasePrices[item.product?.toString()] !== undefined && 
-                            item.unitPrice < lastPurchasePrices[item.product?.toString()] 
+                            lastPurchasePrices[item.product?.toString()] !== undefined &&
+                              item.unitPrice < lastPurchasePrices[item.product?.toString()]
                               ? `⚠️ WARNING: Sale price ($${Math.round(item.unitPrice)}) is below cost price ($${Math.round(lastPurchasePrices[item.product?.toString()])})`
                               : ''
                           }
                           min="0"
                         />
                       </div>
-                      
+
                       {/* Total - 1 column */}
                       <div className="col-span-1">
                         <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center h-8 flex items-center justify-center">
                           {Math.round(totalPrice)}
                         </span>
                       </div>
-                      
+
                       {/* Delete Button - 1 column */}
                       <div className="col-span-1 min-w-0">
                         <LoadingButton
@@ -2385,12 +2380,12 @@ const totalProfit = useMemo(() => {
                             {safeRender(product?.name) || 'Unknown Product'}
                           </h5>
                           {isLowStock && <span className="text-yellow-600 text-xs">⚠️ Low Stock</span>}
-                          {lastPurchasePrices[item.product?.toString()] !== undefined && 
-                           item.unitPrice < lastPurchasePrices[item.product?.toString()] && (
-                            <span className="text-xs ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold">
-                              ⚠️ Below Cost
-                            </span>
-                          )}
+                          {lastPurchasePrices[item.product?.toString()] !== undefined &&
+                            item.unitPrice < lastPurchasePrices[item.product?.toString()] && (
+                              <span className="text-xs ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold">
+                                ⚠️ Below Cost
+                              </span>
+                            )}
                         </div>
                         <LoadingButton
                           onClick={() => handleRemoveItem(index)}
@@ -2423,7 +2418,7 @@ const totalProfit = useMemo(() => {
                               }
                               setFormData(prev => ({
                                 ...prev,
-                                items: prev.items.map((itm, i) => 
+                                items: prev.items.map((itm, i) =>
                                   i === index ? { ...itm, quantity: newQuantity, total: newQuantity * itm.unitPrice } : itm
                                 )
                               }));
@@ -2441,7 +2436,7 @@ const totalProfit = useMemo(() => {
                             onChange={(e) => {
                               const newPrice = parseFloat(e.target.value) || 0;
                               const costPrice = lastPurchasePrices[item.product?.toString()];
-                              
+
                               if (costPrice !== undefined && newPrice < costPrice) {
                                 const loss = costPrice - newPrice;
                                 const lossPercent = ((loss / costPrice) * 100).toFixed(1);
@@ -2455,20 +2450,19 @@ const totalProfit = useMemo(() => {
                                   return;
                                 }
                               }
-                              
+
                               setFormData(prev => ({
                                 ...prev,
-                                items: prev.items.map((itm, i) => 
+                                items: prev.items.map((itm, i) =>
                                   i === index ? { ...itm, unitPrice: newPrice, total: itm.quantity * newPrice } : itm
                                 )
                               }));
                             }}
-                            className={`input text-center h-8 text-sm w-full ${
-                              lastPurchasePrices[item.product?.toString()] !== undefined && 
-                              item.unitPrice < lastPurchasePrices[item.product?.toString()] 
-                                ? 'border-red-500 bg-red-50' 
-                                : ''
-                            }`}
+                            className={`input text-center h-8 text-sm w-full ${lastPurchasePrices[item.product?.toString()] !== undefined &&
+                              item.unitPrice < lastPurchasePrices[item.product?.toString()]
+                              ? 'border-red-500 bg-red-50'
+                              : ''
+                              }`}
                             min="0"
                           />
                         </div>
@@ -2485,8 +2479,8 @@ const totalProfit = useMemo(() => {
                         <div>
                           <p className="text-xs text-gray-500 mb-1">Last Purchase Price</p>
                           <p className="text-sm font-semibold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200">
-                            {lastPurchasePrices[item.product?.toString()] !== undefined 
-                              ? `$${Math.round(lastPurchasePrices[item.product?.toString()])}` 
+                            {lastPurchasePrices[item.product?.toString()] !== undefined
+                              ? `$${Math.round(lastPurchasePrices[item.product?.toString()])}`
                               : 'N/A'}
                           </p>
                         </div>
@@ -2498,7 +2492,7 @@ const totalProfit = useMemo(() => {
             </div>
           )}
         </div>
-            </div>
+      </div>
 
       {/* Sales Order Details */}
       {formData.items.length > 0 && !showEditModal && (
@@ -2743,7 +2737,7 @@ const totalProfit = useMemo(() => {
 
       {/* Edit Sales Order Modal */}
       {showEditModal && selectedOrder && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -2756,7 +2750,7 @@ const totalProfit = useMemo(() => {
             }
           }}
         >
-          <div 
+          <div
             className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
@@ -2894,21 +2888,21 @@ const totalProfit = useMemo(() => {
                         onFocus={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
                           e.stopPropagation();
-                          
+
                           if (!modalProductsData?.length) return;
-                          
+
                           const maxIndex = Math.min(modalProductsData.length - 1, 4); // Max 5 suggestions
-                          
+
                           switch (e.key) {
                             case 'ArrowDown':
                               e.preventDefault();
-                              setModalSelectedSuggestionIndex(prev => 
+                              setModalSelectedSuggestionIndex(prev =>
                                 prev < maxIndex ? prev + 1 : 0
                               );
                               break;
                             case 'ArrowUp':
                               e.preventDefault();
-                              setModalSelectedSuggestionIndex(prev => 
+                              setModalSelectedSuggestionIndex(prev =>
                                 prev > 0 ? prev - 1 : maxIndex
                               );
                               break;
@@ -2921,7 +2915,7 @@ const totalProfit = useMemo(() => {
                                 setQuantity(1);
                                 setModalProductSearchTerm(product.name);
                                 setModalSelectedSuggestionIndex(-1);
-                                
+
                                 // Move focus to quantity field after selecting product
                                 setTimeout(() => {
                                   const quantityInput = document.querySelector('.modal-quantity-input');
@@ -2946,51 +2940,50 @@ const totalProfit = useMemo(() => {
                           {modalProductsData
                             .slice(0, 5)
                             .map((product, index) => (
-                            <div
-                              key={product._id}
-                              onClick={() => {
-                                setModalSelectedProduct(product);
-                                setCustomRate(product.pricing?.retail || 0);
-                                setQuantity(1);
-                                setModalProductSearchTerm(product.name);
-                                setModalSelectedSuggestionIndex(-1);
-                                
-                                // Move focus to quantity field after selecting product
-                                setTimeout(() => {
-                                  const quantityInput = document.querySelector('.modal-quantity-input');
-                                  if (quantityInput) {
-                                    quantityInput.focus();
-                                  }
-                                }, 100);
-                              }}
-                              className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                                modalSelectedSuggestionIndex === index 
-                                  ? 'bg-blue-100 border-blue-200' 
+                              <div
+                                key={product._id}
+                                onClick={() => {
+                                  setModalSelectedProduct(product);
+                                  setCustomRate(product.pricing?.retail || 0);
+                                  setQuantity(1);
+                                  setModalProductSearchTerm(product.name);
+                                  setModalSelectedSuggestionIndex(-1);
+
+                                  // Move focus to quantity field after selecting product
+                                  setTimeout(() => {
+                                    const quantityInput = document.querySelector('.modal-quantity-input');
+                                    if (quantityInput) {
+                                      quantityInput.focus();
+                                    }
+                                  }, 100);
+                                }}
+                                className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${modalSelectedSuggestionIndex === index
+                                  ? 'bg-blue-100 border-blue-200'
                                   : 'hover:bg-gray-100'
-                              }`}
-                            >
-                              <div className="flex flex-col">
-                                <div className="font-medium">
-                                  {product.isVariant 
-                                    ? (product.displayName || product.variantName || product.name)
-                                    : product.name}
-                                </div>
-                                {product.isVariant && (
-                                  <div className="text-xs text-gray-500">
-                                    {product.variantType}: {product.variantValue}
+                                  }`}
+                              >
+                                <div className="flex flex-col">
+                                  <div className="font-medium">
+                                    {product.isVariant
+                                      ? (product.displayName || product.variantName || product.name)
+                                      : product.name}
                                   </div>
-                                )}
+                                  {product.isVariant && (
+                                    <div className="text-xs text-gray-500">
+                                      {product.variantType}: {product.variantValue}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  Stock: {product.inventory?.currentStock || 0} |
+                                  Price: {product.pricing?.retail || 0}
+                                </div>
                               </div>
-                              <div className="text-sm text-gray-600">
-                                Stock: {product.inventory?.currentStock || 0} | 
-                                Price: {product.pricing?.retail || 0}
-                              </div>
-                            </div>
-                          ))}
+                            ))}
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Quantity - 2 columns */}
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
@@ -3003,7 +2996,7 @@ const totalProfit = useMemo(() => {
                         placeholder="1"
                       />
                     </div>
-                    
+
                     {/* Sale Price Per Unit - 2 columns */}
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">Sale Price Per Unit</label>
@@ -3017,7 +3010,7 @@ const totalProfit = useMemo(() => {
                         placeholder="0.00"
                       />
                     </div>
-                    
+
                     {/* Add Button - 2 columns */}
                     <div className="col-span-2">
                       <button
@@ -3061,7 +3054,7 @@ const totalProfit = useMemo(() => {
                       <div className="font-medium text-gray-900 min-w-[200px] mr-4">
                         {item.productData?.name || 'Unknown Product'}
                       </div>
-                      
+
                       {/* Quantity, Price, Total and Delete - Grouped Together */}
                       <div className="flex items-center space-x-3 ml-auto">
                         {/* Quantity Field */}
@@ -3081,7 +3074,7 @@ const totalProfit = useMemo(() => {
                             className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                           />
                         </div>
-                        
+
                         {/* Sale Price Field */}
                         <div className="flex items-center space-x-1">
                           <label className="text-xs text-gray-600">× Sale Price:</label>
@@ -3100,7 +3093,7 @@ const totalProfit = useMemo(() => {
                             className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                           />
                         </div>
-                        
+
                         {/* Total Display */}
                         <div className="flex items-center space-x-1">
                           <label className="text-xs text-gray-600">=</label>
@@ -3108,7 +3101,7 @@ const totalProfit = useMemo(() => {
                             {item.subtotal?.toFixed(2) || (item.quantity * item.unitPrice).toFixed(2)}
                           </span>
                         </div>
-                        
+
                         {/* Remove Button */}
                         <button
                           type="button"
@@ -3171,24 +3164,17 @@ const totalProfit = useMemo(() => {
             {/* Date Range */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                From Date
+                Date Range
               </label>
-              <input
-                type="date"
-                value={filters.fromDate}
-                onChange={(e) => handleFilterChange('fromDate', e.target.value)}
-                className="input h-[42px]"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                To Date
-              </label>
-              <input
-                type="date"
-                value={filters.toDate}
-                onChange={(e) => handleFilterChange('toDate', e.target.value)}
-                className="input h-[42px]"
+              <DateFilter
+                startDate={filters.fromDate}
+                endDate={filters.toDate}
+                onDateChange={(start, end) => {
+                  handleFilterChange('fromDate', start);
+                  handleFilterChange('toDate', end);
+                }}
+                compact={true}
+                showPresets={true}
               />
             </div>
 
@@ -3447,15 +3433,14 @@ const totalProfit = useMemo(() => {
                     <p><span className="font-medium">SO Number:</span> {selectedOrder.soNumber}</p>
                     <p><span className="font-medium">Date:</span> {formatDate(selectedOrder.createdAt)}</p>
                     <p><span className="font-medium">Order Type:</span> {selectedOrder.orderType || 'Standard'}</p>
-                    <p><span className="font-medium">Status:</span> 
-                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                        selectedOrder.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                    <p><span className="font-medium">Status:</span>
+                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedOrder.status === 'draft' ? 'bg-gray-100 text-gray-800' :
                         selectedOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                        selectedOrder.status === 'partially_invoiced' ? 'bg-yellow-100 text-yellow-800' :
-                        selectedOrder.status === 'fully_invoiced' ? 'bg-green-100 text-green-800' :
-                        selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                          selectedOrder.status === 'partially_invoiced' ? 'bg-yellow-100 text-yellow-800' :
+                            selectedOrder.status === 'fully_invoiced' ? 'bg-green-100 text-green-800' :
+                              selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                        }`}>
                         {selectedOrder.status === 'draft' ? 'Pending' : selectedOrder.status.replace('_', ' ')}
                       </span>
                     </p>
@@ -3691,7 +3676,7 @@ const totalProfit = useMemo(() => {
                 <XCircle className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div className="space-y-6">
                 {/* Export Format */}
@@ -3714,7 +3699,7 @@ const totalProfit = useMemo(() => {
                         <div className="text-sm text-gray-500">Print-ready format</div>
                       </div>
                     </label>
-                    
+
                     <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                       <input
                         type="radio"
@@ -3729,7 +3714,7 @@ const totalProfit = useMemo(() => {
                         <div className="text-sm text-gray-500">Spreadsheet format</div>
                       </div>
                     </label>
-                    
+
                     <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                       <input
                         type="radio"
@@ -3744,7 +3729,7 @@ const totalProfit = useMemo(() => {
                         <div className="text-sm text-gray-500">Comma-separated values</div>
                       </div>
                     </label>
-                    
+
                     <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                       <input
                         type="radio"

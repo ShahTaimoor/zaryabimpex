@@ -133,7 +133,12 @@ class DiscountService {
       if (type) query.type = type;
       if (isActive !== undefined) query.isActive = isActive;
 
-      // Date range filters
+      // Date range filter - use dateFilter from middleware if available (Pakistan timezone)
+      if (filters.dateFilter && Object.keys(filters.dateFilter).length > 0) {
+        Object.assign(query, filters.dateFilter);
+      }
+
+      // Date range filters for discount validity (validFrom/validUntil)
       if (validFrom || validUntil) {
         query.validFrom = {};
         if (validFrom) query.validFrom.$gte = validFrom;

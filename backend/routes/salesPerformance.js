@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param, query } = require('express-validator');
 const { auth, requirePermission } = require('../middleware/auth');
 const { handleValidationErrors, sanitizeRequest } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const salesPerformanceService = require('../services/salesPerformanceService');
 const SalesPerformance = require('../models/SalesPerformance'); // Still needed for static methods
 const salesPerformanceRepository = require('../repositories/SalesPerformanceRepository');
@@ -88,14 +89,21 @@ router.get('/', [
   query('reportType').optional({ checkFalsy: true }).isIn(['top_products', 'top_customers', 'top_sales_reps', 'comprehensive']),
   query('status').optional({ checkFalsy: true }).isIn(['generating', 'completed', 'failed', 'archived']),
   query('generatedBy').optional({ checkFalsy: true }).isMongoId(),
-  query('startDate').optional({ checkFalsy: true }).isISO8601(),
-  query('endDate').optional({ checkFalsy: true }).isISO8601(),
+  ...validateDateParams,
   query('sortBy').optional({ checkFalsy: true }).isIn(['generatedAt', 'reportName', 'status', 'viewCount']),
   query('sortOrder').optional({ checkFalsy: true }).isIn(['asc', 'desc']),
   handleValidationErrors,
+  processDateFilter('generatedAt'),
 ], async (req, res) => {
   try {
-    const result = await salesPerformanceService.getSalesPerformanceReports(req.query);
+    // Merge date filter from middleware if present (for Pakistan timezone)
+    const queryParams = { ...req.query };
+    if (req.dateRange) {
+      queryParams.startDate = req.dateRange.startDate || undefined;
+      queryParams.endDate = req.dateRange.endDate || undefined;
+    }
+    
+    const result = await salesPerformanceService.getSalesPerformanceReports(queryParams);
     
     res.json(result);
   } catch (error) {

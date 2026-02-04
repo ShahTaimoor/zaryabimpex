@@ -145,11 +145,11 @@ class CustomerRepository extends BaseRepository {
     if (cleanOptions.sort !== undefined) {
       // Validate sort before passing
       const sort = cleanOptions.sort;
-      const isValidSort = 
+      const isValidSort =
         (typeof sort === 'string' && sort.trim().length > 0) ||
         (typeof sort === 'object' && sort !== null && !Array.isArray(sort) && Object.keys(sort).length > 0) ||
         (Array.isArray(sort) && sort.length > 0);
-      
+
       if (!isValidSort) {
         // Remove invalid sort
         delete cleanOptions.sort;
@@ -193,7 +193,7 @@ class CustomerRepository extends BaseRepository {
    * @returns {Promise<boolean>}
    */
   async emailExists(email, excludeId = null) {
-    if (!email) return false;
+    if (!email || !email.trim()) return false;
     const query = { email: email.toLowerCase().trim() };
     if (excludeId) {
       query._id = { $ne: excludeId };
@@ -208,7 +208,7 @@ class CustomerRepository extends BaseRepository {
    * @returns {Promise<boolean>}
    */
   async phoneExists(phone, excludeId = null) {
-    if (!phone) return false;
+    if (!phone || !phone.trim()) return false;
     const query = { phone: phone.trim() };
     if (excludeId) {
       query._id = { $ne: excludeId };

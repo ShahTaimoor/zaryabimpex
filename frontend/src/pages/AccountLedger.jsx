@@ -22,6 +22,8 @@ import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { handleApiError } from '../utils/errorHandler';
 import toast from 'react-hot-toast';
+import DateFilter from '../components/DateFilter';
+import { getCurrentDatePakistan, getDateDaysAgo } from '../utils/dateUtils';
 
 const AccountTypeBadge = ({ type }) => {
   const config = {
@@ -44,13 +46,9 @@ const AccountTypeBadge = ({ type }) => {
 const AccountLedger = () => {
   // Function to get default date range (one month difference)
   const getDefaultDateRange = () => {
-    const today = new Date();
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(today.getMonth() - 1);
-
     return {
-      startDate: oneMonthAgo.toISOString().split('T')[0], // Format as YYYY-MM-DD
-      endDate: today.toISOString().split('T')[0] // Format as YYYY-MM-DD
+      startDate: getDateDaysAgo(30),
+      endDate: getCurrentDatePakistan()
     };
   };
 
@@ -394,26 +392,17 @@ const AccountLedger = () => {
               </div>
               <div className="card-content">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Date
-                    </label>
-                    <input
-                      type="date"
-                      value={filters.startDate}
-                      onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                      className="input"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Date
-                    </label>
-                    <input
-                      type="date"
-                      value={filters.endDate}
-                      onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                      className="input"
+                  <div className="col-span-2">
+                    <DateFilter
+                      startDate={filters.startDate}
+                      endDate={filters.endDate}
+                      onDateChange={(start, end) => {
+                        handleFilterChange('startDate', start || '');
+                        handleFilterChange('endDate', end || '');
+                      }}
+                      compact={true}
+                      showPresets={true}
+                      className="w-full"
                     />
                   </div>
                   <div>

@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param, query } = require('express-validator');
 const { auth, requirePermission } = require('../middleware/auth');
 const { handleValidationErrors, sanitizeRequest } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const Sales = require('../models/Sales');
 const SalesOrder = require('../models/SalesOrder');
 const PurchaseInvoice = require('../models/PurchaseInvoice');
@@ -156,6 +157,7 @@ router.get('/', [
     })
     .withMessage('Amount must be a positive number'),
   handleValidationErrors,
+  processDateFilter('returnDate'),
 ], async (req, res) => {
   try {
     const {
@@ -164,23 +166,26 @@ router.get('/', [
       status,
       returnType,
       customer,
-      startDate,
-      endDate,
       priority,
       search
     } = req.query;
 
-    const result = await returnManagementService.getReturns({
+    const queryParams = {
       page,
       limit,
       status,
       returnType,
       customer,
-      startDate,
-      endDate,
       priority,
       search
-    });
+    };
+    
+    // Merge date filter from middleware if present (for Pakistan timezone)
+    if (req.dateFilter && Object.keys(req.dateFilter).length > 0) {
+      queryParams.dateFilter = req.dateFilter;
+    }
+
+    const result = await returnManagementService.getReturns(queryParams);
 
     // Transform names to uppercase
     result.returns.forEach(returnItem => {

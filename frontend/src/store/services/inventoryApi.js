@@ -96,6 +96,26 @@ export const inventoryApi = api.injectEndpoints({
         { type: 'Orders', id: 'PO_LIST' },
       ],
     }),
+    // Stock Ledger
+    getStockLedger: builder.query({
+      query: (params) => {
+        // Filter out empty string parameters
+        const filteredParams = {};
+        Object.keys(params || {}).forEach(key => {
+          const value = params[key];
+          // Only include non-empty values (skip empty strings, null, undefined)
+          if (value !== '' && value !== null && value !== undefined) {
+            filteredParams[key] = value;
+          }
+        });
+        return {
+          url: 'stock-ledger',
+          method: 'get',
+          params: filteredParams,
+        };
+      },
+      providesTags: [{ type: 'StockLedger', id: 'LIST' }],
+    }),
     // Stock Movements
     getStockMovements: builder.query({
       query: (params) => {
@@ -285,6 +305,7 @@ export const {
   useGetLowStockAlertsQuery,
   useGetAlertSummaryQuery,
   useGeneratePurchaseOrdersMutation,
+  useGetStockLedgerQuery,
   useGetStockMovementsQuery,
   useGetStockMovementStatsQuery,
   useCreateStockMovementMutation,

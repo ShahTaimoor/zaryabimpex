@@ -172,7 +172,7 @@ class CustomerService {
    */
   async getCustomers(queryParams) {
     const getAllCustomers = queryParams.all === 'true' || queryParams.all === true ||
-                          (queryParams.limit && parseInt(queryParams.limit) >= 999999);
+      (queryParams.limit && parseInt(queryParams.limit) >= 999999);
 
     const page = getAllCustomers ? 1 : (parseInt(queryParams.page) || 1);
     const limit = getAllCustomers ? 999999 : (parseInt(queryParams.limit) || 20);
@@ -258,7 +258,7 @@ class CustomerService {
     const { openingBalance, useTransaction = true } = options;
 
     // Check if email already exists
-    if (customerData.email) {
+    if (customerData.email && customerData.email.trim()) {
       const emailExists = await customerRepository.emailExists(customerData.email);
       if (emailExists) {
         throw new Error('A customer with this email already exists');
@@ -266,7 +266,7 @@ class CustomerService {
     }
 
     // Check if phone already exists
-    if (customerData.phone) {
+    if (customerData.phone && customerData.phone.trim()) {
       const phoneExists = await customerRepository.phoneExists(customerData.phone);
       if (phoneExists) {
         throw new Error('A customer with this phone number already exists');
@@ -288,12 +288,29 @@ class CustomerService {
       lastModifiedBy: userId
     };
 
+    // Sanitize data: remove empty strings for optional unique fields
+    if (dataWithUser.email === '' || (typeof dataWithUser.email === 'string' && !dataWithUser.email.trim())) {
+      dataWithUser.email = undefined;
+    } else if (dataWithUser.email) {
+      dataWithUser.email = dataWithUser.email.trim().toLowerCase();
+    }
+
+    if (dataWithUser.phone === '' || (typeof dataWithUser.phone === 'string' && !dataWithUser.phone.trim())) {
+      dataWithUser.phone = undefined;
+    } else if (dataWithUser.phone) {
+      dataWithUser.phone = dataWithUser.phone.trim();
+    }
+
+    if (dataWithUser.businessName) {
+      dataWithUser.businessName = dataWithUser.businessName.trim();
+    }
+
     // Wrap the transaction operation with retry logic for WriteConflict errors
     const customerId = await retryMongoTransaction(async () => {
       return await runWithOptionalTransaction(async (session) => {
         let newCustomer = new Customer(dataWithUser);
         applyOpeningBalance(newCustomer, parsedOpeningBalance);
-        
+
         // Sync ledger account first (this will save the customer with the ledger account)
         // This ensures the customer is only saved once, after the ledger account is set
         await ledgerAccountService.syncCustomerLedgerAccount(newCustomer, session ? {
@@ -339,7 +356,7 @@ class CustomerService {
     const { openingBalance, useTransaction = true } = options;
 
     // Check if email already exists (excluding current customer)
-    if (updateData.email) {
+    if (updateData.email && updateData.email.trim()) {
       const emailExists = await customerRepository.emailExists(updateData.email, id);
       if (emailExists) {
         throw new Error('A customer with this email already exists');
@@ -347,7 +364,7 @@ class CustomerService {
     }
 
     // Check if phone already exists (excluding current customer)
-    if (updateData.phone) {
+    if (updateData.phone && updateData.phone.trim()) {
       const phoneExists = await customerRepository.phoneExists(updateData.phone, id);
       if (phoneExists) {
         throw new Error('A customer with this phone number already exists');
@@ -377,6 +394,20 @@ class CustomerService {
           ...updateData,
           lastModifiedBy: userId
         });
+
+        // Sanitize data: remove empty strings for optional unique fields
+        if (customer.email === '' || (typeof customer.email === 'string' && !customer.email.trim())) {
+          customer.email = undefined;
+        } else if (customer.email) {
+          customer.email = customer.email.trim().toLowerCase();
+        }
+
+        if (customer.phone === '' || (typeof customer.phone === 'string' && !customer.phone.trim())) {
+          customer.phone = undefined;
+        } else if (customer.phone) {
+          customer.phone = customer.phone.trim();
+        }
+
         applyOpeningBalance(customer, parsedOpeningBalance);
 
         await customer.save(session ? { session } : undefined);
@@ -443,7 +474,7 @@ class CustomerService {
         customer: id,
         status: { $in: ['pending', 'confirmed', 'processing'] }
       });
-      
+
       if (pendingOrders > 0) {
         throw new Error('Cannot delete customer with pending orders. Please cancel or complete orders first.');
       }
@@ -457,7 +488,7 @@ class CustomerService {
       customer.deletedBy = userId;
       customer.deletionReason = reason;
       customer.status = 'inactive'; // Also set status to inactive
-      
+
       await customer.save(session ? { session } : undefined);
 
       // Deactivate ledger account
@@ -530,7 +561,7 @@ class CustomerService {
    */
   async getDeletedCustomers(queryParams = {}) {
     const filter = { isDeleted: true };
-    
+
     if (queryParams.search) {
       filter.$or = [
         { name: { $regex: queryParams.search, $options: 'i' } },
@@ -617,10 +648,10 @@ class CustomerService {
 
       // Calculate currentBalance to match account ledger closingBalance
       // currentBalance = pendingBalance - advanceBalance (net balance)
-      const currentBalance = customer.currentBalance !== undefined 
-        ? customer.currentBalance 
+      const currentBalance = customer.currentBalance !== undefined
+        ? customer.currentBalance
         : (customer.pendingBalance || 0) - (customer.advanceBalance || 0);
-      
+
       return {
         _id: customer._id,
         accountName: customer.businessName || customer.name,

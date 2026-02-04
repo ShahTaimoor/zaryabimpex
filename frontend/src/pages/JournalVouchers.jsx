@@ -13,8 +13,10 @@ import { useGetAccountsQuery } from '../store/services/chartOfAccountsApi';
 import { useGetJournalVouchersQuery, useCreateJournalVoucherMutation } from '../store/services/journalVouchersApi';
 import { handleApiError } from '../utils/errorHandler';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import DateFilter from '../components/DateFilter';
+import { getCurrentDatePakistan } from '../utils/dateUtils';
 
-const todayISO = () => new Date().toISOString().split('T')[0];
+const todayISO = () => getCurrentDatePakistan();
 
 const createEmptyEntry = () => ({
   accountId: '',
@@ -527,26 +529,17 @@ export const JournalVouchers = () => {
         <div className="card-content">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 w-full">
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  From Date
-                </label>
-                <input
-                  type="date"
-                  value={filters.fromDate}
-                  onChange={(e) => handleFilterChange('fromDate', e.target.value)}
-                  className="input"
-                />
-              </div>
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                  To Date
-                </label>
-                <input
-                  type="date"
-                  value={filters.toDate}
-                  onChange={(e) => handleFilterChange('toDate', e.target.value)}
-                  className="input"
+              <div className="sm:col-span-2 md:col-span-2">
+                <DateFilter
+                  startDate={filters.fromDate}
+                  endDate={filters.toDate}
+                  onDateChange={(start, end) => {
+                    handleFilterChange('fromDate', start || '');
+                    handleFilterChange('toDate', end || '');
+                  }}
+                  compact={true}
+                  showPresets={true}
+                  className="w-full"
                 />
               </div>
               <div className="sm:col-span-2 md:col-span-2">

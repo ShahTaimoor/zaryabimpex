@@ -29,14 +29,8 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../components/ComponentRegistry';
 import PrintModal from '../components/PrintModal';
-
-// Helper function to get local date in YYYY-MM-DD format (avoids timezone issues with toISOString)
-const getLocalDateString = (date = new Date()) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+import DateFilter from '../components/DateFilter';
+import { getCurrentDatePakistan } from '../utils/dateUtils';
 
 const StatusBadge = ({ status }) => {
   const statusConfig = {
@@ -130,7 +124,7 @@ const PurchaseInvoiceCard = ({ invoice, onEdit, onDelete, onConfirm, onView, onP
 export const PurchaseInvoices = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const today = getLocalDateString();
+  const today = getCurrentDatePakistan();
   const [dateFrom, setDateFrom] = useState(today); // Today
   const [dateTo, setDateTo] = useState(today); // Today
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -492,29 +486,17 @@ export const PurchaseInvoices = () => {
               </div>
             </div>
 
-            {/* Date From */}
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                From Date
-              </label>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="input h-[42px] text-sm sm:text-base"
-              />
-            </div>
-
-            {/* Date To */}
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                To Date
-              </label>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="input h-[42px] text-sm sm:text-base"
+            {/* Date Filter */}
+            <div className="col-span-2">
+              <DateFilter
+                startDate={dateFrom}
+                endDate={dateTo}
+                onDateChange={(start, end) => {
+                  setDateFrom(start || '');
+                  setDateTo(end || '');
+                }}
+                compact={true}
+                showPresets={true}
               />
             </div>
 

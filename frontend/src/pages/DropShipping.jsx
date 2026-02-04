@@ -57,9 +57,9 @@ const DropShipping = () => {
   // Queries - Always enabled so users can see options when typing
   const [searchSuppliers] = useLazySearchSuppliersQuery();
   const { data: activeSuppliersData } = useGetActiveSuppliersQuery(undefined, { skip: supplierSearchTerm.length > 0 });
-  
+
   const [suppliersData, setSuppliersData] = React.useState(null);
-  
+
   React.useEffect(() => {
     if (supplierSearchTerm.length > 0) {
       searchSuppliers(supplierSearchTerm).then(({ data }) => {
@@ -80,7 +80,7 @@ const DropShipping = () => {
 
   const { data: productsData } = useGetProductsQuery(
     { search: productSearchTerm, limit: 50 },
-    { 
+    {
       skip: productSearchTerm.length === 0,
       keepPreviousData: true,
     }
@@ -122,7 +122,7 @@ const DropShipping = () => {
     setSelectedProduct(product);
     setProductSearchTerm(product.name);
     setSupplierRate(product.pricing?.cost || 0);
-    
+
     // Set customer rate based on rate type
     if (rateType === 'retail') {
       setCustomerRate(product.pricing?.retail || 0);
@@ -168,11 +168,11 @@ const DropShipping = () => {
     };
 
     setCartItems([...cartItems, newItem]);
-    
+
     // Update totals
     const newSupplierTotal = [...cartItems, newItem].reduce((sum, item) => sum + item.supplierAmount, 0);
     const newCustomerTotal = [...cartItems, newItem].reduce((sum, item) => sum + item.customerAmount, 0);
-    
+
     setSupplierInvoiceAmount(newSupplierTotal);
     setCustomerInvoiceAmount(newCustomerTotal);
 
@@ -187,11 +187,11 @@ const DropShipping = () => {
   const handleRemoveItem = (index) => {
     const updatedItems = cartItems.filter((_, i) => i !== index);
     setCartItems(updatedItems);
-    
+
     // Update totals
     const newSupplierTotal = updatedItems.reduce((sum, item) => sum + item.supplierAmount, 0);
     const newCustomerTotal = updatedItems.reduce((sum, item) => sum + item.customerAmount, 0);
-    
+
     setSupplierInvoiceAmount(newSupplierTotal);
     setCustomerInvoiceAmount(newCustomerTotal);
   };
@@ -200,7 +200,7 @@ const DropShipping = () => {
     const updatedItems = cartItems.map((item, i) => {
       if (i === index) {
         const updatedItem = { ...item, [field]: value };
-        
+
         // Recalculate amounts based on the changed field
         if (field === 'quantity' || field === 'supplierRate') {
           updatedItem.supplierAmount = updatedItem.quantity * updatedItem.supplierRate;
@@ -208,24 +208,24 @@ const DropShipping = () => {
         if (field === 'quantity' || field === 'customerRate') {
           updatedItem.customerAmount = updatedItem.quantity * updatedItem.customerRate;
         }
-        
+
         // Recalculate profit
         updatedItem.profitAmount = updatedItem.customerAmount - updatedItem.supplierAmount;
-        updatedItem.profitMargin = updatedItem.customerAmount > 0 
-          ? (updatedItem.profitAmount / updatedItem.customerAmount) * 100 
+        updatedItem.profitMargin = updatedItem.customerAmount > 0
+          ? (updatedItem.profitAmount / updatedItem.customerAmount) * 100
           : 0;
-        
+
         return updatedItem;
       }
       return item;
     });
-    
+
     setCartItems(updatedItems);
-    
+
     // Update totals
     const newSupplierTotal = updatedItems.reduce((sum, item) => sum + item.supplierAmount, 0);
     const newCustomerTotal = updatedItems.reduce((sum, item) => sum + item.customerAmount, 0);
-    
+
     setSupplierInvoiceAmount(newSupplierTotal);
     setCustomerInvoiceAmount(newCustomerTotal);
   };
@@ -294,7 +294,7 @@ const DropShipping = () => {
     setSupplierDescription('');
     setSupplierInvoiceAmount(0);
     setSupplierPaidAmount(0);
-    
+
     setCustomer(null);
     setCustomerSearchTerm('');
     setCustomerBalance(0);
@@ -303,13 +303,13 @@ const DropShipping = () => {
     setCustomerInvoiceAmount(0);
     setCustomerReceivedAmount(0);
     setCustomerAmount(0);
-    
+
     setSelectedProduct(null);
     setProductSearchTerm('');
     setQuantity(1);
     setSupplierRate('');
     setCustomerRate('');
-    
+
     setCartItems([]);
     setTransactionDate(new Date().toISOString().split('T')[0]);
   };
@@ -435,18 +435,17 @@ const DropShipping = () => {
                   const hasBalance = Math.abs(netBalance) > 0;
                   const currentBalance = customer.currentBalance || 0;
                   const pendingBalance = customer.pendingBalance || 0;
-                  const totalOutstanding = currentBalance + pendingBalance;
+                  const totalOutstanding = currentBalance;
                   const creditLimit = customer.creditLimit || 0;
                   const availableCredit = creditLimit > 0 ? creditLimit - totalOutstanding : 0;
-                  
+
                   return (
                     <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
                       {hasBalance && (
                         <div className="flex items-center space-x-1 whitespace-nowrap">
                           <span className="text-xs text-gray-500">{isPayable ? 'Payables:' : 'Receivables:'}</span>
-                          <span className={`text-sm font-medium ${
-                            isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'
-                          }`}>
+                          <span className={`text-sm font-medium ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'
+                            }`}>
                             ${Math.abs(netBalance).toFixed(2)}
                           </span>
                         </div>
@@ -455,13 +454,12 @@ const DropShipping = () => {
                         <>
                           <div className="flex items-center space-x-1 whitespace-nowrap">
                             <span className="text-xs text-gray-500">Credit Limit:</span>
-                            <span className={`text-sm font-medium ${
-                              totalOutstanding >= creditLimit * 0.9 
-                                ? 'text-red-600' 
+                            <span className={`text-sm font-medium ${totalOutstanding >= creditLimit * 0.9
+                                ? 'text-red-600'
                                 : totalOutstanding >= creditLimit * 0.7
-                                ? 'text-yellow-600'
-                                : 'text-blue-600'
-                            }`}>
+                                  ? 'text-yellow-600'
+                                  : 'text-blue-600'
+                              }`}>
                               ${creditLimit.toFixed(2)}
                             </span>
                             {totalOutstanding >= creditLimit * 0.9 && (
@@ -470,13 +468,12 @@ const DropShipping = () => {
                           </div>
                           <div className="flex items-center space-x-1 whitespace-nowrap">
                             <span className="text-xs text-gray-500">Available Credit:</span>
-                            <span className={`text-sm font-medium ${
-                              availableCredit <= creditLimit * 0.1
+                            <span className={`text-sm font-medium ${availableCredit <= creditLimit * 0.1
                                 ? 'text-red-600'
                                 : availableCredit <= creditLimit * 0.3
-                                ? 'text-yellow-600'
-                                : 'text-green-600'
-                            }`}>
+                                  ? 'text-yellow-600'
+                                  : 'text-green-600'
+                              }`}>
                               ${availableCredit.toFixed(2)}
                             </span>
                           </div>

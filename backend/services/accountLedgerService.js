@@ -19,24 +19,32 @@ class AccountLedgerService {
    * @param {number} defaultDays - Default days if no dates provided
    * @returns {{start: Date, end: Date}}
    */
-  clampDateRange(start, end, maxDays = 93, defaultDays = 30) {
+  clampDateRange(start, end) {
     let s = start ? new Date(start) : null;
     let e = end ? new Date(end) : null;
+
+    // Determine start/end if only one is provided
     if (!s && !e) {
-      e = new Date();
-      s = new Date(e);
-      s.setDate(e.getDate() - defaultDays);
+      // Default to "today" if no dates provided (as per previous request)
+      const today = new Date();
+      s = new Date(today.setHours(0, 0, 0, 0));
+      e = new Date(today.setHours(23, 59, 59, 999));
     } else if (s && !e) {
-      e = new Date(s);
-      e.setDate(s.getDate() + defaultDays);
+      // If start provided but no end, default to end of today
+      e = new Date();
+      e.setHours(23, 59, 59, 999);
     } else if (!s && e) {
+      // If end provided but no start, default to 30 days before end
       s = new Date(e);
-      s.setDate(e.getDate() - defaultDays);
+      s.setDate(e.getDate() - 30);
+      s.setHours(0, 0, 0, 0);
     }
-    const maxMs = maxDays * 24 * 60 * 60 * 1000;
-    if (e - s > maxMs) {
-      e = new Date(s.getTime() + maxMs);
-    }
+
+    // Ensure start is set to beginning of day and end to end of day
+    if (s) s.setHours(0, 0, 0, 0);
+    if (e) e.setHours(23, 59, 59, 999);
+
+    // No clamping for maxDays anymore - allow unlimited range
     return { start: s, end: e };
   }
 

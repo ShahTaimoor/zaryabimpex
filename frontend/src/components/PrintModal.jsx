@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { X, Printer } from 'lucide-react';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
+import PrintDocument from './PrintDocument';
 
 const PrintModal = ({
   isOpen,
@@ -13,6 +14,33 @@ const PrintModal = ({
   const printRef = useRef(null);
   const { companyInfo: companySettings } = useCompanyInfo();
   const resolvedDocumentTitle = documentTitle || 'Invoice';
+
+  // Print Configuration States
+  const [showLogo, setShowLogo] = React.useState(true);
+  const [showCompanyDetails, setShowCompanyDetails] = React.useState(true);
+  const [showTax, setShowTax] = React.useState(true);
+  const [showDiscount, setShowDiscount] = React.useState(true);
+  const [showFooter, setShowFooter] = React.useState(true);
+  const [showDate, setShowDate] = React.useState(true);
+  const [showCameraTime, setShowCameraTime] = React.useState(false);
+  const [showDescription, setShowDescription] = React.useState(true);
+  const [showEmail, setShowEmail] = React.useState(true);
+
+  // Sync with Company Settings
+  useEffect(() => {
+    if (companySettings?.printSettings) {
+      const ps = companySettings.printSettings;
+      setShowLogo(ps.showLogo ?? true);
+      setShowCompanyDetails(ps.showCompanyDetails ?? true);
+      setShowTax(ps.showTax ?? true);
+      setShowDiscount(ps.showDiscount ?? true);
+      setShowFooter(ps.showFooter ?? true);
+      setShowDate(ps.showDate ?? true);
+      setShowCameraTime(ps.showCameraTime ?? false);
+      setShowDescription(ps.showDescription ?? true);
+      setShowEmail(ps.showEmail ?? true);
+    }
+  }, [companySettings]);
 
   useEffect(() => {
     if (isOpen) {
@@ -191,13 +219,13 @@ const PrintModal = ({
 
   const invoiceDetailLines = [
     { label: 'Invoice #:', value: formatText(documentNumber) },
-    {
+    showDate ? {
       label: 'Date:',
       value: formatDate(orderData?.createdAt || orderData?.invoiceDate)
-    },
+    } : null,
     { label: 'Status:', value: formatText(documentStatus) },
     { label: 'Type:', value: formatText(documentType) }
-  ];
+  ].filter(Boolean);
 
   const paymentDetailLines = [
     { label: 'Status:', value: formatText(paymentStatus) },
@@ -207,8 +235,21 @@ const PrintModal = ({
 
   const handlePrint = () => {
     const printContent = printRef.current;
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
+    if (!printContent) return;
+
+    // Create a new iframe for printing to avoid clearing the current document
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+
+    // Get checkbox states at the time of printing
+    // Note: We are printing the 'printContent' which is already rendered in the DOM with the correct visibility
+    // based on React state. So we just need to copy the HTML.
+
+    doc.open();
+    doc.write(`
       <html>
         <head>
           <title>${resolvedDocumentTitle} - ${documentNumber}</title>
@@ -224,31 +265,26 @@ const PrintModal = ({
                 color: #111827;
                 margin: 0;
                 padding: 0;
-                background: #f5f6fb;
+                background: #fff;
               }
               .print-preview-scale {
                 transform: none !important;
+                width: 100% !important;
               }
               .print-document {
-                width: 100%;
-                max-width: 100%;
-                box-shadow: none;
-                border-radius: 0;
-                padding: 24px 28px;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
               }
-              .print-document__company-name {
-                font-size: 28px;
+              .print-document__toolbar, .no-print {
+                display: none !important;
               }
-            }
-            .print-preview-scale {
-              width: 100%;
             }
             .print-document {
-              width: 900px;
-              background: #fff;
-              border-radius: 18px;
-              padding: 32px 36px 28px;
-              box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+              width: 100%;
               font-family: 'Inter', 'Segoe UI', sans-serif;
             }
             .print-document__title {
@@ -354,6 +390,10 @@ const PrintModal = ({
             .print-document__footer span {
               display: block;
             }
+            /* Helper for hiding elements */
+            .hidden {
+              display: none !important;
+            }
           </style>
         </head>
         <body>
@@ -361,18 +401,20 @@ const PrintModal = ({
         </body>
       </html>
     `);
+    doc.close();
 
-    printWindow.document.close();
-    printWindow.focus();
     setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      // Cleanup
+      setTimeout(() => document.body.removeChild(iframe), 1000);
     }, 250);
   };
 
   if (!isOpen || !orderData) return null;
 
   const documentHeading = `${resolvedDocumentTitle} Details`;
+  const hasCameraTime = orderData?.billStartTime || orderData?.billEndTime;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 p-4 overflow-hidden">
@@ -380,185 +422,136 @@ const PrintModal = ({
         <div className="bg-transparent w-full max-w-[95vw] max-h-[92vh] flex flex-col items-center">
           <div className="p-4 print-preview-wrapper w-full">
             <div ref={printRef} className="print-preview-scale">
-              <div className="print-document">
-                <div className="print-document__toolbar">
-                  <h2 className="print-document__heading">{documentHeading}</h2>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={handlePrint}
-                      className="btn btn-success btn-md flex items-center space-x-2 px-4"
-                    >
-                      <Printer className="h-4 w-4" />
-                      <span>Print</span>
-                    </button>
-                    <button
-                      onClick={onClose}
-                      className="btn btn-secondary-outline btn-md flex items-center space-x-2 px-4 text-gray-700 border border-gray-300 hover:bg-gray-100"
-                    >
-                      <X className="h-4 w-4" />
-                      <span>Close</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="print-document__company">
-                  {companySettings.logo && (
-                    <div style={{ marginBottom: '16px', textAlign: 'center' }}>
-                      <img
-                        src={companySettings.logo}
-                        alt="Company Logo"
-                        style={{ maxHeight: '80px', maxWidth: '250px', display: 'inline-block' }}
-                      />
-                    </div>
-                  )}
-                  <div className="print-document__company-name">{resolvedCompanyName}</div>
-                  <div className="print-document__company-subtitle">{resolvedCompanySubtitle}</div>
-                </div>
-
-                <div className="print-document__info-grid">
-                  <div className="print-document__info-block">
-                    <div className="print-document__section-label">{partyHeaderLabel}:</div>
-                    {billToLines.map((line, idx) => (
-                      <div
-                        key={`bill-${idx}`}
-                        className="print-document__info-line print-document__info-line--stack"
+              <PrintDocument
+                companySettings={companySettings}
+                orderData={orderData}
+                printSettings={{
+                  showLogo,
+                  showCompanyDetails,
+                  showTax,
+                  showDiscount,
+                  showFooter,
+                  showDate,
+                  showCameraTime,
+                  showDescription,
+                  showEmail,
+                  headerText: companySettings?.printSettings?.headerText,
+                  footerText: companySettings?.printSettings?.footerText
+                }}
+                documentTitle={resolvedDocumentTitle}
+                partyLabel={partyLabel}
+              >
+                {/* No-print Toolbar with Checkboxes */}
+                <div className="print-document__toolbar no-print mb-6 border-b pb-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">{documentHeading}</h2>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={handlePrint}
+                        className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 flex items-center gap-2"
                       >
-                        {line}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="print-document__info-block">
-                    <div className="print-document__section-label">Invoice Details:</div>
-                    {invoiceDetailLines.map((line, idx) => (
-                      <div key={`inv-${idx}`} className="print-document__info-line">
-                        <span className="print-document__info-label">{line.label}</span>
-                        <span className="print-document__info-value">{line.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="print-document__info-block">
-                    <div className="print-document__section-label">Payment:</div>
-                    {paymentDetailLines.map((line, idx) => (
-                      <div key={`pay-${idx}`} className="print-document__info-line">
-                        <span className="print-document__info-label">{line.label}</span>
-                        <span className="print-document__info-value">{line.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* CCTV Camera Time Section */}
-                {(orderData?.billStartTime || orderData?.billEndTime) && (
-                  <div className="print-document__info-grid mt-4">
-                    <div className="print-document__info-block" style={{ gridColumn: '1 / -1' }}>
-                      <div className="print-document__section-label" style={{ color: '#2563eb', borderTop: '2px solid #93c5fd', paddingTop: '12px' }}>
-                        Camera Time
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-                        {orderData.billStartTime && (
-                          <div className="print-document__info-line">
-                            <span className="print-document__info-label">From:</span>
-                            <span className="print-document__info-value">
-                              {formatDateTime(orderData.billStartTime)}
-                            </span>
-                          </div>
-                        )}
-                        {orderData.billEndTime && (
-                          <div className="print-document__info-line">
-                            <span className="print-document__info-label">To:</span>
-                            <span className="print-document__info-value">
-                              {formatDateTime(orderData.billEndTime)}
-                            </span>
-                          </div>
-                        )}
-                        {orderData.billStartTime && orderData.billEndTime && (
-                          <div className="print-document__info-line" style={{ fontSize: '11px', color: '#6b7280' }}>
-                            <span className="print-document__info-label">Duration:</span>
-                            <span className="print-document__info-value">
-                              {Math.round((new Date(orderData.billEndTime) - new Date(orderData.billStartTime)) / 1000)} seconds
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                        <Printer className="h-4 w-4" />
+                        Print
+                      </button>
+                      <button
+                        onClick={onClose}
+                        className="bg-white text-gray-700 px-4 py-2 rounded border border-gray-300 shadow-sm hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Close
+                      </button>
                     </div>
                   </div>
-                )}
 
-                <div className="print-document__section-label mt-6">Items:</div>
-
-                <table className="print-document__table mt-3">
-                  <thead>
-                    <tr>
-                      <th>Item</th>
-                      <th>Description</th>
-                      <th>Qty</th>
-                      <th>Price</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.length === 0 && (
-                      <tr>
-                        <td colSpan="5" style={{ textAlign: 'center' }}>
-                          No items available
-                        </td>
-                      </tr>
+                  {/* Print Options Checkboxes */}
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <span className="font-semibold mr-2">Print Options:</span>
+                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
+                      <input
+                        type="checkbox"
+                        checked={showLogo}
+                        onChange={(e) => setShowLogo(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      Show Logo
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
+                      <input
+                        type="checkbox"
+                        checked={showCompanyDetails}
+                        onChange={(e) => setShowCompanyDetails(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      Show Company Details
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
+                      <input
+                        type="checkbox"
+                        checked={showTax}
+                        onChange={(e) => setShowTax(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      Show Tax
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
+                      <input
+                        type="checkbox"
+                        checked={showDiscount}
+                        onChange={(e) => setShowDiscount(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      Show Discount
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
+                      <input
+                        type="checkbox"
+                        checked={showDate}
+                        onChange={(e) => setShowDate(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      Show Date
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
+                      <input
+                        type="checkbox"
+                        checked={showDescription}
+                        onChange={(e) => setShowDescription(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      Show Description
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
+                      <input
+                        type="checkbox"
+                        checked={showEmail}
+                        onChange={(e) => setShowEmail(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      Show Email
+                    </label>
+                    {hasCameraTime && (
+                      <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
+                        <input
+                          type="checkbox"
+                          checked={showCameraTime}
+                          onChange={(e) => setShowCameraTime(e.target.checked)}
+                          className="rounded text-blue-600 focus:ring-blue-500"
+                        />
+                        Show Camera Time
+                      </label>
                     )}
-                    {items.map((item, index) => {
-                      const qty = toNumber(item.quantity ?? item.qty, 0);
-                      const price = toNumber(
-                        item.unitPrice ?? item.price ?? item.unitCost ?? item.rate,
-                        0
-                      );
-                      const lineTotal = toNumber(item.total ?? item.lineTotal, qty * price);
-                      return (
-                        <tr key={index}>
-                          <td>{item.product?.name || item.name || `Item ${index + 1}`}</td>
-                          <td>
-                            {item.product?.description ||
-                              item.description ||
-                              item.notes ||
-                              '—'}
-                          </td>
-                          <td>{formatCurrency(qty)}</td>
-                          <td>{formatCurrency(price)}</td>
-                          <td>{formatCurrency(lineTotal)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-
-                <div className="print-document__summary">
-                  <div className="print-document__summary-table">
-                    <div className="print-document__summary-row">
-                      <span>Subtotal</span>
-                      <span>{formatCurrency(computedSubtotal)}</span>
-                    </div>
-                    <div className="print-document__summary-row">
-                      <span>Tax</span>
-                      <span>{formatCurrency(taxValue)}</span>
-                    </div>
-                    <div className="print-document__summary-row">
-                      <span>Discount</span>
-                      <span>{formatCurrency(discountValue)}</span>
-                    </div>
-                    <div className="print-document__summary-row print-document__summary-row--total">
-                      <span>Total</span>
-                      <span>{formatCurrency(totalValue)}</span>
-                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
+                      <input
+                        type="checkbox"
+                        checked={showFooter}
+                        onChange={(e) => setShowFooter(e.target.checked)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      Show Footer
+                    </label>
                   </div>
                 </div>
-
-                <div className="print-document__footer">
-                  <div className="print-document__generated">
-                    Generated on {formatDateTime(generatedAt)} &nbsp;•&nbsp; Printed by{' '}
-                    {orderData?.createdBy?.name || 'Current User'}
-                  </div>
-                  {resolvedCompanyAddress && <span>{resolvedCompanyAddress}</span>}
-                  {resolvedCompanyPhone && <span>Phone: {resolvedCompanyPhone}</span>}
-                </div>
-              </div>
+              </PrintDocument>
             </div>
           </div>
         </div>

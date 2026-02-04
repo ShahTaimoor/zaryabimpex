@@ -1153,11 +1153,20 @@ class SalesPerformanceService {
       if (status) query.status = status;
       if (generatedBy) query.generatedBy = generatedBy;
 
-      // Date range filter
+      // Date range filter - use Pakistan timezone if dates are strings
       if (startDate || endDate) {
+        const { getStartOfDayPakistan, getEndOfDayPakistan } = require('../utils/dateFilter');
         query.generatedAt = {};
-        if (startDate) query.generatedAt.$gte = startDate;
-        if (endDate) query.generatedAt.$lte = endDate;
+        if (startDate) {
+          query.generatedAt.$gte = typeof startDate === 'string' 
+            ? getStartOfDayPakistan(startDate) 
+            : startDate;
+        }
+        if (endDate) {
+          query.generatedAt.$lte = typeof endDate === 'string'
+            ? getEndOfDayPakistan(endDate)
+            : endDate;
+        }
       }
 
       const reports = await SalesPerformance.find(query)

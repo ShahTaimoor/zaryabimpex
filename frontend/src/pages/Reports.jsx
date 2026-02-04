@@ -12,11 +12,13 @@ import {
   useGetProductReportQuery,
   useGetCustomerReportQuery,
 } from '../store/services/reportsApi';
+import DateFilter from '../components/DateFilter';
+import { getCurrentDatePakistan, getDateDaysAgo } from '../utils/dateUtils';
 
 export const Reports = () => {
   const [dateRange, setDateRange] = useState({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    to: new Date().toISOString().split('T')[0]
+    from: getDateDaysAgo(30),
+    to: getCurrentDatePakistan()
   });
 
   const { data: salesData, isLoading: salesLoading } = useGetSalesReportQuery({
@@ -54,24 +56,16 @@ export const Reports = () => {
           <p className="text-gray-600 text-sm md:text-base">Analyze your business performance</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400 hidden sm:block flex-shrink-0" />
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={dateRange.from}
-                onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                className="input text-sm flex-1 sm:flex-initial sm:min-w-[140px]"
-              />
-              <span className="text-gray-500 text-sm whitespace-nowrap">to</span>
-              <input
-                type="date"
-                value={dateRange.to}
-                onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                className="input text-sm flex-1 sm:flex-initial sm:min-w-[140px]"
-              />
-            </div>
-          </div>
+          <DateFilter
+            startDate={dateRange.from}
+            endDate={dateRange.to}
+            onDateChange={(start, end) => {
+              setDateRange({ from: start || '', to: end || '' });
+            }}
+            compact={true}
+            showPresets={true}
+            className="flex-1"
+          />
           <button className="btn btn-secondary btn-md w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
             Export

@@ -8,20 +8,23 @@ import { handleApiError } from '../utils/errorHandler';
 import toast from 'react-hot-toast';
 
 const AccountLedgerSummary = () => {
-  // Function to get default date range (one month difference)
+
+  // Function to get default date range (today for both)
   const getDefaultDateRange = () => {
     const today = new Date();
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(today.getMonth() - 1);
-    
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
     return {
-      startDate: oneMonthAgo.toISOString().split('T')[0],
-      endDate: today.toISOString().split('T')[0]
+      startDate: todayStr,
+      endDate: todayStr
     };
   };
 
   const defaultDates = getDefaultDateRange();
-  
+
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
@@ -32,7 +35,7 @@ const AccountLedgerSummary = () => {
   const [supplierSearchQuery, setSupplierSearchQuery] = useState('');
   const supplierDropdownRef = useRef(null);
   const printRef = useRef(null);
-  
+
   const [filters, setFilters] = useState({
     startDate: defaultDates.startDate,
     endDate: defaultDates.endDate,
@@ -238,13 +241,13 @@ const AccountLedgerSummary = () => {
     }
 
     const printWindow = window.open('', '_blank');
-    const customerName = selectedCustomerId 
+    const customerName = selectedCustomerId
       ? (detailedTransactionsData?.data?.customer?.name || 'Customer Receivables')
       : (detailedSupplierTransactionsData?.data?.supplier?.name || 'Supplier Payables');
     const accountCode = selectedCustomerId
       ? (detailedTransactionsData?.data?.customer?.accountCode || '')
       : (detailedSupplierTransactionsData?.data?.supplier?.accountCode || '');
-    
+
     printWindow.document.write(`
       <html>
         <head>
@@ -355,13 +358,13 @@ const AccountLedgerSummary = () => {
           </div>
           ${printContent.innerHTML}
           <div class="print-footer">
-            <p>Generated on ${new Date().toLocaleString('en-GB', { 
-              day: '2-digit', 
-              month: 'short', 
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}</p>
+            <p>Generated on ${new Date().toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}</p>
           </div>
         </body>
       </html>
@@ -446,9 +449,8 @@ const AccountLedgerSummary = () => {
                       <button
                         key={customer._id}
                         onClick={() => handleCustomerSelect(customer)}
-                        className={`w-full text-left px-4 py-2 hover:bg-gray-50 ${
-                          selectedCustomerId === customer._id ? 'bg-blue-50' : ''
-                        }`}
+                        className={`w-full text-left px-4 py-2 hover:bg-gray-50 ${selectedCustomerId === customer._id ? 'bg-blue-50' : ''
+                          }`}
                       >
                         <div className="text-sm font-medium text-gray-900">{displayName}</div>
                         {customer.email && (
@@ -488,9 +490,8 @@ const AccountLedgerSummary = () => {
                       <button
                         key={supplier._id}
                         onClick={() => handleSupplierSelect(supplier)}
-                        className={`w-full text-left px-4 py-2 hover:bg-gray-50 ${
-                          selectedSupplierId === supplier._id ? 'bg-blue-50' : ''
-                        }`}
+                        className={`w-full text-left px-4 py-2 hover:bg-gray-50 ${selectedSupplierId === supplier._id ? 'bg-blue-50' : ''
+                          }`}
                       >
                         <div className="text-sm font-medium text-gray-900">{displayName}</div>
                         {supplier.email && (
@@ -639,9 +640,8 @@ const AccountLedgerSummary = () => {
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">Opening Balance:</td>
                         <td className="px-4 py-3 text-sm text-right text-gray-900"></td>
                         <td className="px-4 py-3 text-sm text-right text-gray-900"></td>
-                        <td className={`px-4 py-3 text-sm text-right font-bold ${
-                          (detailedTransactionsData?.data?.openingBalance || 0) < 0 ? 'text-red-600' : 'text-gray-900'
-                        }`}>
+                        <td className={`px-4 py-3 text-sm text-right font-bold ${(detailedTransactionsData?.data?.openingBalance || 0) < 0 ? 'text-red-600' : 'text-gray-900'
+                          }`}>
                           {formatCurrency(detailedTransactionsData?.data?.openingBalance || 0)}
                         </td>
                       </tr>
@@ -672,9 +672,8 @@ const AccountLedgerSummary = () => {
                             <td className="px-4 py-3 text-sm text-right text-gray-900">
                               {entry.creditAmount > 0 ? formatCurrency(entry.creditAmount) : '-'}
                             </td>
-                            <td className={`px-4 py-3 text-sm text-right font-semibold ${
-                              (entry.balance || 0) < 0 ? 'text-red-600' : 'text-gray-900'
-                            }`}>
+                            <td className={`px-4 py-3 text-sm text-right font-semibold ${(entry.balance || 0) < 0 ? 'text-red-600' : 'text-gray-900'
+                              }`}>
                               {formatCurrency(entry.balance || 0)}
                             </td>
                           </tr>
@@ -697,9 +696,8 @@ const AccountLedgerSummary = () => {
                               detailedTransactionsData?.data?.entries?.reduce((sum, e) => sum + (e.creditAmount || 0), 0) || 0
                             )}
                           </td>
-                          <td className={`px-4 py-3 text-sm text-right text-gray-900 ${
-                            (detailedTransactionsData?.data?.closingBalance || 0) < 0 ? 'text-red-600' : ''
-                          }`}>
+                          <td className={`px-4 py-3 text-sm text-right text-gray-900 ${(detailedTransactionsData?.data?.closingBalance || 0) < 0 ? 'text-red-600' : ''
+                            }`}>
                             {formatCurrency(detailedTransactionsData?.data?.closingBalance || 0)}
                           </td>
                         </tr>
@@ -759,9 +757,8 @@ const AccountLedgerSummary = () => {
                         <td colSpan="3" className="px-4 py-3 text-sm font-medium text-gray-900">Opening Balance:</td>
                         <td className="px-4 py-3 text-sm text-right text-gray-900">-</td>
                         <td className="px-4 py-3 text-sm text-right text-gray-900">-</td>
-                        <td className={`px-4 py-3 text-sm text-right font-bold ${
-                          (detailedSupplierTransactionsData?.data?.openingBalance || 0) < 0 ? 'text-red-600' : 'text-gray-900'
-                        }`}>
+                        <td className={`px-4 py-3 text-sm text-right font-bold ${(detailedSupplierTransactionsData?.data?.openingBalance || 0) < 0 ? 'text-red-600' : 'text-gray-900'
+                          }`}>
                           {formatCurrency(detailedSupplierTransactionsData?.data?.openingBalance || 0)}
                         </td>
                       </tr>
@@ -792,9 +789,8 @@ const AccountLedgerSummary = () => {
                             <td className="px-4 py-3 text-sm text-right text-gray-900">
                               {entry.creditAmount > 0 ? formatCurrency(entry.creditAmount) : '-'}
                             </td>
-                            <td className={`px-4 py-3 text-sm text-right font-semibold ${
-                              (entry.balance || 0) < 0 ? 'text-red-600' : 'text-gray-900'
-                            }`}>
+                            <td className={`px-4 py-3 text-sm text-right font-semibold ${(entry.balance || 0) < 0 ? 'text-red-600' : 'text-gray-900'
+                              }`}>
                               {formatCurrency(entry.balance || 0)}
                             </td>
                           </tr>
@@ -817,9 +813,8 @@ const AccountLedgerSummary = () => {
                               detailedSupplierTransactionsData?.data?.entries?.reduce((sum, e) => sum + (e.creditAmount || 0), 0) || 0
                             )}
                           </td>
-                          <td className={`px-4 py-3 text-sm text-right text-gray-900 ${
-                            (detailedSupplierTransactionsData?.data?.closingBalance || 0) < 0 ? 'text-red-600' : ''
-                          }`}>
+                          <td className={`px-4 py-3 text-sm text-right text-gray-900 ${(detailedSupplierTransactionsData?.data?.closingBalance || 0) < 0 ? 'text-red-600' : ''
+                            }`}>
                             {formatCurrency(detailedSupplierTransactionsData?.data?.closingBalance || 0)}
                           </td>
                         </tr>

@@ -1,5 +1,7 @@
 const express = require('express');
 const { auth, requirePermission } = require('../middleware/auth');
+const { handleValidationErrors } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const AnomalyDetectionService = require('../services/anomalyDetectionService');
 const { query, validationResult } = require('express-validator');
 
@@ -11,11 +13,12 @@ const router = express.Router();
 router.get('/', [
   auth,
   requirePermission('view_anomaly_detection'),
-  query('startDate').optional().isISO8601(),
-  query('endDate').optional().isISO8601(),
+  ...validateDateParams,
   query('minSeverity').optional().isIn(['low', 'medium', 'high', 'critical']),
   query('type').optional().isString(),
-  query('severity').optional().isIn(['low', 'medium', 'high', 'critical'])
+  query('severity').optional().isIn(['low', 'medium', 'high', 'critical']),
+  handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -23,9 +26,10 @@ router.get('/', [
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // Use dateRange from middleware (Pakistan timezone)
     const options = {
-      startDate: req.query.startDate ? new Date(req.query.startDate) : undefined,
-      endDate: req.query.endDate ? new Date(req.query.endDate) : undefined,
+      startDate: req.dateRange?.startDate || undefined,
+      endDate: req.dateRange?.endDate || undefined,
       minSeverity: req.query.minSeverity || 'low'
     };
 
@@ -66,9 +70,10 @@ router.get('/', [
 router.get('/sales', [
   auth,
   requirePermission('view_anomaly_detection'),
-  query('startDate').optional().isISO8601(),
-  query('endDate').optional().isISO8601(),
-  query('minSeverity').optional().isIn(['low', 'medium', 'high', 'critical'])
+  ...validateDateParams,
+  query('minSeverity').optional().isIn(['low', 'medium', 'high', 'critical']),
+  handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -76,9 +81,10 @@ router.get('/sales', [
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // Use dateRange from middleware (Pakistan timezone)
     const options = {
-      startDate: req.query.startDate ? new Date(req.query.startDate) : undefined,
-      endDate: req.query.endDate ? new Date(req.query.endDate) : undefined,
+      startDate: req.dateRange?.startDate || undefined,
+      endDate: req.dateRange?.endDate || undefined,
       minSeverity: req.query.minSeverity || 'low'
     };
 

@@ -12,6 +12,12 @@ export const paymentApi = api.injectEndpoints({
         { type: 'Sales', id: 'LIST' },
         { type: 'Sales', id: 'PAYMENT_HISTORY' },
         { type: 'Orders', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
       ],
     }),
     processRefund: builder.mutation({
@@ -24,6 +30,12 @@ export const paymentApi = api.injectEndpoints({
         { type: 'Sales', id: 'LIST' },
         { type: 'Sales', id: 'PAYMENT_HISTORY' },
         { type: 'Orders', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
       ],
     }),
     voidTransaction: builder.mutation({
@@ -36,6 +48,12 @@ export const paymentApi = api.injectEndpoints({
         { type: 'Sales', id: 'LIST' },
         { type: 'Sales', id: 'PAYMENT_HISTORY' },
         { type: 'Orders', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
       ],
     }),
     getPaymentHistory: builder.query({
@@ -48,9 +66,9 @@ export const paymentApi = api.injectEndpoints({
         const list = result?.data?.payments || result?.payments || result?.items || [];
         return list.length
           ? [
-              ...list.map(({ _id, id }) => ({ type: 'Sales', id: _id || id })),
-              { type: 'Sales', id: 'PAYMENT_HISTORY' },
-            ]
+            ...list.map(({ _id, id }) => ({ type: 'Sales', id: _id || id })),
+            { type: 'Sales', id: 'PAYMENT_HISTORY' },
+          ]
           : [{ type: 'Sales', id: 'PAYMENT_HISTORY' }];
       },
     }),

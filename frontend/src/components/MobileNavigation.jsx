@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Menu, 
-  X, 
-  Home, 
-  ShoppingCart, 
-  Package, 
-  Users, 
-  Truck, 
-  FileText, 
-  BarChart3, 
+import {
+  Menu,
+  X,
+  Home,
+  ShoppingCart,
+  Package,
+  Users,
+  Truck,
+  FileText,
+  BarChart3,
   Settings,
   LogOut,
   User,
@@ -26,7 +26,8 @@ import {
   Building2,
   Receipt,
   CreditCard,
-  Camera
+  Camera,
+  Wallet
 } from 'lucide-react';
 import { useResponsive } from './ResponsiveContainer';
 import { useAuth } from '../contexts/AuthContext';
@@ -85,6 +86,7 @@ const MobileNavigation = ({ user, onLogout }) => {
     { path: '/drop-shipping', icon: ArrowRight, label: 'Drop Shipping', badge: null, permission: 'create_drop_shipping' },
     { path: '/inventory', icon: Package, label: 'Inventory', badge: null, permission: 'view_inventory' },
     { path: '/stock-movements', icon: ArrowUpDown, label: 'Stock Movements', badge: null, permission: 'view_stock_movements' },
+    { path: '/stock-ledger', icon: FileText, label: 'Stock Ledger', badge: null, permission: 'view_reports' },
     { path: '/sale-returns', icon: RotateCcw, label: 'Sale Returns', badge: null, permission: 'view_returns' },
     { path: '/purchase-returns', icon: RotateCcw, label: 'Purchase Returns', badge: null, permission: 'view_returns' },
     { path: '/returns', icon: RotateCcw, label: 'Returns', badge: null, permission: 'view_returns' },
@@ -101,14 +103,37 @@ const MobileNavigation = ({ user, onLogout }) => {
     { path: '/employees', icon: Users, label: 'Employees', badge: null, permission: 'manage_users' },
     { path: '/attendance', icon: Clock, label: 'Attendance', badge: null, permission: 'view_own_attendance' },
     { path: '/settings', icon: Settings, label: 'Settings', badge: null, permission: 'manage_users' },
-    { path: '/cash-receiving', icon: Receipt, label: 'Cash Receiving', badge: null, permission: 'view_reports' },
+    { path: '/expenses', icon: Wallet, label: 'Record Expense', badge: null, permission: 'view_reports' },
     { path: '/cash-receipts', icon: Receipt, label: 'Cash Receipts', badge: null, permission: 'view_reports' },
     { path: '/cash-payments', icon: CreditCard, label: 'Cash Payments', badge: null, permission: 'view_reports' },
     { path: '/cctv-access', icon: Camera, label: 'CCTV Access', badge: null, permission: 'view_sales_invoices' }
   ];
 
-  // Filter navigation based on user permissions
+  // Sidebar visibility state
+  const [sidebarConfig, setSidebarConfig] = useState(() => {
+    const saved = localStorage.getItem('sidebarConfig');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Listener for sidebar configuration changes
+  useEffect(() => {
+    const handleSidebarChange = () => {
+      const saved = localStorage.getItem('sidebarConfig');
+      if (saved) {
+        setSidebarConfig(JSON.parse(saved));
+      }
+    };
+
+    window.addEventListener('sidebarConfigChanged', handleSidebarChange);
+    return () => window.removeEventListener('sidebarConfigChanged', handleSidebarChange);
+  }, []);
+
+  // Filter navigation based on user permissions AND sidebar configuration
   const filteredNavigationItems = navigationItems.filter(item => {
+    // 1. Check sidebar configuration first
+    if (sidebarConfig[item.label] === false) return false;
+
+    // 2. Check permissions
     if (!item.permission) return true; // Always show items without permission requirement
     if (user?.role === 'admin') return true; // Admin users see everything
     return hasPermission(item.permission);
@@ -193,20 +218,18 @@ const MobileNavigation = ({ user, onLogout }) => {
                 {filteredNavigationItems.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.path);
-                  
+
                   return (
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                        active
-                          ? 'bg-primary-100 text-primary-700 border-r-2 border-primary-600'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
+                      className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${active
+                        ? 'bg-primary-100 text-primary-700 border-r-2 border-primary-600'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
                     >
-                      <Icon className={`mr-3 h-5 w-5 ${
-                        active ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
-                      }`} />
+                      <Icon className={`mr-3 h-5 w-5 ${active ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
+                        }`} />
                       <span className="flex-1">{item.label}</span>
                       {item.badge && (
                         <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">

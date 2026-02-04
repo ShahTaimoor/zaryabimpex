@@ -21,12 +21,12 @@ export const saleReturnsApi = api.injectEndpoints({
       providesTags: (result) =>
         result?.data
           ? [
-              ...result.data.map(({ _id, id }) => ({
-                type: 'SaleReturns',
-                id: _id || id,
-              })),
-              { type: 'SaleReturns', id: 'LIST' },
-            ]
+            ...result.data.map(({ _id, id }) => ({
+              type: 'SaleReturns',
+              id: _id || id,
+            })),
+            { type: 'SaleReturns', id: 'LIST' },
+          ]
           : [{ type: 'SaleReturns', id: 'LIST' }],
     }),
 
@@ -51,6 +51,9 @@ export const saleReturnsApi = api.injectEndpoints({
         { type: 'Returns', id: 'LIST' },
         { type: 'Sales', id: 'LIST' },
         { type: 'Inventory', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
       ],
     }),
 
@@ -62,6 +65,18 @@ export const saleReturnsApi = api.injectEndpoints({
       }),
       providesTags: (_r, _e, customerId) => [
         { type: 'SaleReturns', id: `CUSTOMER_INVOICES_${customerId}` },
+      ],
+    }),
+
+    // Search products sold to customer
+    searchCustomerProducts: builder.query({
+      query: ({ customerId, search }) => ({
+        url: `sale-returns/customer/${customerId}/products`,
+        method: 'get',
+        params: search ? { search } : {},
+      }),
+      providesTags: (_r, _e, { customerId }) => [
+        { type: 'SaleReturns', id: `CUSTOMER_PRODUCTS_${customerId}` },
       ],
     }),
 
@@ -104,6 +119,9 @@ export const saleReturnsApi = api.injectEndpoints({
         { type: 'Sales', id: 'LIST' },
         { type: 'Inventory', id: 'LIST' },
         { type: 'Customers', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
       ],
     }),
 
@@ -125,6 +143,8 @@ export const {
   useGetSaleReturnQuery,
   useCreateSaleReturnMutation,
   useGetCustomerInvoicesQuery,
+  useSearchCustomerProductsQuery,
+  useLazySearchCustomerProductsQuery,
   useApproveSaleReturnMutation,
   useRejectSaleReturnMutation,
   useProcessSaleReturnMutation,

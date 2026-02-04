@@ -21,15 +21,21 @@ const purchaseInvoiceRepository = require('../repositories/PurchaseInvoiceReposi
 // Get backdate/future date report
 router.get('/', auth, async (req, res) => {
   try {
+    const { getStartOfDayPakistan, getEndOfDayPakistan, formatDatePakistan } = require('../utils/dateFilter');
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
+    const todayStr = formatDatePakistan(today);
+    const todayDate = getStartOfDayPakistan(todayStr);
     
-    // Define date ranges for backdate and future date detection
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
+    // Define date ranges for backdate and future date detection (30 days)
+    const thirtyDaysAgoDate = new Date(today);
+    thirtyDaysAgoDate.setDate(thirtyDaysAgoDate.getDate() - 30);
+    const thirtyDaysAgoStr = formatDatePakistan(thirtyDaysAgoDate);
+    const thirtyDaysAgo = getStartOfDayPakistan(thirtyDaysAgoStr);
     
-    const thirtyDaysFuture = new Date(today);
-    thirtyDaysFuture.setDate(today.getDate() + 30);
+    const thirtyDaysFutureDate = new Date(today);
+    thirtyDaysFutureDate.setDate(thirtyDaysFutureDate.getDate() + 30);
+    const thirtyDaysFutureStr = formatDatePakistan(thirtyDaysFutureDate);
+    const thirtyDaysFuture = getEndOfDayPakistan(thirtyDaysFutureStr);
 
     // Helper function to format entry for report
     const formatEntry = (entry, type, dateField, amountField, referenceField) => ({

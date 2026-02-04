@@ -7,6 +7,7 @@ const PDFDocument = require('pdfkit');
 const PurchaseInvoice = require('../models/PurchaseInvoice'); // Still needed for new PurchaseInvoice() and static methods
 const { auth, requirePermission } = require('../middleware/auth');
 const { sanitizeRequest, handleValidationErrors } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const purchaseInvoiceService = require('../services/purchaseInvoiceService');
 const purchaseInvoiceRepository = require('../repositories/PurchaseInvoiceRepository');
 const supplierRepository = require('../repositories/SupplierRepository');
@@ -44,8 +45,9 @@ router.get('/', [
   query('status').optional().isIn(['draft', 'confirmed', 'received', 'paid', 'cancelled', 'closed']),
   query('paymentStatus').optional().isIn(['pending', 'paid', 'partial', 'overdue']),
   query('invoiceType').optional().isIn(['purchase', 'return', 'adjustment']),
-  query('dateFrom').optional().isISO8601(),
-  query('dateTo').optional().isISO8601()
+  ...validateDateParams,
+  handleValidationErrors,
+  processDateFilter(['invoiceDate', 'createdAt']),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -53,8 +55,14 @@ router.get('/', [
       return res.status(400).json({ errors: errors.array() });
     }
     
+    // Merge date filter from middleware if present (for Pakistan timezone)
+    const queryParams = { ...req.query };
+    if (req.dateFilter && Object.keys(req.dateFilter).length > 0) {
+      queryParams.dateFilter = req.dateFilter;
+    }
+    
     // Call service to get purchase invoices
-    const result = await purchaseInvoiceService.getPurchaseInvoices(req.query);
+    const result = await purchaseInvoiceService.getPurchaseInvoices(queryParams);
     
     res.json({
       invoices: result.invoices,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, RefreshCw, Calendar, ArrowUpDown } from 'lucide-react';
 import { formatDate, formatCurrency } from '../utils/formatters';
+import DateFilter from './DateFilter';
 
 const DashboardReportModal = ({ 
   isOpen, 
@@ -123,26 +124,18 @@ const DashboardReportModal = ({
         {/* Date Range and Filters */}
         <div className="mb-3 sm:mb-4 space-y-3 sm:space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 md:gap-4">
-            <div className="grid grid-cols-2 sm:flex sm:flex-row items-stretch sm:items-center gap-2 sm:gap-x-2 md:gap-x-3 flex-1 sm:flex-initial">
-              <Calendar className="h-4 w-4 text-gray-500 hidden sm:block flex-shrink-0" />
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1 sm:gap-x-2 w-full sm:w-auto">
-                <label className="text-xs sm:text-sm font-medium text-gray-600 sm:whitespace-nowrap">From:</label>
-                <input
-                  type="date"
-                  value={localDateFrom}
-                  onChange={(e) => setLocalDateFrom(e.target.value)}
-                  className="input text-xs sm:text-sm w-full sm:w-auto min-w-0 sm:min-w-[8rem] md:min-w-[10rem]"
-                />
-              </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1 sm:gap-x-2 w-full sm:w-auto">
-                <label className="text-xs sm:text-sm font-medium text-gray-600 sm:whitespace-nowrap">To:</label>
-                <input
-                  type="date"
-                  value={localDateTo}
-                  onChange={(e) => setLocalDateTo(e.target.value)}
-                  className="input text-xs sm:text-sm w-full sm:w-auto min-w-0 sm:min-w-[8rem] md:min-w-[10rem]"
-                />
-              </div>
+            <div className="w-full sm:w-auto flex-1">
+              <DateFilter
+                startDate={localDateFrom}
+                endDate={localDateTo}
+                onDateChange={(start, end) => {
+                  setLocalDateFrom(start);
+                  setLocalDateTo(end);
+                }}
+                compact={true}
+                showPresets={true}
+                className="w-full"
+              />
             </div>
             <button
               onClick={handleSearch}

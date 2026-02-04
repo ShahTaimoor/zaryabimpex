@@ -107,8 +107,23 @@ class SalesService {
       filter.orderType = queryParams.orderType;
     }
 
-    // Date range filter - use billDate if available, otherwise fall back to createdAt
-    if (queryParams.dateFrom || queryParams.dateTo) {
+    // Date range filter - use dateFilter from middleware if available (Pakistan timezone)
+    // Otherwise fall back to legacy dateFrom/dateTo handling
+    if (queryParams.dateFilter && Object.keys(queryParams.dateFilter).length > 0) {
+      // dateFilter from middleware already handles Pakistan timezone
+      // It may contain $or condition for multiple fields
+      if (queryParams.dateFilter.$or) {
+        // Middleware created $or condition for multiple fields
+        if (filter.$and) {
+          filter.$and.push(queryParams.dateFilter);
+        } else {
+          filter.$and = [queryParams.dateFilter];
+        }
+      } else {
+        // Single field date filter - merge with existing filter
+        Object.assign(filter, queryParams.dateFilter);
+      }
+    } else if (queryParams.dateFrom || queryParams.dateTo) {
       const dateConditions = [];
       
       if (queryParams.dateFrom) {

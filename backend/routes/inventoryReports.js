@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param, query } = require('express-validator');
 const { auth, requirePermission } = require('../middleware/auth');
 const { handleValidationErrors, sanitizeRequest } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const inventoryReportService = require('../services/inventoryReportService');
 const InventoryReport = require('../models/InventoryReport'); // Still needed for model reference
 const Product = require('../models/Product'); // Still needed for model reference
@@ -95,7 +96,14 @@ router.get('/', [
   handleValidationErrors,
 ], async (req, res) => {
   try {
-    const result = await inventoryReportService.getInventoryReports(req.query);
+    // Merge date filter from middleware if present (for Pakistan timezone)
+    const queryParams = { ...req.query };
+    if (req.dateRange) {
+      queryParams.startDate = req.dateRange.startDate || undefined;
+      queryParams.endDate = req.dateRange.endDate || undefined;
+    }
+    
+    const result = await inventoryReportService.getInventoryReports(queryParams);
     
     res.json(result);
   } catch (error) {

@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param, query } = require('express-validator');
 const { auth, requirePermission } = require('../middleware/auth');
 const { handleValidationErrors, sanitizeRequest } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const discountService = require('../services/discountService');
 
 const router = express.Router();
@@ -57,7 +58,9 @@ router.get('/', [
   query('validUntil').optional({ checkFalsy: true }).isISO8601().toDate(),
   query('sortBy').optional({ checkFalsy: true }).isIn(['name', 'code', 'type', 'value', 'priority', 'createdAt', 'validFrom', 'validUntil']),
   query('sortOrder').optional({ checkFalsy: true }).isIn(['asc', 'desc']),
+  ...validateDateParams,
   handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
   try {
     // Filter out empty string values
@@ -67,6 +70,11 @@ router.get('/', [
       }
       return acc;
     }, {});
+    
+    // Merge date filter from middleware if present (for Pakistan timezone)
+    if (req.dateFilter && Object.keys(req.dateFilter).length > 0) {
+      cleanedQuery.dateFilter = req.dateFilter;
+    }
 
     const result = await discountService.getDiscounts(cleanedQuery);
     

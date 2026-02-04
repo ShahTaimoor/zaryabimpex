@@ -3,6 +3,7 @@ const router = express.Router();
 const { auth, requirePermission } = require('../middleware/auth');
 const { query, param } = require('express-validator');
 const { handleValidationErrors, sanitizeRequest } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const trialBalanceService = require('../services/trialBalanceService');
 
 /**
@@ -17,12 +18,19 @@ router.get('/', [
   auth,
   requirePermission('view_reports'),
   sanitizeRequest,
-  query('asOfDate').optional().isISO8601().toDate().withMessage('Valid date format required (YYYY-MM-DD)'),
+  query('asOfDate').optional().isISO8601().withMessage('Valid date format required (YYYY-MM-DD)'),
   query('periodId').optional().isMongoId().withMessage('Valid period ID required'),
   handleValidationErrors,
 ], async (req, res) => {
   try {
-    const asOfDate = req.query.asOfDate ? new Date(req.query.asOfDate) : new Date();
+    // Use Pakistan timezone for asOfDate if provided
+    let asOfDate;
+    if (req.query.asOfDate) {
+      const { getEndOfDayPakistan } = require('../utils/dateFilter');
+      asOfDate = getEndOfDayPakistan(req.query.asOfDate);
+    } else {
+      asOfDate = new Date();
+    }
     const periodId = req.query.periodId || null;
 
     const trialBalance = await trialBalanceService.generateTrialBalance(asOfDate, periodId);
@@ -95,11 +103,15 @@ router.get('/summary', [
   auth,
   requirePermission('view_reports'),
   sanitizeRequest,
-  query('asOfDate').optional().isISO8601().toDate().withMessage('Valid date format required (YYYY-MM-DD)'),
+  query('asOfDate').optional().isISO8601().withMessage('Valid date format required (YYYY-MM-DD)'),
   handleValidationErrors,
 ], async (req, res) => {
   try {
-    const asOfDate = req.query.asOfDate ? new Date(req.query.asOfDate) : new Date();
+    // Use Pakistan timezone for asOfDate if provided
+    const { getEndOfDayPakistan } = require('../utils/dateFilter');
+    const asOfDate = req.query.asOfDate 
+      ? getEndOfDayPakistan(req.query.asOfDate)
+      : new Date();
 
     const summary = await trialBalanceService.getTrialBalanceSummary(asOfDate);
 

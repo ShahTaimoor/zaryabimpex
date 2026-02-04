@@ -33,17 +33,11 @@ import { useGetCustomersQuery } from '../store/services/customersApi';
 import { useAppDispatch } from '../store/hooks';
 import { api } from '../store/api';
 import PrintModal from '../components/PrintModal';
-
-// Helper function to get local date in YYYY-MM-DD format (avoids timezone issues with toISOString)
-const getLocalDateString = (date = new Date()) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+import DateFilter from '../components/DateFilter';
+import { getCurrentDatePakistan } from '../utils/dateUtils';
 
 const CashReceipts = () => {
-  const today = getLocalDateString();
+  const today = getCurrentDatePakistan();
   // State for filters and pagination
   const [filters, setFilters] = useState({
     fromDate: today,
@@ -148,7 +142,7 @@ const CashReceipts = () => {
   // Helper functions
   const resetForm = () => {
     setFormData({
-      date: getLocalDateString(),
+      date: getCurrentDatePakistan(),
       amount: '',
       particular: '',
       customer: '',
@@ -350,7 +344,7 @@ const CashReceipts = () => {
   const handleCreate = () => {
     // Clean up form data - remove empty strings and only send fields with values
     const cleanedData = {
-      date: formData.date || getLocalDateString(),
+      date: formData.date || getCurrentDatePakistan(),
       amount: parseFloat(formData.amount) || 0,
       particular: formData.particular || undefined,
       notes: formData.notes || undefined,
@@ -1184,26 +1178,16 @@ const CashReceipts = () => {
         <div className="card-content">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {/* Date Range */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                From Date
-              </label>
-              <input
-                type="date"
-                value={filters.fromDate}
-                onChange={(e) => handleFilterChange('fromDate', e.target.value)}
-                className="input"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                To Date
-              </label>
-              <input
-                type="date"
-                value={filters.toDate}
-                onChange={(e) => handleFilterChange('toDate', e.target.value)}
-                className="input"
+            <div className="col-span-2">
+              <DateFilter
+                startDate={filters.fromDate}
+                endDate={filters.toDate}
+                onDateChange={(start, end) => {
+                  handleFilterChange('fromDate', start || '');
+                  handleFilterChange('toDate', end || '');
+                }}
+                compact={true}
+                showPresets={true}
               />
             </div>
 

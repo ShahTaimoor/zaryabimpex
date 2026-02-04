@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param, query } = require('express-validator');
 const { auth, requirePermission } = require('../middleware/auth');
 const { handleValidationErrors, sanitizeRequest } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const balanceSheetService = require('../services/balanceSheetService');
 
 const router = express.Router();
@@ -64,10 +65,10 @@ router.get('/', [
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('status').optional({ checkFalsy: true }).isIn(['draft', 'review', 'approved', 'final']),
   query('periodType').optional({ checkFalsy: true }).isIn(['monthly', 'quarterly', 'yearly']),
-  query('startDate').optional({ checkFalsy: true }).isISO8601().toDate(),
-  query('endDate').optional({ checkFalsy: true }).isISO8601().toDate(),
+  ...validateDateParams,
   query('search').optional({ checkFalsy: true }).trim(),
   handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
   try {
     const {
@@ -75,20 +76,24 @@ router.get('/', [
       limit = 10,
       status,
       periodType,
-      startDate,
-      endDate,
       search
     } = req.query;
 
-    const result = await balanceSheetService.getBalanceSheets({
+    // Use dateRange from middleware (Pakistan timezone)
+    const queryParams = {
       page,
       limit,
       status,
       periodType,
-      startDate,
-      endDate,
       search
-    });
+    };
+    
+    if (req.dateRange) {
+      queryParams.startDate = req.dateRange.startDate || undefined;
+      queryParams.endDate = req.dateRange.endDate || undefined;
+    }
+
+    const result = await balanceSheetService.getBalanceSheets(queryParams);
 
     res.json({
       balanceSheets: result.balanceSheets,

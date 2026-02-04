@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  Users, 
-  ShoppingCart, 
-  Warehouse, 
-  BarChart3, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Package,
+  Users,
+  ShoppingCart,
+  Warehouse,
+  BarChart3,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -43,22 +43,22 @@ import { useResponsive } from './ResponsiveContainer';
 import { WhatsAppFloat } from './WhatsAppFloat';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
-const navigation = [
+export const navigation = [
   // Dashboard
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, allowMultiple: true },
-  
+
   // Sales Workflow
   { type: 'heading', name: 'Sales Workflow', color: 'bg-blue-500' },
   { name: 'Sales Orders', href: '/sales-orders', icon: FileText },
   { name: 'Sales', href: '/sales', icon: CreditCard },
   { name: 'Sales Invoices', href: '/sales-invoices', icon: Search },
-  
+
   // Purchase Workflow
   { type: 'heading', name: 'Purchase Workflow', color: 'bg-green-500' },
   { name: 'Purchase Orders', href: '/purchase-orders', icon: FileText },
   { name: 'Purchase', href: '/purchase', icon: Truck },
   { name: 'Purchase Invoices', href: '/purchase-invoices', icon: Search },
-  
+
   // Operations
   { type: 'heading', name: 'Operations', color: 'bg-teal-500' },
   { name: 'Sale Returns', href: '/sale-returns', icon: RotateCcw },
@@ -66,7 +66,7 @@ const navigation = [
   { name: 'Returns', href: '/returns', icon: RotateCcw },
   { name: 'Discounts', href: '/discounts', icon: Tag },
   { name: 'CCTV Access', href: '/cctv-access', icon: Camera },
-  
+
   // Financial Transactions
   { type: 'heading', name: 'Financial Transactions', color: 'bg-yellow-500' },
   { name: 'Cash Receipts', href: '/cash-receipts', icon: Receipt },
@@ -74,7 +74,7 @@ const navigation = [
   { name: 'Bank Receipts', href: '/bank-receipts', icon: Building },
   { name: 'Bank Payments', href: '/bank-payments', icon: ArrowUpDown },
   { name: 'Record Expense', href: '/expenses', icon: Wallet },
-  
+
   // Master Data
   { type: 'heading', name: 'Master Data', color: 'bg-purple-500' },
   { name: 'Products', href: '/products', icon: Package },
@@ -84,19 +84,20 @@ const navigation = [
   { name: 'Banks', href: '/banks', icon: Building2 },
   { name: 'Investors', href: '/investors', icon: TrendingUp },
   { name: 'Drop Shipping', href: '/drop-shipping', icon: ArrowRight },
-  
+
   // Inventory Management
   { type: 'heading', name: 'Inventory Management', color: 'bg-orange-500' },
   { name: 'Inventory', href: '/inventory', icon: Warehouse },
   { name: 'Warehouses', href: '/warehouses', icon: Warehouse },
   { name: 'Stock Movements', href: '/stock-movements', icon: ArrowUpDown },
-  
+  { name: 'Stock Ledger', href: '/stock-ledger', icon: FileText },
+
   // Accounting
   { type: 'heading', name: 'Accounting', color: 'bg-pink-500' },
   { name: 'Chart of Accounts', href: '/chart-of-accounts', icon: FolderTree },
   { name: 'Journal Vouchers', href: '/journal-vouchers', icon: FileText },
   { name: 'Account Ledger Summary', href: '/account-ledger', icon: FileText },
-  
+
   // Reports & Analytics
   { type: 'heading', name: 'Reports & Analytics', color: 'bg-indigo-500' },
   { name: 'P&L Statements', href: '/pl-statements', icon: BarChart3 },
@@ -105,7 +106,7 @@ const navigation = [
   { name: 'Inventory Reports', href: '/inventory-reports', icon: Warehouse },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Backdate Report', href: '/backdate-report', icon: Clock },
-  
+
   // System Management
   { type: 'heading', name: 'System Management', color: 'bg-red-500' },
   { name: 'Settings', href: '/settings', icon: Settings },
@@ -117,16 +118,15 @@ const navigation = [
 const CategoryTreeItem = ({ category, subcategories, isActive, level = 0 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = subcategories && subcategories.length > 0;
-  
+
   return (
     <div>
       <Link
         to={`/products?category=${category._id}`}
-        className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-          isActive
-            ? 'bg-primary-100 text-primary-900'
-            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-        }`}
+        className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${isActive
+          ? 'bg-primary-100 text-primary-900'
+          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`}
         style={{ paddingLeft: `${0.5 + level * 1}rem` }}
       >
         {hasChildren && (
@@ -176,6 +176,65 @@ export const Layout = ({ children }) => {
   const { isMobile, isTablet } = useResponsive();
   const { isInstallable, handleInstallClick } = usePWAInstall();
 
+  // Sidebar visibility state
+  const [sidebarConfig, setSidebarConfig] = useState(() => {
+    const saved = localStorage.getItem('sidebarConfig');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Listener for sidebar configuration changes
+  useEffect(() => {
+    const handleSidebarChange = () => {
+      const saved = localStorage.getItem('sidebarConfig');
+      if (saved) {
+        setSidebarConfig(JSON.parse(saved));
+      }
+    };
+
+    window.addEventListener('sidebarConfigChanged', handleSidebarChange);
+    return () => window.removeEventListener('sidebarConfigChanged', handleSidebarChange);
+  }, []);
+
+  // Filtered navigation
+  const filteredNavigation = React.useMemo(() => {
+    return navigation.reduce((acc, item, index) => {
+      if (item.type === 'heading') {
+        const subItems = [];
+        for (let i = index + 1; i < navigation.length; i++) {
+          if (navigation[i].type === 'heading') break;
+          if (navigation[i].name) subItems.push(navigation[i]);
+        }
+        const hasVisibleSubItem = subItems.some(subItem => sidebarConfig[subItem.name] !== false);
+        if (hasVisibleSubItem) acc.push(item);
+      } else if (item.name) {
+        if (sidebarConfig[item.name] !== false) acc.push(item);
+      } else {
+        acc.push(item);
+      }
+      return acc;
+    }, []);
+  }, [sidebarConfig]);
+
+  // Redirect if current page is hidden
+  useEffect(() => {
+    if (!user || filteredNavigation.length === 0) return;
+    const currentPath = location.pathname;
+    if (currentPath === '/settings' || currentPath === '/settings2' || currentPath === '/login') {
+      return;
+    }
+
+    const currentNavItem = navigation.find(item => item.href === currentPath);
+    if (currentNavItem && currentNavItem.name) {
+      if (sidebarConfig[currentNavItem.name] === false) {
+        const firstVisiblePage = filteredNavigation.find(item => item.href && item.name && item.type !== 'heading');
+        if (firstVisiblePage && firstVisiblePage.href !== currentPath) {
+          navigate(firstVisiblePage.href);
+        }
+      }
+    }
+  }, [location.pathname, sidebarConfig, filteredNavigation, user, navigate]);
+
+
   // Fetch categories using Redux
   const { data: categoriesData, isLoading: categoriesLoading, refetch: refetchCategories } = useGetCategoriesQuery(
     {},
@@ -198,12 +257,12 @@ export const Layout = ({ children }) => {
   const buildCategoryTree = (categories) => {
     const categoryMap = {};
     const tree = [];
-    
+
     // Create a map of categories by ID
     categories.forEach(cat => {
       categoryMap[cat._id] = { category: cat, subcategories: [] };
     });
-    
+
     // Build the tree structure
     categories.forEach(cat => {
       if (cat.parentCategory && categoryMap[cat.parentCategory]) {
@@ -212,7 +271,7 @@ export const Layout = ({ children }) => {
         tree.push(categoryMap[cat._id]);
       }
     });
-    
+
     return tree;
   };
 
@@ -225,7 +284,7 @@ export const Layout = ({ children }) => {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile Navigation */}
       <MobileNavigation user={user} onLogout={handleLogout} />
-      
+
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
@@ -240,13 +299,13 @@ export const Layout = ({ children }) => {
             </button>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto max-h-[calc(100vh-4rem)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            {navigation.map((item, index) => {
+            {filteredNavigation.map((item, index) => {
               if (item.type === 'divider') {
                 return (
                   <div key={`divider-${index}`} className="my-2 border-t border-gray-200"></div>
                 );
               }
-              
+
               if (item.type === 'heading') {
                 return (
                   <div key={`heading-${index}`} className={`${item.color} text-white px-3 py-2 mt-3 mb-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm`}>
@@ -254,22 +313,21 @@ export const Layout = ({ children }) => {
                   </div>
                 );
               }
-              
+
               const isActive = location.pathname === item.href;
               return (
                 <div key={item.name}>
                   <Link
                     to={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                      isActive
-                        ? 'bg-primary-100 text-primary-900'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${isActive
+                      ? 'bg-primary-100 text-primary-900'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
                   >
                     <item.icon className="mr-3 h-5 w-5" />
                     {item.name}
                   </Link>
-                  
+
                   {/* Show category tree after Categories link */}
                   {item.name === 'Categories' && (
                     <div className="mt-1 ml-3">
@@ -319,13 +377,13 @@ export const Layout = ({ children }) => {
             <h1 className="text-xl font-bold text-gray-900">POS System</h1>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto max-h-[calc(100vh-4rem)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            {navigation.map((item, index) => {
+            {filteredNavigation.map((item, index) => {
               if (item.type === 'divider') {
                 return (
                   <div key={`divider-${index}`} className="my-2 border-t border-gray-200"></div>
                 );
               }
-              
+
               if (item.type === 'heading') {
                 return (
                   <div key={`heading-${index}`} className={`${item.color} text-white px-3 py-2 mt-3 mb-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm`}>
@@ -333,22 +391,21 @@ export const Layout = ({ children }) => {
                   </div>
                 );
               }
-              
+
               const isActive = location.pathname === item.href;
               return (
                 <div key={item.name}>
                   <Link
                     to={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                      isActive
-                        ? 'bg-primary-100 text-primary-900'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${isActive
+                      ? 'bg-primary-100 text-primary-900'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
                   >
                     <item.icon className="mr-3 h-5 w-5" />
                     {item.name}
                   </Link>
-                  
+
                   {/* Show category tree after Categories link */}
                   {item.name === 'Categories' && (
                     <div className="mt-1 ml-3">
@@ -406,34 +463,42 @@ export const Layout = ({ children }) => {
           <div className="flex flex-1 gap-x-2 sm:gap-x-4 self-stretch lg:gap-x-6 min-w-0 overflow-hidden">
             {/* Financial Transaction Buttons - Responsive */}
             <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto flex-shrink-0 scrollbar-hide">
-              <button
-                onClick={() => navigate('/cash-receipts')}
-                className="bg-green-500 hover:bg-green-600 text-white px-2 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-1 text-xs sm:text-sm font-medium flex-shrink-0"
-              >
-                <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden md:inline">Cash Receipts</span>
-              </button>
-              <button
-                onClick={() => navigate('/cash-payments')}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-1 text-xs sm:text-sm font-medium flex-shrink-0"
-              >
-                <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden md:inline">Cash Payments</span>
-              </button>
-              <button
-                onClick={() => navigate('/bank-receipts')}
-                className="bg-purple-500 hover:bg-purple-600 text-white px-2 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-1 text-xs sm:text-sm font-medium flex-shrink-0"
-              >
-                <Building className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden md:inline">Bank Receipts</span>
-              </button>
-              <button
-                onClick={() => navigate('/bank-payments')}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-2 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-1 text-xs sm:text-sm font-medium flex-shrink-0"
-              >
-                <ArrowUpDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden md:inline">Bank Payments</span>
-              </button>
+              {sidebarConfig['Cash Receipts'] !== false && (
+                <button
+                  onClick={() => navigate('/cash-receipts')}
+                  className="bg-green-500 hover:bg-green-600 text-white px-2 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-1 text-xs sm:text-sm font-medium flex-shrink-0"
+                >
+                  <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden md:inline">Cash Receipts</span>
+                </button>
+              )}
+              {sidebarConfig['Cash Payments'] !== false && (
+                <button
+                  onClick={() => navigate('/cash-payments')}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-2 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-1 text-xs sm:text-sm font-medium flex-shrink-0"
+                >
+                  <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden md:inline">Cash Payments</span>
+                </button>
+              )}
+              {sidebarConfig['Bank Receipts'] !== false && (
+                <button
+                  onClick={() => navigate('/bank-receipts')}
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-2 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-1 text-xs sm:text-sm font-medium flex-shrink-0"
+                >
+                  <Building className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden md:inline">Bank Receipts</span>
+                </button>
+              )}
+              {sidebarConfig['Bank Payments'] !== false && (
+                <button
+                  onClick={() => navigate('/bank-payments')}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-2 sm:px-3 py-2 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center space-x-1 text-xs sm:text-sm font-medium flex-shrink-0"
+                >
+                  <ArrowUpDown className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden md:inline">Bank Payments</span>
+                </button>
+              )}
             </div>
             <div className="flex flex-1 min-w-0"></div>
             <div className="flex items-center gap-x-4 lg:gap-x-6">
@@ -473,16 +538,16 @@ export const Layout = ({ children }) => {
           </div>
         </div>
 
-          {/* Page content */}
-          <main className={`${isMobile ? 'py-2' : 'py-4'} overflow-x-hidden max-w-full`}>
-            <div className={`mx-auto max-w-full w-full overflow-x-hidden ${isMobile ? 'px-2' : 'px-2 sm:px-4 lg:px-6'}`}>
-              <ErrorBoundary>
-                {children}
-              </ErrorBoundary>
-            </div>
-          </main>
+        {/* Page content */}
+        <main className={`${isMobile ? 'py-2' : 'py-4'} overflow-x-hidden max-w-full`}>
+          <div className={`mx-auto max-w-full w-full overflow-x-hidden ${isMobile ? 'px-2' : 'px-2 sm:px-4 lg:px-6'}`}>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </div>
+        </main>
       </div>
-      
+
       {/* WhatsApp Floating Button */}
       <WhatsAppFloat />
     </div>

@@ -1071,34 +1071,16 @@ class ReturnManagementService {
     if (queryParams.customer) filter.customer = queryParams.customer;
     if (queryParams.priority) filter.priority = queryParams.priority;
 
-    // Date range filter
-    if (queryParams.startDate || queryParams.endDate) {
-      filter.returnDate = {};
-
-      if (queryParams.startDate) {
-        let start;
-        // Parse YYYY-MM-DD to local date if possible to avoid timezone issues
-        if (typeof queryParams.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(queryParams.startDate)) {
-          const [year, month, day] = queryParams.startDate.split('-').map(Number);
-          start = new Date(year, month - 1, day);
-        } else {
-          start = new Date(queryParams.startDate);
-        }
-        start.setHours(0, 0, 0, 0);
-        filter.returnDate.$gte = start;
-      }
-
-      if (queryParams.endDate) {
-        let end;
-        if (typeof queryParams.endDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(queryParams.endDate)) {
-          const [year, month, day] = queryParams.endDate.split('-').map(Number);
-          end = new Date(year, month - 1, day);
-        } else {
-          end = new Date(queryParams.endDate);
-        }
-        end.setHours(23, 59, 59, 999);
-        filter.returnDate.$lte = end;
-      }
+    // Date range filter - use dateFilter from middleware if available (Pakistan timezone)
+    // Otherwise fall back to legacy startDate/endDate handling
+    if (queryParams.dateFilter && Object.keys(queryParams.dateFilter).length > 0) {
+      // Merge date filter from middleware (already in Pakistan timezone)
+      Object.assign(filter, queryParams.dateFilter);
+    } else if (queryParams.startDate || queryParams.endDate) {
+      // Legacy date filtering (for backward compatibility)
+      const { buildDateRangeFilter } = require('../utils/dateFilter');
+      const dateFilter = buildDateRangeFilter(queryParams.startDate, queryParams.endDate, 'returnDate');
+      Object.assign(filter, dateFilter);
     }
 
     // Search filter

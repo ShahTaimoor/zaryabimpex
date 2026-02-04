@@ -32,8 +32,25 @@ class ReportsService {
    * @returns {Promise<object>}
    */
   async getSalesReport(queryParams) {
-    const dateFrom = queryParams.dateFrom ? new Date(queryParams.dateFrom) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const dateTo = queryParams.dateTo ? new Date(queryParams.dateTo) : new Date();
+    const { getStartOfDayPakistan, getEndOfDayPakistan } = require('../utils/dateFilter');
+    
+    // Use Pakistan timezone for date filtering
+    let dateFrom, dateTo;
+    if (queryParams.dateFrom) {
+      dateFrom = getStartOfDayPakistan(queryParams.dateFrom);
+    } else {
+      // Default to 30 days ago
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      dateFrom = getStartOfDayPakistan(thirtyDaysAgo.toISOString().split('T')[0]);
+    }
+    
+    if (queryParams.dateTo) {
+      dateTo = getEndOfDayPakistan(queryParams.dateTo);
+    } else {
+      dateTo = getEndOfDayPakistan(new Date().toISOString().split('T')[0]);
+    }
+    
     const groupBy = queryParams.groupBy || 'day';
     const orderType = queryParams.orderType;
 
@@ -78,7 +95,7 @@ class ReportsService {
         period.totalRevenue / period.totalOrders : 0;
     });
 
-    // Get sales returns for the same period
+    // Get sales returns for the same period (using Pakistan timezone dates)
     const salesReturns = await ReturnRepository.findAll({
       origin: 'sales',
       returnDate: { 
@@ -172,8 +189,24 @@ class ReportsService {
    * @returns {Promise<object>}
    */
   async getProductReport(queryParams) {
-    const dateFrom = queryParams.dateFrom ? new Date(queryParams.dateFrom) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const dateTo = queryParams.dateTo ? new Date(queryParams.dateTo) : new Date();
+    const { getStartOfDayPakistan, getEndOfDayPakistan } = require('../utils/dateFilter');
+    
+    // Use Pakistan timezone for date filtering
+    let dateFrom, dateTo;
+    if (queryParams.dateFrom) {
+      dateFrom = getStartOfDayPakistan(queryParams.dateFrom);
+    } else {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      dateFrom = getStartOfDayPakistan(thirtyDaysAgo.toISOString().split('T')[0]);
+    }
+    
+    if (queryParams.dateTo) {
+      dateTo = getEndOfDayPakistan(queryParams.dateTo);
+    } else {
+      dateTo = getEndOfDayPakistan(new Date().toISOString().split('T')[0]);
+    }
+    
     const limit = parseInt(queryParams.limit) || 20;
 
     const orders = await salesRepository.findAll({
@@ -232,8 +265,24 @@ class ReportsService {
    * @returns {Promise<object>}
    */
   async getCustomerReport(queryParams) {
-    const dateFrom = queryParams.dateFrom ? new Date(queryParams.dateFrom) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const dateTo = queryParams.dateTo ? new Date(queryParams.dateTo) : new Date();
+    const { getStartOfDayPakistan, getEndOfDayPakistan } = require('../utils/dateFilter');
+    
+    // Use Pakistan timezone for date filtering
+    let dateFrom, dateTo;
+    if (queryParams.dateFrom) {
+      dateFrom = getStartOfDayPakistan(queryParams.dateFrom);
+    } else {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      dateFrom = getStartOfDayPakistan(thirtyDaysAgo.toISOString().split('T')[0]);
+    }
+    
+    if (queryParams.dateTo) {
+      dateTo = getEndOfDayPakistan(queryParams.dateTo);
+    } else {
+      dateTo = getEndOfDayPakistan(new Date().toISOString().split('T')[0]);
+    }
+    
     const limit = parseInt(queryParams.limit) || 20;
     const businessType = queryParams.businessType;
 

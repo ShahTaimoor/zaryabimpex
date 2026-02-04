@@ -3,6 +3,8 @@ const { body, query, param } = require('express-validator');
 const StockMovement = require('../models/StockMovement'); // Still needed for new StockMovement() and static methods
 const Product = require('../models/Product'); // Still needed for model reference
 const { auth, requirePermission } = require('../middleware/auth');
+const { handleValidationErrors } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const stockMovementRepository = require('../repositories/StockMovementRepository');
 const productRepository = require('../repositories/ProductRepository');
 
@@ -50,10 +52,11 @@ router.get('/', [
     'purchase', 'sale', 'return_in', 'return_out', 'adjustment_in', 'adjustment_out',
     'transfer_in', 'transfer_out', 'damage', 'expiry', 'theft', 'production', 'consumption', 'initial_stock'
   ]).withMessage('Invalid movement type'),
-  query('dateFrom').optional({ checkFalsy: true }).isISO8601().withMessage('Invalid date format'),
-  query('dateTo').optional({ checkFalsy: true }).isISO8601().withMessage('Invalid date format'),
+  ...validateDateParams,
   query('location').optional({ checkFalsy: true }).isString().trim(),
-  query('status').optional({ checkFalsy: true }).isIn(['pending', 'completed', 'cancelled', 'reversed']).withMessage('Invalid status')
+  query('status').optional({ checkFalsy: true }).isIn(['pending', 'completed', 'cancelled', 'reversed']).withMessage('Invalid status'),
+  handleValidationErrors,
+  processDateFilter(['movementDate', 'createdAt']),
 ], async (req, res) => {
   try {
     const {
@@ -61,8 +64,6 @@ router.get('/', [
       limit = 20,
       product,
       movementType,
-      dateFrom,
-      dateTo,
       location,
       status,
       search
@@ -77,15 +78,9 @@ router.get('/', [
     if (location) query.location = location;
     if (status) query.status = status;
     
-    if (dateFrom || dateTo) {
-      query.createdAt = {};
-      const fromDate = toStartOfDay(dateFrom);
-      const toDate = toEndOfDay(dateTo);
-      if (fromDate) query.createdAt.$gte = fromDate;
-      if (toDate) query.createdAt.$lte = toDate;
-      if (Object.keys(query.createdAt).length === 0) {
-        delete query.createdAt;
-      }
+    // Date range filter - use dateFilter from middleware (Pakistan timezone)
+    if (req.dateFilter && Object.keys(req.dateFilter).length > 0) {
+      Object.assign(query, req.dateFilter);
     }
     
     if (decodedSearch) {

@@ -6,6 +6,8 @@ const path = require('path');
 const PDFDocument = require('pdfkit');
 const SalesOrder = require('../models/SalesOrder'); // Still needed for new SalesOrder() and static methods
 const { auth, requirePermission } = require('../middleware/auth');
+const { handleValidationErrors } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const inventoryService = require('../services/inventoryService');
 const salesOrderRepository = require('../repositories/SalesOrderRepository');
 const customerRepository = require('../repositories/CustomerRepository');
@@ -49,9 +51,10 @@ router.get('/', [
   query('search').optional().trim(),
   query('status').optional({ checkFalsy: true }).isIn(['draft', 'confirmed', 'partially_invoiced', 'fully_invoiced', 'cancelled', 'closed']),
   query('customer').optional({ checkFalsy: true }).isMongoId(),
-  query('fromDate').optional().isISO8601(),
-  query('toDate').optional().isISO8601(),
-  query('orderNumber').optional().trim()
+  ...validateDateParams,
+  query('orderNumber').optional().trim(),
+  handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -104,25 +107,9 @@ router.get('/', [
       filter.soNumber = { $regex: req.query.orderNumber, $options: 'i' };
     }
     
-    // Date filtering - support both dateFrom/dateTo (from Dashboard) and fromDate/toDate (legacy)
-    const dateFrom = req.query.dateFrom || req.query.fromDate;
-    const dateTo = req.query.dateTo || req.query.toDate;
-    
-    if (dateFrom || dateTo) {
-      filter.createdAt = {};
-      if (dateFrom) {
-        // Set to start of day (00:00:00) in local timezone
-        const fromDate = new Date(dateFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        filter.createdAt.$gte = fromDate;
-      }
-      if (dateTo) {
-        // Add 1 day to include the entire toDate (end of day 23:59:59.999)
-        const toDate = new Date(dateTo);
-        toDate.setDate(toDate.getDate() + 1);
-        toDate.setHours(0, 0, 0, 0);
-        filter.createdAt.$lt = toDate;
-      }
+    // Date filtering - use dateFilter from middleware (Pakistan timezone)
+    if (req.dateFilter && Object.keys(req.dateFilter).length > 0) {
+      Object.assign(filter, req.dateFilter);
     }
     
     

@@ -11,12 +11,12 @@ export const bankPaymentsApi = api.injectEndpoints({
       providesTags: (result) =>
         result?.data?.payments
           ? [
-              ...result.data.payments.map(({ _id, id }) => ({
-                type: 'BankPayments',
-                id: _id || id,
-              })),
-              { type: 'BankPayments', id: 'LIST' },
-            ]
+            ...result.data.payments.map(({ _id, id }) => ({
+              type: 'BankPayments',
+              id: _id || id,
+            })),
+            { type: 'BankPayments', id: 'LIST' },
+          ]
           : [{ type: 'BankPayments', id: 'LIST' }],
     }),
     createBankPayment: builder.mutation({
@@ -25,7 +25,18 @@ export const bankPaymentsApi = api.injectEndpoints({
         method: 'post',
         data,
       }),
-      invalidatesTags: [{ type: 'BankPayments', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'BankPayments', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+        { type: 'Banks', id: 'LIST' },
+      ],
     }),
     updateBankPayment: builder.mutation({
       query: ({ id, ...data }) => ({
@@ -36,6 +47,15 @@ export const bankPaymentsApi = api.injectEndpoints({
       invalidatesTags: (_r, _e, { id }) => [
         { type: 'BankPayments', id },
         { type: 'BankPayments', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+        { type: 'Banks', id: 'LIST' },
       ],
     }),
     deleteBankPayment: builder.mutation({
@@ -46,6 +66,15 @@ export const bankPaymentsApi = api.injectEndpoints({
       invalidatesTags: (_r, _e, id) => [
         { type: 'BankPayments', id },
         { type: 'BankPayments', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+        { type: 'Banks', id: 'LIST' },
       ],
     }),
     exportExcel: builder.mutation({

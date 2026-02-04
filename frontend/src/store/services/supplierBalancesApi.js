@@ -20,7 +20,13 @@ export const supplierBalancesApi = api.injectEndpoints({
       }),
       invalidatesTags: (_res, _err, { supplierId }) => [
         { type: 'Suppliers', id: supplierId },
+        { type: 'Suppliers', id: 'LIST' },
         { type: 'Accounting', id: 'SUPPLIER_BALANCE' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
         { type: 'CashPayments', id: 'LIST' },
       ],
     }),
@@ -32,7 +38,13 @@ export const supplierBalancesApi = api.injectEndpoints({
       }),
       invalidatesTags: (_res, _err, { supplierId }) => [
         { type: 'Suppliers', id: supplierId },
+        { type: 'Suppliers', id: 'LIST' },
         { type: 'Accounting', id: 'SUPPLIER_BALANCE' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
       ],
     }),
     recalculateBalance: builder.mutation({
@@ -42,7 +54,13 @@ export const supplierBalancesApi = api.injectEndpoints({
       }),
       invalidatesTags: (_res, _err, supplierId) => [
         { type: 'Suppliers', id: supplierId },
+        { type: 'Suppliers', id: 'LIST' },
         { type: 'Accounting', id: 'SUPPLIER_BALANCE' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
       ],
     }),
     canAcceptPurchase: builder.query({

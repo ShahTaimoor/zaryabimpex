@@ -1,6 +1,8 @@
 const express = require('express');
 const { body, validationResult, query } = require('express-validator');
 const { auth, requirePermission } = require('../middleware/auth');
+const { handleValidationErrors } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const inventoryService = require('../services/inventoryService');
 const purchaseOrderService = require('../services/purchaseOrderService');
 const supplierRepository = require('../repositories/SupplierRepository');
@@ -45,8 +47,9 @@ router.get('/', [
   query('search').optional().trim(),
   query('status').optional().isIn(['draft', 'confirmed', 'partially_received', 'fully_received', 'cancelled', 'closed']),
   query('supplier').optional().isMongoId(),
-  query('dateFrom').optional().isISO8601(),
-  query('dateTo').optional().isISO8601()
+  ...validateDateParams,
+  handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -54,8 +57,14 @@ router.get('/', [
       return res.status(400).json({ errors: errors.array() });
     }
 
+    // Merge date filter from middleware if present (for Pakistan timezone)
+    const queryParams = { ...req.query };
+    if (req.dateFilter && Object.keys(req.dateFilter).length > 0) {
+      queryParams.dateFilter = req.dateFilter;
+    }
+    
     // Call service to get purchase orders
-    const result = await purchaseOrderService.getPurchaseOrders(req.query);
+    const result = await purchaseOrderService.getPurchaseOrders(queryParams);
     
     res.json({
       purchaseOrders: result.purchaseOrders,

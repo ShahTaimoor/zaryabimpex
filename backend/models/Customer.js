@@ -22,7 +22,7 @@ const customerSchema = new mongoose.Schema({
     unique: true,
     sparse: true // Allows multiple null/undefined values, but ensures uniqueness for provided values
   },
-  
+
   // Business Information
   businessName: {
     type: String,
@@ -40,7 +40,7 @@ const customerSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  
+
   // Address Information
   addresses: [{
     type: {
@@ -61,7 +61,7 @@ const customerSchema = new mongoose.Schema({
       default: false
     }
   }],
-  
+
   // Customer Classification
   customerTier: {
     type: String,
@@ -91,7 +91,7 @@ const customerSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
-  
+
   // Payment Terms
   paymentTerms: {
     type: String,
@@ -104,7 +104,7 @@ const customerSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
-  
+
   // Preferences
   preferences: {
     defaultPaymentMethod: {
@@ -121,14 +121,14 @@ const customerSchema = new mongoose.Schema({
       default: false
     }
   },
-  
+
   // Status
   status: {
     type: String,
     enum: ['active', 'inactive', 'suspended'],
     default: 'active'
   },
-  
+
   // Credit Policy
   creditPolicy: {
     gracePeriodDays: {
@@ -155,7 +155,7 @@ const customerSchema = new mongoose.Schema({
       message: String
     }]
   },
-  
+
   // Suspension Information
   suspendedAt: Date,
   suspensionReason: String,
@@ -163,13 +163,13 @@ const customerSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  
+
   // Notes
   notes: {
     type: String,
     maxlength: 1000
   },
-  
+
   // Metadata
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -183,7 +183,7 @@ const customerSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'ChartOfAccounts'
   },
-  
+
   // Soft Delete Fields
   isDeleted: {
     type: Boolean,
@@ -202,7 +202,7 @@ const customerSchema = new mongoose.Schema({
     type: String,
     maxlength: 500
   },
-  
+
   // Anonymization (for GDPR)
   isAnonymized: {
     type: Boolean,
@@ -210,7 +210,7 @@ const customerSchema = new mongoose.Schema({
     index: true
   },
   anonymizedAt: Date,
-  
+
   // Version for optimistic locking
   version: {
     type: Number,
@@ -237,35 +237,35 @@ customerSchema.index({ isDeleted: 1, status: 1 }); // For soft delete queries
 customerSchema.index({ isAnonymized: 1 }); // For anonymized customers
 
 // Virtual for display name
-customerSchema.virtual('displayName').get(function() {
+customerSchema.virtual('displayName').get(function () {
   return this.businessName || this.name;
 });
 
 // Virtual for UI terminology alignment
-customerSchema.virtual('outstandingBalance').get(function() {
+customerSchema.virtual('outstandingBalance').get(function () {
   return this.pendingBalance;
 });
 
 // Method to get default address
-customerSchema.methods.getDefaultAddress = function(type = 'both') {
-  return this.addresses.find(addr => 
+customerSchema.methods.getDefaultAddress = function (type = 'both') {
+  return this.addresses.find(addr =>
     addr.isDefault && (addr.type === type || addr.type === 'both')
   );
 };
 
 // Method to check if customer can make purchase
-customerSchema.methods.canMakePurchase = function(amount) {
+customerSchema.methods.canMakePurchase = function (amount) {
   if (this.status !== 'active') return false;
   if (this.paymentTerms === 'cash') return true;
   return (this.currentBalance + amount) <= this.creditLimit;
 };
 
 // Method to get effective discount
-customerSchema.methods.getEffectiveDiscount = function() {
+customerSchema.methods.getEffectiveDiscount = function () {
   let discount = this.discountPercent;
-  
+
   // Apply tier-based discounts
-  switch(this.customerTier) {
+  switch (this.customerTier) {
     case 'silver':
       discount = Math.max(discount, 5);
       break;
@@ -276,7 +276,7 @@ customerSchema.methods.getEffectiveDiscount = function() {
       discount = Math.max(discount, 15);
       break;
   }
-  
+
   return discount;
 };
 
@@ -284,35 +284,35 @@ customerSchema.methods.getEffectiveDiscount = function() {
 const normalizeOptionalFields = (doc) => {
   if (!doc) return;
 
-  if (typeof doc.email === 'string') {
-    doc.email = doc.email.trim().toLowerCase();
-    if (doc.email === '') {
+  if (doc.email === null || (typeof doc.email === 'string')) {
+    if (doc.email !== null) doc.email = doc.email.trim().toLowerCase();
+    if (!doc.email) {
       doc.email = undefined;
     }
   }
 
-  if (typeof doc.phone === 'string' && doc.phone.trim() === '') {
+  if (doc.phone === null || (typeof doc.phone === 'string' && doc.phone.trim() === '')) {
     doc.phone = undefined;
   }
 
-  if (typeof doc.taxId === 'string' && doc.taxId.trim() === '') {
+  if (doc.taxId === null || (typeof doc.taxId === 'string' && doc.taxId.trim() === '')) {
     doc.taxId = undefined;
   }
 
-  if (typeof doc.ledgerAccount === 'string') {
-    doc.ledgerAccount = doc.ledgerAccount.trim();
-    if (doc.ledgerAccount === '') {
+  if (doc.ledgerAccount === null || (typeof doc.ledgerAccount === 'string')) {
+    if (doc.ledgerAccount !== null) doc.ledgerAccount = doc.ledgerAccount.trim();
+    if (!doc.ledgerAccount) {
       doc.ledgerAccount = undefined;
     }
   }
 };
 
-customerSchema.pre('validate', function(next) {
+customerSchema.pre('validate', function (next) {
   normalizeOptionalFields(this);
   next();
 });
 
-customerSchema.pre('findOneAndUpdate', function(next) {
+customerSchema.pre('findOneAndUpdate', function (next) {
   const update = this.getUpdate();
   if (!update) return next();
 

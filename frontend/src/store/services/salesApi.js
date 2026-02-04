@@ -11,9 +11,9 @@ export const salesApi = api.injectEndpoints({
       providesTags: (result) =>
         result?.items
           ? [
-              ...result.items.map(({ id, _id }) => ({ type: 'Sales', id: id || _id })),
-              { type: 'Sales', id: 'LIST' },
-            ]
+            ...result.items.map(({ id, _id }) => ({ type: 'Sales', id: id || _id })),
+            { type: 'Sales', id: 'LIST' },
+          ]
           : [{ type: 'Sales', id: 'LIST' }],
     }),
     createSale: builder.mutation({
@@ -30,6 +30,9 @@ export const salesApi = api.injectEndpoints({
         { type: 'Products', id: 'LIST' }, // Invalidate products to refresh stock levels
         { type: 'Inventory', id: 'LIST' }, // Invalidate inventory cache
         { type: 'Customers', id: 'LIST' }, // Invalidate customers to refresh credit information
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
       ],
     }),
     getOrders: builder.query({
@@ -41,9 +44,9 @@ export const salesApi = api.injectEndpoints({
       providesTags: (result) =>
         result?.items || result?.data?.items
           ? [
-              ...(result.items || result.data.items).map(({ id, _id }) => ({ type: 'Sales', id: id || _id })),
-              { type: 'Sales', id: 'LIST' },
-            ]
+            ...(result.items || result.data.items).map(({ id, _id }) => ({ type: 'Sales', id: id || _id })),
+            { type: 'Sales', id: 'LIST' },
+          ]
           : [{ type: 'Sales', id: 'LIST' }],
     }),
     getTodaySummary: builder.query({
@@ -101,9 +104,9 @@ export const salesApi = api.injectEndpoints({
       providesTags: (result) =>
         result?.orders
           ? [
-              ...result.orders.map(({ _id, id }) => ({ type: 'Sales', id: _id || id })),
-              { type: 'Sales', id: 'CCTV_LIST' },
-            ]
+            ...result.orders.map(({ _id, id }) => ({ type: 'Sales', id: _id || id })),
+            { type: 'Sales', id: 'CCTV_LIST' },
+          ]
           : [{ type: 'Sales', id: 'CCTV_LIST' }],
     }),
   }),

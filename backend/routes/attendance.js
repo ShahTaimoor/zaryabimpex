@@ -1,6 +1,8 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 const { auth, requireAnyPermission } = require('../middleware/auth');
+const { handleValidationErrors } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const Attendance = require('../models/Attendance'); // Still needed for new Attendance() and static methods
 const Employee = require('../models/Employee'); // Still needed for model reference
 const attendanceRepository = require('../repositories/AttendanceRepository');
@@ -201,8 +203,9 @@ router.get('/me', [
   auth,
   requireAnyPermission(['view_own_attendance', 'clock_attendance']),
   query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('startDate').optional().isISO8601(),
-  query('endDate').optional().isISO8601(),
+  ...validateDateParams,
+  handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
   try {
     const employee = await employeeRepository.findByUserAccount(req.user._id);
@@ -213,16 +216,9 @@ router.get('/me', [
     const limit = parseInt(req.query.limit || '30');
     const query = { employee: employee._id };
     
-    if (req.query.startDate || req.query.endDate) {
-      query.createdAt = {};
-      if (req.query.startDate) {
-        query.createdAt.$gte = new Date(req.query.startDate);
-      }
-      if (req.query.endDate) {
-        const endDate = new Date(req.query.endDate);
-        endDate.setHours(23, 59, 59, 999);
-        query.createdAt.$lte = endDate;
-      }
+    // Use dateFilter from middleware (Pakistan timezone)
+    if (req.dateFilter && Object.keys(req.dateFilter).length > 0) {
+      Object.assign(query, req.dateFilter);
     }
     
     const result = await attendanceRepository.findWithPagination(query, {
@@ -257,28 +253,11 @@ router.get('/team', [
   },
   query('limit').optional().isInt({ min: 1, max: 100 }),
   query('employeeId').optional().isMongoId(),
-  query('startDate').optional().isISO8601(),
-  query('endDate').optional().isISO8601(),
+  ...validateDateParams,
   query('status').optional().isIn(['open', 'closed']),
+  handleValidationErrors,
+  processDateFilter('createdAt'),
 ], async (req, res) => {
-  // Check for validation errors
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    logger.warn('Team attendance validation failed', {
-      errors: errors.array(),
-      query: req.query
-    });
-    return res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array().map(error => ({
-        field: error.param,
-        message: error.msg,
-        value: error.value
-      }))
-    });
-  }
-
   try {
     const limit = parseInt(req.query.limit || '50');
     const filterQuery = {};
@@ -291,29 +270,9 @@ router.get('/team', [
       filterQuery.status = req.query.status;
     }
     
-    if (req.query.startDate || req.query.endDate) {
-      filterQuery.createdAt = {};
-      if (req.query.startDate) {
-        const startDate = new Date(req.query.startDate);
-        if (isNaN(startDate.getTime())) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Invalid startDate format. Use ISO 8601 format (YYYY-MM-DD)' 
-          });
-        }
-        filterQuery.createdAt.$gte = startDate;
-      }
-      if (req.query.endDate) {
-        const endDate = new Date(req.query.endDate);
-        if (isNaN(endDate.getTime())) {
-          return res.status(400).json({ 
-            success: false, 
-            message: 'Invalid endDate format. Use ISO 8601 format (YYYY-MM-DD)' 
-          });
-        }
-        endDate.setHours(23, 59, 59, 999);
-        filterQuery.createdAt.$lte = endDate;
-      }
+    // Use dateFilter from middleware (Pakistan timezone)
+    if (req.dateFilter && Object.keys(req.dateFilter).length > 0) {
+      Object.assign(filterQuery, req.dateFilter);
     }
     
     logger.debug('Fetching team attendance', {

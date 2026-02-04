@@ -82,6 +82,11 @@ export const componentRegistry = {
     icon: 'ArrowUpDown',
     component: () => import('../pages/StockMovements').then(m => m.default || m.StockMovements)
   },
+  '/stock-ledger': {
+    title: 'Stock Ledger',
+    icon: 'FileText',
+    component: () => import('../pages/StockLedger').then(m => m.default || m.StockLedger)
+  },
   '/returns': {
     title: 'Returns',
     icon: 'RotateCcw',

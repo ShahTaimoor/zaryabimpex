@@ -11,12 +11,12 @@ export const journalVouchersApi = api.injectEndpoints({
       providesTags: (result) =>
         result?.data?.vouchers || result?.vouchers
           ? [
-              ...(result.data?.vouchers || result.vouchers).map(({ _id, id }) => ({
-                type: 'JournalVouchers',
-                id: _id || id,
-              })),
-              { type: 'JournalVouchers', id: 'LIST' },
-            ]
+            ...(result.data?.vouchers || result.vouchers).map(({ _id, id }) => ({
+              type: 'JournalVouchers',
+              id: _id || id,
+            })),
+            { type: 'JournalVouchers', id: 'LIST' },
+          ]
           : [{ type: 'JournalVouchers', id: 'LIST' }],
     }),
     getJournalVoucher: builder.query({
@@ -32,7 +32,17 @@ export const journalVouchersApi = api.injectEndpoints({
         method: 'post',
         data,
       }),
-      invalidatesTags: [{ type: 'JournalVouchers', id: 'LIST' }],
+      invalidatesTags: [
+        { type: 'JournalVouchers', id: 'LIST' },
+        { type: 'Customers', id: 'LIST' },
+        { type: 'Suppliers', id: 'LIST' },
+        { type: 'Accounting', id: 'LEDGER_SUMMARY' },
+        { type: 'Accounting', id: 'LEDGER_ENTRIES' },
+        { type: 'Accounting', id: 'ALL_ENTRIES' },
+        { type: 'ChartOfAccounts', id: 'LIST' },
+        { type: 'ChartOfAccounts', id: 'STATS' },
+        { type: 'ChartOfAccounts', id: 'HIERARCHY' },
+      ],
     }),
   }),
   overrideExisting: false,

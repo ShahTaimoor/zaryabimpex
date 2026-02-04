@@ -14,53 +14,37 @@ import { useGetSummaryQuery } from '../store/services/plStatementsApi';
 import { handleApiError } from '../utils/errorHandler';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { formatCurrency } from '../utils/formatters';
+import DateFilter from '../components/DateFilter';
+import { getCurrentDatePakistan, getStartOfMonth } from '../utils/dateUtils';
 
-// Helper function to get local date in YYYY-MM-DD format
-const getLocalDateString = (date = new Date()) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-// Helper function to format date for display (avoid timezone shifts)
+// Helper function to format date for display (using Pakistan timezone utilities)
 const formatDate = (dateString) => {
   if (!dateString) return '';
-  
-  // If dateString is already in YYYY-MM-DD format, parse it directly
-  if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    const [year, month, day] = dateString.split('-').map(Number);
-    const date = new Date(year, month - 1, day); // Use local date constructor
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+  try {
+    return formatDatePakistan(dateString);
+  } catch (e) {
+    // Fallback to simple formatting
+    if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [year, month, day] = dateString.split('-');
+      return new Date(year, month - 1, day).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+    return dateString;
   }
-  
-  // For other formats, try to parse but use local components
-  const date = new Date(dateString);
-  // Extract local date components to avoid timezone shifts
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const day = date.getDate();
-  const localDate = new Date(year, month, day);
-  return localDate.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
-  });
 };
 
 export const PLStatements = () => {
   // Get first day of current month and today
-  const today = new Date();
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const today = getCurrentDatePakistan();
+  const firstDayOfMonth = getStartOfMonth();
   
-  const [fromDate, setFromDate] = useState(getLocalDateString(firstDayOfMonth));
-  const [toDate, setToDate] = useState(getLocalDateString(today));
-  const [searchFromDate, setSearchFromDate] = useState(getLocalDateString(firstDayOfMonth));
-  const [searchToDate, setSearchToDate] = useState(getLocalDateString(today));
+  const [fromDate, setFromDate] = useState(firstDayOfMonth);
+  const [toDate, setToDate] = useState(today);
+  const [searchFromDate, setSearchFromDate] = useState(firstDayOfMonth);
+  const [searchToDate, setSearchToDate] = useState(today);
   const [showData, setShowData] = useState(false);
 
   // Fetch P&L summary when search is clicked
@@ -427,34 +411,21 @@ export const PLStatements = () => {
 
         <div className="p-6 bg-slate-50/50">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-            <div className="md:col-span-4">
+            <div className="md:col-span-8">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">
-                Statement Period From
+                Statement Period
               </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-700 font-medium"
-                />
-              </div>
-            </div>
-
-            <div className="md:col-span-4">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 ml-1">
-                Statement Period To
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-700 font-medium"
-                />
-              </div>
+              <DateFilter
+                startDate={fromDate}
+                endDate={toDate}
+                onDateChange={(start, end) => {
+                  setFromDate(start || '');
+                  setToDate(end || '');
+                }}
+                compact={true}
+                showPresets={true}
+                className="w-full"
+              />
             </div>
 
             <div className="md:col-span-4">

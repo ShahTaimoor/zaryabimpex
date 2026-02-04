@@ -2,6 +2,8 @@ const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
 const mongoose = require('mongoose');
 const { auth, requirePermission } = require('../middleware/auth');
+const { handleValidationErrors } = require('../middleware/validation');
+const { validateDateParams, processDateFilter } = require('../middleware/dateFilter');
 const { checkSegregationOfDuties } = require('../middleware/segregationOfDuties');
 const JournalVoucher = require('../models/JournalVoucher'); // Still needed for new JournalVoucher() and static methods
 const ChartOfAccounts = require('../models/ChartOfAccounts'); // Still needed for model reference
@@ -11,16 +13,7 @@ const chartOfAccountsRepository = require('../repositories/ChartOfAccountsReposi
 
 const router = express.Router();
 
-const withValidation = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      success: false,
-      errors: errors.array()
-    });
-  }
-  next();
-};
+// Removed withValidation - using handleValidationErrors from middleware/validation instead
 
 router.get('/', [
   auth,
@@ -28,17 +21,16 @@ router.get('/', [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
   query('status').optional({ checkFalsy: true }).isIn(['draft', 'posted']).withMessage('Invalid status filter'),
-  query('fromDate').optional({ checkFalsy: true }).isISO8601().withMessage('Invalid from date'),
-  query('toDate').optional({ checkFalsy:true }).isISO8601().withMessage('Invalid to date'),
-  query('search').optional({ checkFalsy:true }).isString().trim().isLength({ max: 100 }).withMessage('Search must be a string')
-], withValidation, async (req, res) => {
+  ...validateDateParams,
+  query('search').optional({ checkFalsy:true }).isString().trim().isLength({ max: 100 }).withMessage('Search must be a string'),
+  handleValidationErrors,
+  processDateFilter('voucherDate'),
+], async (req, res) => {
   try {
     const {
       page = 1,
       limit = 20,
       status,
-      fromDate,
-      toDate,
       search
     } = req.query;
 
@@ -48,18 +40,9 @@ router.get('/', [
       filter.status = status;
     }
 
-    if (fromDate || toDate) {
-      filter.voucherDate = {};
-      if (fromDate) {
-        const start = new Date(fromDate);
-        start.setHours(0, 0, 0, 0);
-        filter.voucherDate.$gte = start;
-      }
-      if (toDate) {
-        const end = new Date(toDate);
-        end.setHours(23, 59, 59, 999);
-        filter.voucherDate.$lte = end;
-      }
+    // Date range filter - use dateFilter from middleware (Pakistan timezone)
+    if (req.dateFilter && Object.keys(req.dateFilter).length > 0) {
+      Object.assign(filter, req.dateFilter);
     }
 
     if (search) {
@@ -113,7 +96,7 @@ router.get('/:id', [
   auth,
   requirePermission('view_reports'),
   param('id').isMongoId().withMessage('Invalid voucher ID')
-], withValidation, async (req, res) => {
+], handleValidationErrors, async (req, res) => {
   try {
     const voucher = await journalVoucherRepository.findById(req.params.id, {
       populate: [
@@ -157,7 +140,7 @@ router.post('/', [
   body('entries.*.credit').optional().isFloat({ min: 0 }).withMessage('Credit must be a non-negative number'),
   body('entries.*.particulars').optional().isString().trim().isLength({ max: 500 }).withMessage('Particulars are too long'),
   body('approvalThreshold').optional().isFloat({ min: 0 }).withMessage('Approval threshold must be a non-negative number')
-], withValidation, async (req, res) => {
+], handleValidationErrors, async (req, res) => {
   try {
     const { voucherDate, reference, description, entries, notes } = req.body;
     const createdBy = req.user?._id;
@@ -285,7 +268,7 @@ router.post('/:id/approve', [
   checkSegregationOfDuties('manage_reports', 'approve_journal_vouchers'),
   param('id').isMongoId().withMessage('Valid voucher ID is required'),
   body('notes').optional().isString().trim().isLength({ max: 500 }).withMessage('Notes too long')
-], withValidation, async (req, res) => {
+], handleValidationErrors, async (req, res) => {
   try {
     const voucher = await journalVoucherRepository.findById(req.params.id);
     
@@ -369,7 +352,7 @@ router.post('/:id/reject', [
   checkSegregationOfDuties('manage_reports', 'approve_journal_vouchers'),
   param('id').isMongoId().withMessage('Valid voucher ID is required'),
   body('reason').trim().isLength({ min: 1, max: 500 }).withMessage('Rejection reason is required (max 500 characters)')
-], withValidation, async (req, res) => {
+], handleValidationErrors, async (req, res) => {
   try {
     const voucher = await journalVoucherRepository.findById(req.params.id);
     
@@ -431,7 +414,7 @@ router.get('/:id/approval-status', [
   auth,
   requirePermission('view_reports'),
   param('id').isMongoId().withMessage('Valid voucher ID is required')
-], withValidation, async (req, res) => {
+], handleValidationErrors, async (req, res) => {
   try {
     const voucher = await journalVoucherRepository.findById(req.params.id, {
       populate: [
