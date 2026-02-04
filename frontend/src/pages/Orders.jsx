@@ -323,6 +323,28 @@ export const Orders = () => {
     }
     const contactLine = contactSegments.length ? `<div>${contactSegments.join(' | ')}</div>` : '';
 
+    // Get customer address from addresses array
+    let customerAddress = '';
+    const customer = order.customer || order.customerInfo || {};
+    if (customer.addresses && Array.isArray(customer.addresses) && customer.addresses.length > 0) {
+      // Try to find default address first, then billing address, then first address
+      const defaultAddress = customer.addresses.find(addr => addr.isDefault) ||
+                             customer.addresses.find(addr => addr.type === 'billing' || addr.type === 'both') ||
+                             customer.addresses[0];
+      
+      if (defaultAddress) {
+        const addressParts = [];
+        if (defaultAddress.street) addressParts.push(defaultAddress.street);
+        if (defaultAddress.city) addressParts.push(defaultAddress.city);
+        if (defaultAddress.state) addressParts.push(defaultAddress.state);
+        customerAddress = addressParts.join(', ');
+      }
+    }
+    // Fallback to old address field if addresses array is not available
+    if (!customerAddress) {
+      customerAddress = order.customerInfo?.address || '';
+    }
+
     const printContent = `
       <!DOCTYPE html>
       <html>
@@ -362,10 +384,10 @@ export const Orders = () => {
         <div class="invoice-details">
           <div class="customer-info">
             <div class="section-title">Bill To:</div>
-            <div><strong>${order.customerInfo?.name || 'N/A'}</strong></div>
-            <div>${order.customerInfo?.email || ''}</div>
-            <div>${order.customerInfo?.phone || ''}</div>
-            <div>${order.customerInfo?.address || ''}</div>
+            <div><strong>${order.customerInfo?.name || customer.businessName || customer.name || 'N/A'}</strong></div>
+            <div>${order.customerInfo?.email || customer.email || ''}</div>
+            <div>${order.customerInfo?.phone || customer.phone || ''}</div>
+            ${customerAddress ? `<div>${customerAddress}</div>` : ''}
             ${order.customerInfo?.pendingBalance ? `<div style="margin-top: 10px;"><strong>Pending Balance: ${Math.round(order.customerInfo.pendingBalance)}</strong></div>` : ''}
           </div>
           <div class="invoice-info">

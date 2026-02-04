@@ -76,7 +76,8 @@ const PrintDocument = ({
                 name: 'Walk-in Customer',
                 email: 'N/A',
                 phone: 'N/A',
-                extra: ''
+                extra: '',
+                address: ''
             };
         }
 
@@ -90,6 +91,24 @@ const PrintDocument = ({
                 ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
                 : '') ||
             'Walk-in Customer';
+        
+        // Get customer address from addresses array
+        let customerAddress = '';
+        if (customer.addresses && Array.isArray(customer.addresses) && customer.addresses.length > 0) {
+            // Try to find default address first, then billing address, then first address
+            const defaultAddress = customer.addresses.find(addr => addr.isDefault) ||
+                                   customer.addresses.find(addr => addr.type === 'billing' || addr.type === 'both') ||
+                                   customer.addresses[0];
+            
+            if (defaultAddress) {
+                const addressParts = [];
+                if (defaultAddress.street) addressParts.push(defaultAddress.street);
+                if (defaultAddress.city) addressParts.push(defaultAddress.city);
+                if (defaultAddress.state) addressParts.push(defaultAddress.state);
+                customerAddress = addressParts.join(', ');
+            }
+        }
+        
         return {
             name: composedName,
             email: customer.email || 'N/A',
@@ -98,7 +117,8 @@ const PrintDocument = ({
                 customer.companyName ||
                 orderData.customerInfo?.businessName ||
                 orderData.customer?.businessName ||
-                ''
+                '',
+            address: customerAddress || orderData.customerInfo?.address || ''
         };
     }, [orderData]);
 
@@ -177,7 +197,7 @@ const PrintDocument = ({
         partyInfo.extra || null,
         partyInfo.email !== 'N/A' && showEmail ? partyInfo.email : null,
         partyInfo.phone !== 'N/A' ? partyInfo.phone : null,
-        orderData?.customerInfo?.address || null
+        partyInfo.address || null
     ].filter(Boolean);
 
     const invoiceDetailLines = [

@@ -162,7 +162,7 @@ router.get('/cctv-orders', [
 
     // Get orders with CCTV timestamps
     const orders = await Sales.find(query)
-      .populate('customer', 'displayName firstName lastName email phone')
+      .populate('customer', 'displayName firstName lastName email phone addresses')
       .populate('createdBy', 'firstName lastName')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -1755,7 +1755,7 @@ router.post('/export/excel', [auth, requirePermission('view_orders')], async (re
     }
 
     const orders = await Sales.find(filter)
-      .populate('customer', 'businessName name firstName lastName email phone')
+      .populate('customer', 'businessName name firstName lastName email phone addresses')
       .populate('items.product', 'name')
       .populate('createdBy', 'firstName lastName email')
       .sort({ createdAt: -1 })
@@ -1908,7 +1908,7 @@ router.post('/export/csv', [auth, requirePermission('view_orders')], async (req,
     }
 
     const orders = await Sales.find(filter)
-      .populate('customer', 'businessName name firstName lastName email phone')
+      .populate('customer', 'businessName name firstName lastName email phone addresses')
       .populate('items.product', 'name')
       .populate('createdBy', 'firstName lastName email')
       .sort({ createdAt: -1 })
@@ -2042,7 +2042,7 @@ router.post('/export/pdf', [auth, requirePermission('view_orders')], async (req,
     }
 
     const orders = await Sales.find(filter)
-      .populate('customer', 'businessName name firstName lastName email phone pendingBalance currentBalance')
+      .populate('customer', 'businessName name firstName lastName email phone pendingBalance currentBalance addresses')
       .populate('items.product', 'name')
       .populate('createdBy', 'firstName lastName email')
       .sort({ createdAt: -1 })
@@ -2631,7 +2631,7 @@ router.post('/export/json', [auth, requirePermission('view_orders')], async (req
     }
 
     const orders = await Sales.find(filter)
-      .populate('customer', 'businessName name firstName lastName email phone')
+      .populate('customer', 'businessName name firstName lastName email phone addresses')
       .populate('items.product', 'name')
       .populate('createdBy', 'firstName lastName email')
       .sort({ createdAt: -1 })
