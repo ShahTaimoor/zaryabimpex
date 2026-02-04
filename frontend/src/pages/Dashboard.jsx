@@ -22,7 +22,8 @@ import {
   ArrowUpCircle,
   Truck,
   Tag,
-  Eye
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import DashboardReportModal from '../components/DashboardReportModal';
 import {
@@ -40,6 +41,7 @@ import { useGetCashPaymentsQuery } from '../store/services/cashPaymentsApi';
 import { useGetBankReceiptsQuery } from '../store/services/bankReceiptsApi';
 import { useGetBankPaymentsQuery } from '../store/services/bankPaymentsApi';
 import { useGetUpcomingExpensesQuery } from '../store/services/expensesApi';
+import { useGetCompanySettingsQuery } from '../store/services/settingsApi';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage, LoadingInline } from '../components/LoadingSpinner';
 import PeriodComparisonSection from '../components/PeriodComparisonSection';
@@ -77,11 +79,30 @@ const StatCard = ({ title, value, icon: Icon, color, change, changeType }) => (
   </div>
 );
 
+const DASHBOARD_HIDDEN_KEY = 'dashboardDataHidden';
+
 export const Dashboard = () => {
   const navigate = useNavigate();
   const today = getCurrentDatePakistan();
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
+
+  // Hide dashboard data: when true, show only business logo; when false, show full dashboard
+  const [dashboardHidden, setDashboardHidden] = useState(() => {
+    try {
+      return localStorage.getItem(DASHBOARD_HIDDEN_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleDashboardVisibility = () => {
+    const next = !dashboardHidden;
+    setDashboardHidden(next);
+    try {
+      localStorage.setItem(DASHBOARD_HIDDEN_KEY, String(next));
+    } catch (_) {}
+  };
 
   // Modal states
   const [showSalesOrdersModal, setShowSalesOrdersModal] = useState(false);
@@ -208,6 +229,8 @@ export const Dashboard = () => {
     { days: 14 },
     { pollingInterval: 60000 }
   );
+
+  const { data: companySettingsData } = useGetCompanySettingsQuery();
 
   if (summaryLoading || lowStockLoading || inventoryLoading || customersLoading ||
     salesOrdersLoading || pendingSalesOrdersLoading || purchaseOrdersLoading || pendingPurchaseOrdersLoading ||
@@ -420,6 +443,10 @@ export const Dashboard = () => {
   const bankReceiptsDataArray = bankReceiptsData?.data?.bankReceipts || [];
   const bankPaymentsDataArray = bankPayments;
 
+  const companyInfo = companySettingsData?.data || {};
+  const companyLogo = companyInfo.logo;
+  const companyName = companyInfo.companyName || companyInfo.businessName || '';
+
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
@@ -427,16 +454,67 @@ export const Dashboard = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm sm:text-base text-gray-600">Welcome back! Here's what's happening today.</p>
         </div>
-        <div className="hidden md:flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => navigate('/cash-receiving')}
-            className="btn btn-primary items-center justify-center space-x-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex"
+            type="button"
+            onClick={toggleDashboardVisibility}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors"
+            title={dashboardHidden ? 'Show dashboard data' : 'Hide dashboard data'}
           >
-            <Receipt className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="text-sm sm:text-base font-medium">Cash Receiving</span>
+            {dashboardHidden ? (
+              <>
+                <Eye className="h-4 w-4" />
+                <span>Unhide data</span>
+              </>
+            ) : (
+              <>
+                <EyeOff className="h-4 w-4" />
+                <span>Hide data</span>
+              </>
+            )}
           </button>
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={() => navigate('/cash-receiving')}
+              className="btn btn-primary items-center justify-center space-x-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex"
+            >
+              <Receipt className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-sm sm:text-base font-medium">Cash Receiving</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {dashboardHidden ? (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+          <div className="flex flex-col items-center gap-6 max-w-md text-center">
+            {companyLogo ? (
+              <img
+                src={companyLogo}
+                alt={companyName || 'Company logo'}
+                className="max-h-48 w-auto max-w-full object-contain"
+              />
+            ) : (
+              <div className="w-40 h-40 rounded-xl bg-gray-100 flex items-center justify-center">
+                <Building className="h-20 w-20 text-gray-400" />
+              </div>
+            )}
+            {companyName && (
+              <h2 className="text-xl font-semibold text-gray-800">{companyName}</h2>
+            )}
+            <p className="text-sm text-gray-500">Dashboard data is hidden. Click &quot;Unhide data&quot; to view again.</p>
+            <button
+              type="button"
+              onClick={toggleDashboardVisibility}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 text-sm font-medium"
+            >
+              <Eye className="h-4 w-4" />
+              Unhide data
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
 
       {upcomingRecurringExpenses.length > 0 && (
         <div className="card">
@@ -1010,6 +1088,8 @@ export const Dashboard = () => {
           setEndDate(to);
         }}
       />
+        </>
+      )}
     </div>
   );
 };

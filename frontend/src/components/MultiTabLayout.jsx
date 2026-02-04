@@ -476,10 +476,12 @@ export const MultiTabLayout = ({ children }) => {
           {/* Main Navigation Container */}
           <div className="flex flex-1 items-center gap-2 sm:gap-3 lg:gap-4 min-w-0">
             {/* Alerts Button - Left Aligned - Always visible on top */}
-            <div className="flex-shrink-0">
-              <InventoryAlertsBadge onNavigate={handleNavigationClick} />
-            </div>
-            
+            {sidebarConfig['Inventory Alerts'] !== false && (
+              <div className="flex-shrink-0">
+                <InventoryAlertsBadge onNavigate={handleNavigationClick} />
+              </div>
+            )}
+
             {/* Mobile Top Bar Buttons - Cash Receiving and Record Expense */}
             <div className="flex-shrink-0 lg:hidden flex items-center gap-2">
               {sidebarConfig['Cash Receipts'] !== false && (
@@ -561,8 +563,9 @@ export const MultiTabLayout = ({ children }) => {
               )}
             </div>
 
+
             {/* User Profile Section - Right Aligned with Dropdown */}
-            <div className="relative flex items-center gap-2 sm:gap-3 flex-shrink-0 overflow-visible" ref={userMenuRef}>
+            <div className="relative flex items-center gap-2 sm:gap-3 ml-auto flex-shrink-0 overflow-visible" ref={userMenuRef}>
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1.5 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
