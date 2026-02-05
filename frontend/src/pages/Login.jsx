@@ -205,7 +205,7 @@ export const Login = () => {
                 </a>
                 <div className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200">
                   <MapPin className="w-4 h-4 mr-2 text-gray-500" />
-                  Ug 390 Deans trade center Peshawar
+                  UG 390, Deans Trade Center, Cantt Peshawar
                 </div>
               </div>
             </div>
