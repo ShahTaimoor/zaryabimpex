@@ -37,7 +37,7 @@ export const ProductList = ({
                   onChange={() => bulkOps.toggleSelectAll(products)}
                 />
               </div>
-              <div className="col-span-3 xl:col-span-4">
+              <div className="col-span-5 xl:col-span-5">
                 <h3 className="text-xs xl:text-sm font-medium text-gray-700">Product Name</h3>
                 <p className="text-xs text-gray-500">Description</p>
               </div>
@@ -59,7 +59,7 @@ export const ProductList = ({
               <div className="col-span-1">
                 <h3 className="text-xs xl:text-sm font-medium text-gray-700">Status</h3>
               </div>
-              <div className="col-span-2 xl:col-span-1">
+              <div className="col-span-1">
                 <h3 className="text-xs xl:text-sm font-medium text-gray-700">Actions</h3>
               </div>
             </div>
@@ -90,7 +90,7 @@ export const ProductList = ({
                       onChange={() => bulkOps.toggleSelection(product._id)}
                     />
                   </div>
-                  <div className="col-span-3 xl:col-span-4 min-w-0">
+                  <div className="col-span-5 xl:col-span-5 min-w-0">
                     <div className="flex items-center space-x-2 xl:space-x-3">
                       <Package className="h-4 w-4 xl:h-5 xl:w-5 text-gray-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
@@ -161,7 +161,7 @@ export const ProductList = ({
                     </span>
                   </div>
 
-                  <div className="col-span-2 xl:col-span-1">
+                  <div className="col-span-1">
                     <div className="flex items-center space-x-1.5 xl:space-x-2 flex-wrap">
                       <button
                         onClick={() => onGenerateBarcode(product)}

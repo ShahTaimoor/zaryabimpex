@@ -739,31 +739,50 @@ router.post('/import/csv', [
         for (let i = 0; i < products.length; i++) {
           try {
             const row = products[i];
+
+            // Map CSV columns to our internal field names.
+            // This supports both exported/template headers like "Product Name"
+            // and simpler keys like "name", "cost", etc.
+            const mapped = {
+              name: row['Product Name'] || row['Name'] || row['Product'] || row.name,
+              description: row['Description'] || row['description'] || row.description || '',
+              category: row['Category'] || row['category'] || row.category || 'Uncategorized',
+              brand: row['Brand'] || row['brand'] || row.brand || '',
+              barcode: row['Barcode'] || row['barcode'] || row.barcode || '',
+              sku: row['SKU'] || row['Sku'] || row['sku'] || row.sku || '',
+              supplier: row['Supplier'] || row['supplier'] || row.supplier || '',
+              cost: row['Cost Price'] || row['Cost'] || row['cost'] || row.cost,
+              retail: row['Retail Price'] || row['Retail'] || row['retail'] || row.retail,
+              wholesale: row['Wholesale Price'] || row['Wholesale'] || row['wholesale'] || row.wholesale,
+              currentStock: row['Current Stock'] || row['Stock'] || row['currentStock'] || row.stock,
+              reorderPoint: row['Reorder Point'] || row['Reorder'] || row['reorderPoint'] || row.reorder,
+              status: row['Status'] || row['status'] || 'active'
+            };
             
             // Validate required fields
-            if (!row.name) {
+            if (!mapped.name) {
               results.errors.push({
                 row: i + 2, // +2 because CSV has header and 0-based index
-                error: 'Missing required field: name is required'
+                error: 'Missing required field: Product Name is required'
               });
               continue;
             }
             
             // Check if product already exists
-            const productExists = await productService.productExistsByName(row.name.trim());
+            const productExists = await productService.productExistsByName(mapped.name.toString().trim());
             
             if (productExists) {
               results.errors.push({
                 row: i + 2,
-                error: `Product already exists with name: ${row.name}`
+                error: `Product already exists with name: ${mapped.name}`
               });
               continue;
             }
             
             // Validate and parse pricing
-            const cost = parseFloat(row.cost);
-            const retail = parseFloat(row.retail);
-            const wholesale = parseFloat(row.wholesale);
+            const cost = parseFloat(mapped.cost);
+            const retail = parseFloat(mapped.retail);
+            const wholesale = parseFloat(mapped.wholesale);
             
             if (isNaN(cost) || cost < 0) {
               results.errors.push({
@@ -805,23 +824,23 @@ router.post('/import/csv', [
             
             // Create product using service
             const productData = {
-              name: row.name.trim(),
-              description: row.description?.trim() || '',
-              category: row.category?.trim() || 'Uncategorized',
-              brand: row.brand?.trim() || '',
-              barcode: row.barcode?.trim() || '',
-              sku: row.sku?.trim() || '',
-              supplier: row.supplier?.trim() || '',
+              name: mapped.name.toString().trim(),
+              description: mapped.description?.toString().trim() || '',
+              category: mapped.category?.toString().trim() || 'Uncategorized',
+              brand: mapped.brand?.toString().trim() || '',
+              barcode: mapped.barcode?.toString().trim() || '',
+              sku: mapped.sku?.toString().trim() || '',
+              supplier: mapped.supplier?.toString().trim() || '',
               pricing: {
                 cost: cost,
                 retail: retail,
                 wholesale: wholesale
               },
               inventory: {
-                currentStock: parseInt(row.currentStock) || 0,
-                reorderPoint: parseInt(row.reorderPoint) || 0
+                currentStock: parseInt(mapped.currentStock) || 0,
+                reorderPoint: parseInt(mapped.reorderPoint) || 0
               },
-              status: row.status?.toLowerCase() === 'inactive' ? 'inactive' : 'active'
+              status: mapped.status?.toString().toLowerCase() === 'inactive' ? 'inactive' : 'active'
             };
             
             await productService.createProduct(productData, req.user._id);
