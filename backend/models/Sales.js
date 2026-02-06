@@ -78,7 +78,8 @@ const orderSchema = new mongoose.Schema({
     name: String,
     email: String,
     phone: String,
-    businessName: String
+    businessName: String,
+    address: String
   },
   
   // Order Items

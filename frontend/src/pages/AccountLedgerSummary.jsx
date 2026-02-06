@@ -3,6 +3,12 @@ import { Users, Building2, Search, Calendar, Download, FileText, ChevronDown, Pr
 import { useGetLedgerSummaryQuery, useGetCustomerDetailedTransactionsQuery, useGetSupplierDetailedTransactionsQuery } from '../store/services/accountLedgerApi';
 import { useGetCustomersQuery } from '../store/services/customersApi';
 import { useGetSuppliersQuery } from '../store/services/suppliersApi';
+import { useLazyGetOrderByIdQuery } from '../store/services/salesApi';
+import { useLazyGetCashReceiptByIdQuery } from '../store/services/cashReceiptsApi';
+import { useLazyGetBankReceiptByIdQuery } from '../store/services/bankReceiptsApi';
+import { useLazyGetPurchaseOrderQuery } from '../store/services/purchaseOrdersApi';
+import PrintModal from '../components/PrintModal';
+import ReceiptPaymentPrintModal from '../components/ReceiptPaymentPrintModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { handleApiError } from '../utils/errorHandler';
 import toast from 'react-hot-toast';
@@ -35,6 +41,20 @@ const AccountLedgerSummary = () => {
   const [supplierSearchQuery, setSupplierSearchQuery] = useState('');
   const supplierDropdownRef = useRef(null);
   const printRef = useRef(null);
+
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printData, setPrintData] = useState(null);
+  const [printDocumentTitle, setPrintDocumentTitle] = useState('Invoice');
+  const [printPartyLabel, setPrintPartyLabel] = useState('Customer');
+  const [showReceiptPrintModal, setShowReceiptPrintModal] = useState(false);
+  const [receiptPrintData, setReceiptPrintData] = useState(null);
+  const [receiptPrintTitle, setReceiptPrintTitle] = useState('Receipt');
+  const [printLoading, setPrintLoading] = useState(false);
+
+  const [getOrderById] = useLazyGetOrderByIdQuery();
+  const [getCashReceiptById] = useLazyGetCashReceiptByIdQuery();
+  const [getBankReceiptById] = useLazyGetBankReceiptByIdQuery();
+  const [getPurchaseOrder] = useLazyGetPurchaseOrderQuery();
 
   const [filters, setFilters] = useState({
     startDate: defaultDates.startDate,
@@ -227,6 +247,86 @@ const AccountLedgerSummary = () => {
     const month = d.toLocaleDateString('en-US', { month: 'short' });
     const year = d.getFullYear().toString().slice(-2);
     return `${day}-${month}-${year}`;
+  };
+
+  const handlePrintEntry = async (entry) => {
+    if (!entry?.referenceId || !entry?.source) {
+      toast.error('Print not available for this row.');
+      return;
+    }
+    setPrintLoading(true);
+    setPrintData(null);
+    try {
+      if (entry.source === 'Sale') {
+        const result = await getOrderById(entry.referenceId).unwrap();
+        const order = result?.order || result?.data?.order || result;
+        if (order) {
+          setPrintDocumentTitle('Sales Invoice');
+          setPrintPartyLabel('Customer');
+          setPrintData(order);
+          setShowPrintModal(true);
+        } else {
+          toast.error('Could not load sale for printing.');
+        }
+      } else if (entry.source === 'Cash Receipt') {
+        const result = await getCashReceiptById(entry.referenceId).unwrap();
+        const receipt = result?.data || result;
+        if (receipt) {
+          setReceiptPrintTitle('Cash Receipt');
+          setReceiptPrintData(receipt);
+          setShowReceiptPrintModal(true);
+        } else {
+          toast.error('Could not load receipt for printing.');
+        }
+      } else if (entry.source === 'Bank Receipt') {
+        const result = await getBankReceiptById(entry.referenceId).unwrap();
+        const receipt = result?.data || result;
+        if (receipt) {
+          setReceiptPrintTitle('Bank Receipt');
+          setReceiptPrintData(receipt);
+          setShowReceiptPrintModal(true);
+        } else {
+          toast.error('Could not load bank receipt for printing.');
+        }
+      } else if (entry.source === 'Cash Payment' || entry.source === 'Bank Payment') {
+        toast('Print this payment from Cash Payments or Bank Payments page.');
+      } else if (entry.source === 'Purchase' && selectedSupplierId) {
+        const result = await getPurchaseOrder(entry.referenceId).unwrap();
+        const po = result?.data || result;
+        if (po) {
+          const supplier = po.supplier || po.supplierInfo || {};
+          const orderData = {
+            orderNumber: po.poNumber || po._id,
+            invoiceNumber: po.poNumber || po._id,
+            supplier,
+            customer: supplier,
+            customerInfo: supplier,
+            items: (po.items || []).map((item) => ({
+              product: item.product || { name: item.productName || 'N/A' },
+              quantity: item.quantity || 0,
+              unitPrice: item.unitCost || item.unitPrice || 0
+            })),
+            pricing: po.pricing || { total: po.total || 0, subtotal: po.total || 0 },
+            total: po.total || 0,
+            createdAt: po.createdAt,
+            payment: { method: 'Credit', amountPaid: 0 }
+          };
+          setPrintDocumentTitle('Purchase Invoice');
+          setPrintPartyLabel('Supplier');
+          setPrintData(orderData);
+          setShowPrintModal(true);
+        } else {
+          toast.error('Could not load purchase for printing.');
+        }
+      } else {
+        toast('Print this document from the relevant module (e.g. Bank Receipts, Cash Payments, Sale Returns).');
+      }
+    } catch (err) {
+      handleApiError(err, 'Load document for print');
+      toast.error('Could not load document for printing.');
+    } finally {
+      setPrintLoading(false);
+    }
   };
 
   const handleExport = () => {
@@ -630,6 +730,9 @@ const AccountLedgerSummary = () => {
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                           Balance
                         </th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider w-20">
+                          Print
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -644,12 +747,13 @@ const AccountLedgerSummary = () => {
                           }`}>
                           {formatCurrency(detailedTransactionsData?.data?.openingBalance || 0)}
                         </td>
+                        <td className="px-4 py-3 text-sm text-center"></td>
                       </tr>
 
                       {/* Transaction Rows */}
                       {detailedTransactionsData?.data?.entries?.length === 0 ? (
                         <tr>
-                          <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                          <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
                             <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                             <p>No transactions found for this period</p>
                           </td>
@@ -676,6 +780,19 @@ const AccountLedgerSummary = () => {
                               }`}>
                               {formatCurrency(entry.balance || 0)}
                             </td>
+                            <td className="px-4 py-3 text-center">
+                              {entry.referenceId && entry.source ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handlePrintEntry(entry)}
+                                  disabled={printLoading}
+                                  className="inline-flex items-center justify-center p-1.5 rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+                                  title="Print this bill"
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </button>
+                              ) : null}
+                            </td>
                           </tr>
                         ))
                       )}
@@ -700,6 +817,7 @@ const AccountLedgerSummary = () => {
                             }`}>
                             {formatCurrency(detailedTransactionsData?.data?.closingBalance || 0)}
                           </td>
+                          <td className="px-4 py-3 text-sm text-center"></td>
                         </tr>
                       )}
                     </tbody>
@@ -749,6 +867,7 @@ const AccountLedgerSummary = () => {
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">Debits</th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">Credits</th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">Balance</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider w-20">Print</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -761,12 +880,13 @@ const AccountLedgerSummary = () => {
                           }`}>
                           {formatCurrency(detailedSupplierTransactionsData?.data?.openingBalance || 0)}
                         </td>
+                        <td className="px-4 py-3 text-center"></td>
                       </tr>
 
                       {/* Transaction Entries */}
                       {detailedSupplierTransactionsData?.data?.entries?.length === 0 ? (
                         <tr>
-                          <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                          <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
                             <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                             <p>No transactions found for this period</p>
                           </td>
@@ -793,6 +913,19 @@ const AccountLedgerSummary = () => {
                               }`}>
                               {formatCurrency(entry.balance || 0)}
                             </td>
+                            <td className="px-4 py-3 text-center">
+                              {entry.referenceId && entry.source ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handlePrintEntry(entry)}
+                                  disabled={printLoading}
+                                  className="inline-flex items-center justify-center p-1.5 rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+                                  title="Print this bill"
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </button>
+                              ) : null}
+                            </td>
                           </tr>
                         ))
                       )}
@@ -817,6 +950,7 @@ const AccountLedgerSummary = () => {
                             }`}>
                             {formatCurrency(detailedSupplierTransactionsData?.data?.closingBalance || 0)}
                           </td>
+                          <td className="px-4 py-3 text-center"></td>
                         </tr>
                       )}
                     </tbody>
@@ -838,6 +972,29 @@ const AccountLedgerSummary = () => {
           )}
         </div>
       )}
+
+      {/* Print Modal for invoices (Sale, Purchase) */}
+      <PrintModal
+        isOpen={showPrintModal}
+        onClose={() => {
+          setShowPrintModal(false);
+          setPrintData(null);
+        }}
+        orderData={printData}
+        documentTitle={printDocumentTitle}
+        partyLabel={printPartyLabel}
+      />
+
+      {/* Receipt / Payment print modal – for Cash Receipt, Bank Receipt only (separate from invoice PrintModal) */}
+      <ReceiptPaymentPrintModal
+        isOpen={showReceiptPrintModal}
+        onClose={() => {
+          setShowReceiptPrintModal(false);
+          setReceiptPrintData(null);
+        }}
+        documentTitle={receiptPrintTitle}
+        receiptData={receiptPrintData}
+      />
     </div>
   );
 };

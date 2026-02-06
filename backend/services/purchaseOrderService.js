@@ -97,7 +97,7 @@ class PurchaseOrderService {
       getAll: getAllPurchaseOrders,
       sort: { createdAt: -1 },
       populate: [
-        { path: 'supplier', select: 'companyName contactPerson email phone businessType currentBalance pendingBalance' },
+        { path: 'supplier', select: 'companyName contactPerson email phone businessType currentBalance pendingBalance addresses' },
         { path: 'items.product', select: 'name description pricing inventory' },
         { path: 'createdBy', select: 'firstName lastName email' },
         { path: 'lastModifiedBy', select: 'firstName lastName email' }
@@ -135,7 +135,7 @@ class PurchaseOrderService {
 
     // Populate related fields
     await purchaseOrder.populate([
-      { path: 'supplier', select: 'companyName contactPerson email phone businessType paymentTerms currentBalance pendingBalance' },
+      { path: 'supplier', select: 'companyName contactPerson email phone businessType paymentTerms currentBalance pendingBalance addresses' },
       { path: 'items.product', select: 'name description pricing inventory' },
       { path: 'createdBy', select: 'firstName lastName email' },
       { path: 'lastModifiedBy', select: 'firstName lastName email' },
@@ -189,7 +189,7 @@ class PurchaseOrderService {
 
     // Populate related fields
     await purchaseOrder.populate([
-      { path: 'supplier', select: 'companyName contactPerson email phone businessType' },
+      { path: 'supplier', select: 'companyName contactPerson email phone businessType addresses' },
       { path: 'items.product', select: 'name description pricing inventory' },
       { path: 'createdBy', select: 'firstName lastName email' }
     ]);
@@ -254,7 +254,7 @@ class PurchaseOrderService {
 
     // Populate related fields
     await updatedPO.populate([
-      { path: 'supplier', select: 'companyName contactPerson email phone businessType' },
+      { path: 'supplier', select: 'companyName contactPerson email phone businessType addresses' },
       { path: 'items.product', select: 'name description pricing inventory' },
       { path: 'createdBy', select: 'firstName lastName email' },
       { path: 'lastModifiedBy', select: 'firstName lastName email' }
@@ -382,7 +382,7 @@ class PurchaseOrderService {
     const purchaseOrder = await purchaseOrderRepository.findById(id, {
       populate: [
         { path: 'items.product', select: 'name description pricing inventory' },
-        { path: 'supplier', select: 'companyName contactPerson email phone businessType' }
+        { path: 'supplier', select: 'companyName contactPerson email phone businessType addresses' }
       ]
     });
 

@@ -28,7 +28,7 @@ import {
   useExportJSONMutation,
   useDownloadFileMutation,
 } from '../store/services/bankReceiptsApi';
-import PrintModal from '../components/PrintModal';
+import ReceiptPaymentPrintModal from '../components/ReceiptPaymentPrintModal';
 import DateFilter from '../components/DateFilter';
 import { getCurrentDatePakistan } from '../utils/dateUtils';
 
@@ -290,34 +290,7 @@ const BankReceipts = () => {
   };
 
   const handlePrint = (receipt) => {
-    // Format receipt data for PrintModal
-    const formattedData = {
-      invoiceNumber: receipt.voucherCode,
-      orderNumber: receipt.voucherCode,
-      createdAt: receipt.date,
-      invoiceDate: receipt.date,
-      customer: receipt.customer || null,
-      customerInfo: receipt.customer || null,
-      supplier: receipt.supplier || null,
-      pricing: {
-        subtotal: receipt.amount || 0,
-        total: receipt.amount || 0,
-        discountAmount: 0,
-        taxAmount: 0
-      },
-      total: receipt.amount || 0,
-      subtotal: receipt.amount || 0,
-      items: [],
-      payment: {
-        method: 'Bank Transfer',
-        status: 'Paid',
-        amountPaid: receipt.amount || 0
-      },
-      notes: receipt.notes || receipt.particular || '',
-      bankAccount: receipt.bank ? `${receipt.bank.bankName} - ${receipt.bank.accountNumber}` : '',
-      transactionReference: receipt.transactionReference || ''
-    };
-    setPrintData(formattedData);
+    setPrintData(receipt);
     setShowPrintModal(true);
   };
 
@@ -938,16 +911,15 @@ const BankReceipts = () => {
         </div>
       </div>
 
-      {/* Print Modal */}
-      <PrintModal
+      {/* Receipt print modal – dedicated layout for receipts only */}
+      <ReceiptPaymentPrintModal
         isOpen={showPrintModal}
         onClose={() => {
           setShowPrintModal(false);
           setPrintData(null);
         }}
-        orderData={printData}
         documentTitle="Bank Receipt"
-        partyLabel={printData?.supplier ? 'Supplier' : 'Customer'}
+        receiptData={printData}
       />
 
       {/* Create Modal - Removed */}

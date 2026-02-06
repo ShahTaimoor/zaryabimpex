@@ -12,7 +12,6 @@ import {
   Edit,
   Shield,
   UserCheck,
-  Upload,
   FileText,
   Printer,
   Eye,
@@ -31,6 +30,7 @@ import {
   useGetCompanySettingsQuery,
   useUpdateCompanySettingsMutation,
 } from '../store/services/settingsApi';
+import { useFetchCompanyQuery } from '../store/services/companyApi';
 import {
   useGetUsersQuery,
   useGetUserActivityQuery,
@@ -44,6 +44,7 @@ import { navigation } from '../components/MultiTabLayout';
 import { useChangePasswordMutation } from '../store/services/authApi';
 import { LoadingSpinner, LoadingButton } from '../components/LoadingSpinner';
 import PrintDocument from '../components/PrintDocument';
+import { CompanySettingsForm } from '../components/CompanySettingsForm';
 import { handleApiError } from '../utils/errorHandler';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -59,7 +60,6 @@ export const Settings2 = () => {
     address: '',
     contactNumber: '',
     email: '',
-    logo: null,
     taxRegistrationNumber: ''
   });
   const [savingCompanySettings, setSavingCompanySettings] = useState(false);
@@ -101,6 +101,19 @@ export const Settings2 = () => {
     showCameraTime: false,
     showDescription: true,
     showEmail: true,
+    showPrintBusinessName: true,
+    showPrintContactName: true,
+    showPrintAddress: true,
+    showPrintCity: true,
+    showPrintState: true,
+    showPrintPostalCode: true,
+    showPrintInvoiceNumber: true,
+    showPrintInvoiceDate: true,
+    showPrintInvoiceStatus: true,
+    showPrintInvoiceType: true,
+    showPrintPaymentStatus: true,
+    showPrintPaymentMethod: true,
+    showPrintPaymentAmount: true,
     headerText: '',
     footerText: '',
     invoiceLayout: 'standard'
@@ -111,7 +124,19 @@ export const Settings2 = () => {
     createdAt: new Date(),
     customer: {
       name: 'Walk-in Customer',
-      phone: '555-0123'
+      displayName: 'Jane Smith',
+      businessName: 'Sample Business Ltd',
+      phone: '555-0123',
+      email: 'jane@example.com',
+      address: '123 Main Street',
+      addresses: [{ street: '123 Main Street', city: 'New York', state: 'NY', country: 'US', zipCode: '10001', isDefault: true }]
+    },
+    customerInfo: {
+      name: 'Jane Smith',
+      businessName: 'Sample Business Ltd',
+      phone: '555-0123',
+      email: 'jane@example.com',
+      address: '123 Main Street, New York, NY, US, 10001'
     },
     items: [
       { name: 'Sample Item 1', quantity: 2, unitPrice: 50.00, total: 100.00 },
@@ -653,8 +678,10 @@ export const Settings2 = () => {
 
   // Fetch company settings
   const { data: settingsResponse, isLoading: companyLoading, refetch: refetchSettings } = useGetCompanySettingsQuery();
+  const { data: companyApiResponse } = useFetchCompanyQuery();
   const [updateCompanySettings] = useUpdateCompanySettingsMutation();
   const settings = settingsResponse?.data || settingsResponse;
+  const companyProfile = companyApiResponse?.data || {};
 
   // Map settings data to component state
   useEffect(() => {
@@ -664,7 +691,6 @@ export const Settings2 = () => {
         address: settings.address || '',
         contactNumber: settings.contactNumber || '',
         email: settings.email || '',
-        logo: settings.logo || null,
         taxRegistrationNumber: settings.taxId || '' // Map taxId back to taxRegistrationNumber
       };
       setCompanyData(mappedData);
@@ -681,6 +707,19 @@ export const Settings2 = () => {
           showEmail: settings.printSettings.showEmail ?? true,
           showCameraTime: settings.printSettings.showCameraTime ?? false,
           showDescription: settings.printSettings.showDescription ?? true,
+          showPrintBusinessName: settings.printSettings.showPrintBusinessName ?? true,
+          showPrintContactName: settings.printSettings.showPrintContactName ?? true,
+          showPrintAddress: settings.printSettings.showPrintAddress ?? true,
+          showPrintCity: settings.printSettings.showPrintCity ?? true,
+          showPrintState: settings.printSettings.showPrintState ?? true,
+          showPrintPostalCode: settings.printSettings.showPrintPostalCode ?? true,
+          showPrintInvoiceNumber: settings.printSettings.showPrintInvoiceNumber ?? true,
+          showPrintInvoiceDate: settings.printSettings.showPrintInvoiceDate ?? true,
+          showPrintInvoiceStatus: settings.printSettings.showPrintInvoiceStatus ?? true,
+          showPrintInvoiceType: settings.printSettings.showPrintInvoiceType ?? true,
+          showPrintPaymentStatus: settings.printSettings.showPrintPaymentStatus ?? true,
+          showPrintPaymentMethod: settings.printSettings.showPrintPaymentMethod ?? true,
+          showPrintPaymentAmount: settings.printSettings.showPrintPaymentAmount ?? true,
           headerText: settings.printSettings.headerText || '',
           footerText: settings.printSettings.footerText || '',
           invoiceLayout: settings.printSettings.invoiceLayout || 'standard'
@@ -763,7 +802,6 @@ export const Settings2 = () => {
           address: settings.data.data.address || '',
           contactNumber: settings.data.data.contactNumber || '',
           email: settings.data.data.email || '',
-          logo: settings.data.data.logo || null,
           taxRegistrationNumber: settings.data.data.taxId || ''
         };
 
@@ -786,6 +824,19 @@ export const Settings2 = () => {
           showEmail: ps.showEmail ?? true,
           showCameraTime: ps.showCameraTime ?? false,
           showDescription: ps.showDescription ?? true,
+          showPrintBusinessName: ps.showPrintBusinessName ?? true,
+          showPrintContactName: ps.showPrintContactName ?? true,
+          showPrintAddress: ps.showPrintAddress ?? true,
+          showPrintCity: ps.showPrintCity ?? true,
+          showPrintState: ps.showPrintState ?? true,
+          showPrintPostalCode: ps.showPrintPostalCode ?? true,
+          showPrintInvoiceNumber: ps.showPrintInvoiceNumber ?? true,
+          showPrintInvoiceDate: ps.showPrintInvoiceDate ?? true,
+          showPrintInvoiceStatus: ps.showPrintInvoiceStatus ?? true,
+          showPrintInvoiceType: ps.showPrintInvoiceType ?? true,
+          showPrintPaymentStatus: ps.showPrintPaymentStatus ?? true,
+          showPrintPaymentMethod: ps.showPrintPaymentMethod ?? true,
+          showPrintPaymentAmount: ps.showPrintPaymentAmount ?? true,
           headerText: ps.headerText || prev.headerText || '',
           footerText: ps.footerText || prev.footerText || '',
           invoiceLayout: ps.invoiceLayout || prev.invoiceLayout || 'standard'
@@ -808,7 +859,6 @@ export const Settings2 = () => {
         address: settings.data.data.address || '',
         contactNumber: settings.data.data.contactNumber || '',
         email: settings.data.data.email || '',
-        logo: settings.data.data.logo || null,
         taxRegistrationNumber: settings.data.data.taxId || ''
       };
       setCompanyData(newData);
@@ -829,7 +879,6 @@ export const Settings2 = () => {
           address: response.data.address || '',
           contactNumber: response.data.contactNumber || '',
           email: response.data.email || '',
-          logo: response.data.logo || null,
           taxRegistrationNumber: response.data.taxId || '' // Map taxId back to taxRegistrationNumber
         };
         setCompanyData(updatedData);
@@ -930,41 +979,10 @@ export const Settings2 = () => {
       contactNumber: companyData.contactNumber,
       address: companyData.address,
       email: companyData.email,
-      taxId: companyData.taxRegistrationNumber, // Map taxRegistrationNumber to taxId
-      logo: companyData.logo
+      taxId: companyData.taxRegistrationNumber // Map taxRegistrationNumber to taxId
     };
 
     handleSaveCompanySettings(dataToSend);
-  };
-
-  const handleLogoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file size (2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error('File size must be less than 2MB');
-        return;
-      }
-
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCompanyData(prev => ({
-          ...prev,
-          logo: reader.result
-        }));
-        toast.success('Logo uploaded successfully!');
-      };
-      reader.onerror = () => {
-        toast.error('Failed to read file');
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleNewUserChange = (e) => {
@@ -1307,313 +1325,7 @@ export const Settings2 = () => {
             </div>
 
             <div className="card-content">
-              <form onSubmit={handleCompanySubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Company Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <div className="flex items-center space-x-2">
-                        <Building className="h-4 w-4" />
-                        <span>Company Name *</span>
-                      </div>
-                    </label>
-                    <input
-                      type="text"
-                      name="companyName"
-                      value={companyData.companyName}
-                      onChange={handleCompanyChange}
-                      className="input"
-                      placeholder="Enter company name"
-                      required
-                    />
-                  </div>
-
-                  {/* Contact Number */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <div className="flex items-center space-x-2">
-                        <Phone className="h-4 w-4" />
-                        <span>Contact Number *</span>
-                      </div>
-                    </label>
-                    <input
-                      type="text"
-                      name="contactNumber"
-                      value={companyData.contactNumber}
-                      onChange={handleCompanyChange}
-                      className="input"
-                      placeholder="Enter contact number"
-                      required
-                    />
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <div className="flex items-center space-x-2">
-                        <Mail className="h-4 w-4" />
-                        <span>Email *</span>
-                      </div>
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={companyData.email}
-                      onChange={handleCompanyChange}
-                      className="input"
-                      placeholder="Enter email address"
-                      required
-                    />
-                  </div>
-
-                  {/* Tax Registration Number */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <div className="flex items-center space-x-2">
-                        <FileText className="h-4 w-4" />
-                        <span>Tax Registration Number</span>
-                      </div>
-                    </label>
-                    <input
-                      type="text"
-                      name="taxRegistrationNumber"
-                      value={companyData.taxRegistrationNumber}
-                      onChange={handleCompanyChange}
-                      className="input"
-                      placeholder="Enter tax registration number"
-                    />
-                  </div>
-                </div>
-
-                {/* Address */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>Address *</span>
-                    </div>
-                  </label>
-                  <textarea
-                    name="address"
-                    value={companyData.address}
-                    onChange={handleCompanyChange}
-                    className="input"
-                    placeholder="Enter complete address"
-                    rows="3"
-                    required
-                  />
-                </div>
-
-                {/* Logo Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <div className="flex items-center space-x-2">
-                      <Upload className="h-4 w-4" />
-                      <span>Company Logo</span>
-                    </div>
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="input"
-                    />
-                    {companyData.logo && (
-                      <div className="mt-2">
-                        <img
-                          src={companyData.logo}
-                          alt="Logo Preview"
-                          className="h-16 w-auto object-contain border border-gray-200 rounded p-1"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setCompanyData(prev => ({ ...prev, logo: null }))}
-                          className="text-xs text-red-600 hover:text-red-800 mt-1"
-                        >
-                          Remove Logo
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Upload your company logo (PNG, JPG, GIF - Max 2MB)
-                  </p>
-                </div>
-
-                {/* Save Button */}
-                <div className="flex justify-end pt-4 border-t">
-                  <LoadingButton
-                    type="submit"
-                    isLoading={savingCompanySettings}
-                    className="btn btn-primary px-4 py-2"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Company Information
-                  </LoadingButton>
-                </div>
-              </form>
-
-              {/* Current Saved Company Information - Editable Section */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                    <div className="flex items-center space-x-2">
-                      <Building className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                      <h3 className="text-base sm:text-lg font-semibold text-blue-800">Current Saved Company Information</h3>
-                    </div>
-                    {settings?.updatedAt && (
-                      <div className="text-xs sm:text-sm text-blue-600">
-                        <span>Last Updated: {new Date(settings.updatedAt).toLocaleString()}</span>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600 mb-6">
-                    View and edit your currently saved company information. Changes here will update the saved data.
-                  </p>
-
-
-                  <form onSubmit={handleCompanySubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Company Name */}
-                      <div>
-                        <label className="block text-sm font-medium text-blue-800 mb-2">
-                          <div className="flex items-center space-x-2">
-                            <Building className="h-4 w-4" />
-                            <span>Company Name *</span>
-                          </div>
-                        </label>
-                        <input
-                          type="text"
-                          name="companyName"
-                          value={companyData.companyName}
-                          onChange={handleCompanyChange}
-                          className="input bg-white border-blue-300 focus:border-blue-500"
-                          placeholder="Enter company name"
-                          required
-                        />
-                      </div>
-
-                      {/* Contact Number */}
-                      <div>
-                        <label className="block text-sm font-medium text-blue-800 mb-2">
-                          <div className="flex items-center space-x-2">
-                            <Phone className="h-4 w-4" />
-                            <span>Contact Number *</span>
-                          </div>
-                        </label>
-                        <input
-                          type="text"
-                          name="contactNumber"
-                          value={companyData.contactNumber}
-                          onChange={handleCompanyChange}
-                          className="input bg-white border-blue-300 focus:border-blue-500"
-                          placeholder="Enter contact number"
-                          required
-                        />
-                      </div>
-
-                      {/* Email */}
-                      <div>
-                        <label className="block text-sm font-medium text-blue-800 mb-2">
-                          <div className="flex items-center space-x-2">
-                            <Mail className="h-4 w-4" />
-                            <span>Email *</span>
-                          </div>
-                        </label>
-                        <input
-                          type="email"
-                          name="email"
-                          value={companyData.email}
-                          onChange={handleCompanyChange}
-                          className="input bg-white border-blue-300 focus:border-blue-500"
-                          placeholder="Enter email address"
-                          required
-                        />
-                      </div>
-
-                      {/* Tax Registration Number */}
-                      <div>
-                        <label className="block text-sm font-medium text-blue-800 mb-2">
-                          <div className="flex items-center space-x-2">
-                            <FileText className="h-4 w-4" />
-                            <span>Tax Registration Number</span>
-                          </div>
-                        </label>
-                        <input
-                          type="text"
-                          name="taxRegistrationNumber"
-                          value={companyData.taxRegistrationNumber}
-                          onChange={handleCompanyChange}
-                          className="input bg-white border-blue-300 focus:border-blue-500"
-                          placeholder="Enter tax registration number"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Address */}
-                    <div>
-                      <label className="block text-sm font-medium text-blue-800 mb-2">
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="h-4 w-4" />
-                          <span>Address *</span>
-                        </div>
-                      </label>
-                      <textarea
-                        name="address"
-                        value={companyData.address}
-                        onChange={handleCompanyChange}
-                        className="input bg-white border-blue-300 focus:border-blue-500"
-                        placeholder="Enter complete address"
-                        rows="3"
-                        required
-                      />
-                    </div>
-
-                    {/* Logo Upload */}
-                    <div>
-                      <label className="block text-sm font-medium text-blue-800 mb-2">
-                        <div className="flex items-center space-x-2">
-                          <Upload className="h-4 w-4" />
-                          <span>Company Logo</span>
-                        </div>
-                      </label>
-                      <div className="flex items-center space-x-4">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoUpload}
-                          className="input bg-white border-blue-300 focus:border-blue-500"
-                        />
-                        {companyData.logo && (
-                          <div className="mt-2">
-                            <img
-                              src={companyData.logo}
-                              alt="Logo Preview"
-                              className="h-16 w-auto object-contain border border-gray-200 rounded p-1"
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Upload your company logo (PNG, JPG, GIF - Max 2MB)
-                      </p>
-                    </div>
-
-                    {/* Update Button */}
-                    <div className="flex justify-end pt-6 mt-6 border-t border-blue-200">
-                      <LoadingButton
-                        type="submit"
-                        isLoading={savingCompanySettings}
-                        className="btn btn-primary bg-blue-600 hover:bg-blue-700 px-6 py-2.5"
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Update Company Information
-                      </LoadingButton>
-                    </div>
-                  </form>
-                </div>
-              </div>
+              <CompanySettingsForm />
             </div>
           </div>
         )}
@@ -2237,11 +1949,14 @@ export const Settings2 = () => {
                   </div>
                 </div>
 
-                {/* Display Options */}
+                {/* Display Options - these apply to all print previews and printed documents (Sales/Purchase Invoice, Sales/Purchase Order) */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Display Options
                   </label>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Control what appears on printed invoices and receipts. Uncheck to hide anywhere print is used.
+                  </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                       <input
@@ -2354,24 +2069,203 @@ export const Settings2 = () => {
                         <div className="text-xs text-gray-500">Display customer email address on receipts</div>
                       </div>
                     </label>
-                  </div>
-                </div>
 
-                {/* Show Description Checkbox */}
-                <div className="mt-4">
-                  <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input
-                      type="checkbox"
-                      name="showDescription"
-                      checked={printSettings.showDescription}
-                      onChange={handlePrintSettingsChange}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">Show Description</div>
-                      <div className="text-xs text-gray-500">Display item descriptions in table</div>
-                    </div>
-                  </label>
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showDescription"
+                        checked={printSettings.showDescription}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Description</div>
+                        <div className="text-xs text-gray-500">Display item descriptions in table</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintBusinessName"
+                        checked={printSettings.showPrintBusinessName}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Business Name (Bill To)</div>
+                        <div className="text-xs text-gray-500">Display customer/supplier business name on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintContactName"
+                        checked={printSettings.showPrintContactName}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Contact Person Name (Bill To)</div>
+                        <div className="text-xs text-gray-500">Display contact person name on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintAddress"
+                        checked={printSettings.showPrintAddress}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Address (Bill To)</div>
+                        <div className="text-xs text-gray-500">Display street address on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintCity"
+                        checked={printSettings.showPrintCity}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show City (Bill To)</div>
+                        <div className="text-xs text-gray-500">Display city on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintState"
+                        checked={printSettings.showPrintState}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show State (Bill To)</div>
+                        <div className="text-xs text-gray-500">Display state/region on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintPostalCode"
+                        checked={printSettings.showPrintPostalCode}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Postal Code (Bill To)</div>
+                        <div className="text-xs text-gray-500">Display postal/zip code on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintInvoiceNumber"
+                        checked={printSettings.showPrintInvoiceNumber}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Invoice # (Invoice Details)</div>
+                        <div className="text-xs text-gray-500">Display invoice/order number on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintInvoiceDate"
+                        checked={printSettings.showPrintInvoiceDate}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Date (Invoice Details)</div>
+                        <div className="text-xs text-gray-500">Display invoice date on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintInvoiceStatus"
+                        checked={printSettings.showPrintInvoiceStatus}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Status (Invoice Details)</div>
+                        <div className="text-xs text-gray-500">Display invoice status on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintInvoiceType"
+                        checked={printSettings.showPrintInvoiceType}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Type (Invoice Details)</div>
+                        <div className="text-xs text-gray-500">Display order/invoice type on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintPaymentStatus"
+                        checked={printSettings.showPrintPaymentStatus}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Status (Payment)</div>
+                        <div className="text-xs text-gray-500">Display payment status on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintPaymentMethod"
+                        checked={printSettings.showPrintPaymentMethod}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Method (Payment)</div>
+                        <div className="text-xs text-gray-500">Display payment method on print</div>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="checkbox"
+                        name="showPrintPaymentAmount"
+                        checked={printSettings.showPrintPaymentAmount}
+                        onChange={handlePrintSettingsChange}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Show Amount (Payment)</div>
+                        <div className="text-xs text-gray-500">Display payment amount on print</div>
+                      </div>
+                    </label>
+                  </div>
                 </div>
 
                 {/* Print Preview */}
@@ -2388,7 +2282,7 @@ export const Settings2 = () => {
                   <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 overflow-hidden flex justify-center items-start min-h-[600px]">
                     <div style={{ transform: 'scale(0.55)', transformOrigin: 'top center', marginBottom: '-500px' }}>
                       <PrintDocument
-                        companySettings={companyData}
+                        companySettings={{ ...companyData, logo: companyProfile.logo || companyData.logo }}
                         orderData={sampleOrderData}
                         printSettings={printSettings}
                         documentTitle="Receipt Preview"
@@ -2409,7 +2303,6 @@ export const Settings2 = () => {
                         address: companyData.address,
                         email: companyData.email,
                         taxId: companyData.taxRegistrationNumber,
-                        logo: companyData.logo,
                         printSettings: printSettings
                       };
                       handleSaveCompanySettings(dataToSend);

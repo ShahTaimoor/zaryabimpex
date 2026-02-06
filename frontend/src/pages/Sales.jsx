@@ -147,7 +147,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
     {
       threshold: 0.4,
       minScore: 0.3,
-      limit: 15 // Increased limit to show more results including variants
+      limit: null // Show unlimited products
     }
   );
 
@@ -1977,6 +1977,7 @@ export const Sales = ({ tabId, editData }) => {
               onSelect={handleCustomerSelect}
               onSearch={setCustomerSearchTerm}
               selectedItem={selectedCustomer}
+              rightContentKey="city"
               displayKey={(customer) => {
                 // Calculate total balance: currentBalance (which is net balance)
                 const totalBalance = customer.currentBalance !== undefined
@@ -2993,15 +2994,22 @@ export const Sales = ({ tabId, editData }) => {
                 {cart.length > 0 && (
                   <button
                     onClick={() => {
+                      // Format address from customer for print (same logic as backend/PrintDocument)
+                      let customerAddress = '';
+                      if (selectedCustomer?.addresses?.length) {
+                        const addr = selectedCustomer.addresses.find(a => a.isDefault) || selectedCustomer.addresses.find(a => a.type === 'billing' || a.type === 'both') || selectedCustomer.addresses[0];
+                        if (addr) customerAddress = [addr.street, addr.city, addr.state, addr.country, addr.zipCode || addr.zip].filter(Boolean).join(', ');
+                      } else if (selectedCustomer?.address) customerAddress = selectedCustomer.address;
                       const tempOrder = {
                         orderNumber: `TEMP-${Date.now()}`,
                         orderType: mapBusinessTypeToOrderType(selectedCustomer?.businessType),
-                        customer: selectedCustomer?._id,
+                        customer: selectedCustomer ?? undefined,
                         customerInfo: selectedCustomer ? {
                           name: selectedCustomer.displayName,
                           email: selectedCustomer.email,
                           phone: selectedCustomer.phone,
-                          businessName: selectedCustomer.businessName
+                          businessName: selectedCustomer.businessName,
+                          address: customerAddress || undefined
                         } : null,
                         items: cart.map(item => ({
                           product: {

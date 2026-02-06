@@ -48,6 +48,7 @@ import { formatDate, formatCurrency } from '../utils/formatters';
 import { useCompanyInfo } from '../hooks/useCompanyInfo';
 import DateFilter from '../components/DateFilter';
 import { getCurrentDatePakistan, getDateDaysAgo } from '../utils/dateUtils';
+import PrintModal from '../components/PrintModal';
 
 // Helper function to safely render values
 const safeRender = (value) => {
@@ -245,6 +246,8 @@ export const PurchaseOrders = ({ tabId }) => {
   // State for modals
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printOrderData, setPrintOrderData] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [supplierSearchTerm, setSupplierSearchTerm] = useState('');
@@ -454,15 +457,15 @@ export const PurchaseOrders = ({ tabId }) => {
     {
       threshold: 0.4,
       minScore: 0.3,
-      limit: 50 // Limit results for dropdown
+      limit: null // Show unlimited products
     }
   );
   
-  // Show limited results when search is empty, all filtered results when searching
+  // Show all results when searching
   const productsData = React.useMemo(() => {
     if (!productSearchTerm || productSearchTerm.trim().length === 0) {
-      // Show first 30 items when no search term
-      return allItems.slice(0, 30);
+      // Show all items when no search term
+      return allItems;
     }
     return fuzzySearchResults;
   }, [productSearchTerm, allItems, fuzzySearchResults]);
@@ -475,15 +478,15 @@ export const PurchaseOrders = ({ tabId }) => {
     {
       threshold: 0.4,
       minScore: 0.3,
-      limit: 50
+      limit: null // Show unlimited products
     }
   );
   
-  // Show limited results when search is empty, all filtered results when searching
+  // Show all results when searching
   const modalProductsData = React.useMemo(() => {
     if (!modalProductSearchTerm || modalProductSearchTerm.trim().length === 0) {
-      // Show first 30 items when no search term
-      return allItems.slice(0, 30);
+      // Show all items when no search term
+      return allItems;
     }
     return modalFuzzySearchResults;
   }, [modalProductSearchTerm, allItems, modalFuzzySearchResults]);
@@ -992,200 +995,50 @@ export const PurchaseOrders = ({ tabId }) => {
     setShowViewModal(true);
   };
 
+  const formatPurchaseOrderForPrint = (order) => {
+    if (!order) return null;
+    const supplier = order.supplier || {};
+    const items = (order.items || []).map((item) => {
+      const product = item.product || {};
+      const name = product.isVariant
+        ? product.displayName || product.variantName || product.name || 'Product'
+        : product.name || 'Product';
+      const qty = Number(item.quantity) || 0;
+      const unitCost = Number(item.unitCost ?? item.cost ?? 0) || 0;
+      const totalCost = Number(item.totalCost) || qty * unitCost;
+      return {
+        quantity: qty,
+        unitPrice: unitCost,
+        unitCost,
+        total: totalCost,
+        product: { name },
+        name
+      };
+    });
+    const subtotal = order.subtotal ?? items.reduce((sum, i) => sum + (i.quantity * (i.unitPrice || 0)), 0);
+    const tax = order.tax ?? 0;
+    const total = order.total ?? subtotal + tax;
+    return {
+      ...order,
+      supplier,
+      items,
+      subtotal,
+      tax,
+      total,
+      poNumber: order.poNumber || order.orderNumber || order.referenceNumber,
+      orderNumber: order.poNumber || order.orderNumber,
+      status: order.status || 'draft',
+      createdAt: order.createdAt || order.orderDate,
+      payment: order.payment || { method: 'N/A', status: 'Pending', amountPaid: 0 }
+    };
+  };
+
   const handlePrint = (order) => {
-    // Create a print function matching the view modal format
-    const printContent = `
-      <html>
-        <head>
-          <title>Purchase Order - ${order.poNumber}</title>
-          <style>
-            @media print {
-              @page { size: A4; margin: 0.5in; }
-              body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.2; color: #000; margin: 0; padding: 0; }
-              .container { max-width: 800px; margin: 0 auto; }
-              .header { text-align: center; margin-bottom: 20px; }
-              .header h1 { font-size: 24px; font-weight: bold; margin: 0 0 4px 0; color: #000; }
-              .header p { margin: 2px 0; font-size: 14px; color: #6b7280; }
-              .details-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-              .details-section h5 { font-size: 16px; font-weight: 600; color: #000; margin: 0 0 8px 0; }
-              .details-section p { margin: 2px 0; font-size: 14px; color: #374151; }
-              .details-section .font-medium { font-weight: 500; }
-              .status-badge { display: inline-block; padding: 4px 8px; border-radius: 9999px; font-size: 12px; font-weight: 500; background-color: #f3f4f6; color: #374151; }
-              .outstanding-balance { margin-top: 8px; padding-top: 6px; border-top: 1px solid #e5e7eb; }
-              .outstanding-balance p { font-weight: 600; color: #dc2626; }
-              .items-section { margin-bottom: 20px; }
-              .items-section h5 { font-size: 16px; font-weight: 600; color: #000; margin: 0 0 8px 0; }
-              .items-table { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
-              .items-table thead { background-color: #f9fafb; }
-              .items-table th { padding: 8px; text-align: left; font-size: 14px; font-weight: 600; color: #000; border-bottom: 1px solid #e5e7eb; }
-              .items-table td { padding: 8px; font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; }
-              .items-table tr:last-child td { border-bottom: none; }
-              .items-table tr:nth-child(even) { background-color: #f9fafb; }
-              .product-info { display: flex; flex-direction: column; }
-              .product-name { font-weight: 500; color: #000; }
-              .product-description { font-size: 12px; color: #6b7280; margin-top: 2px; }
-              .text-right { text-align: right; }
-              .totals-section { display: flex; justify-content: flex-end; margin-bottom: 20px; }
-              .totals-container { width: 320px; }
-              .totals-section .space-y-2 > * + * { margin-top: 4px; }
-              .totals-section .flex { display: flex; justify-content: space-between; }
-              .totals-section .text-sm { font-size: 14px; }
-              .totals-section .text-gray-600 { color: #6b7280; }
-              .totals-section .font-medium { font-weight: 500; }
-              .totals-section .text-lg { font-size: 18px; }
-              .totals-section .font-bold { font-weight: 700; }
-              .totals-section .border-t { border-top: 1px solid #e5e7eb; }
-              .totals-section .pt-2 { padding-top: 8px; }
-              .totals-section .text-red-600 { color: #dc2626; }
-              .notes-section { margin-bottom: 20px; }
-              .notes-section h5 { font-size: 16px; font-weight: 600; color: #000; margin: 0 0 8px 0; }
-              .notes-content { font-size: 14px; color: #374151; background-color: #f9fafb; padding: 8px; border-radius: 8px; border: 1px solid #e5e7eb; }
-              .footer { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #e5e7eb; }
-              .footer .text-xs { font-size: 12px; line-height: 1.1; }
-              .footer .text-gray-500 { color: #6b7280; }
-              .footer .flex { display: flex; }
-              .footer .space-x-3 > * + * { margin-left: 12px; }
-              .footer .btn { padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
-              .footer .btn-primary { background-color: #3b82f6; color: white; }
-              .footer .btn-secondary { background-color: #6b7280; color: white; }
-              .footer .flex .items-center { align-items: center; }
-              .footer .mr-2 { margin-right: 8px; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <!-- Header -->
-            <div class="header">
-              <h1>${resolvedCompanyName}</h1>
-              ${resolvedCompanyAddress ? `<p>${resolvedCompanyAddress}</p>` : ''}
-              ${resolvedCompanyPhone ? `<p>Phone: ${resolvedCompanyPhone}</p>` : ''}
-            </div>
-            
-            <!-- Details Section -->
-            <div class="details-grid">
-              <div class="details-section">
-                <h5>Purchase Order Details</h5>
-                <p><span class="font-medium">PO Number:</span> ${order.poNumber}</p>
-                <p><span class="font-medium">Date:</span> ${formatDate(order.createdAt)}</p>
-                <p><span class="font-medium">Status:</span> 
-                  <span class="status-badge">${order.status === 'draft' ? 'Pending' : order.status.replace('_', ' ')}</span>
-                </p>
-                ${order.expectedDelivery ? `<p><span class="font-medium">Expected Delivery:</span> ${formatDate(order.expectedDelivery)}</p>` : ''}
-              </div>
-              <div class="details-section">
-                <!-- Empty middle column for spacing -->
-              </div>
-              <div class="details-section" style="text-align: right;">
-                <h5>Supplier Details</h5>
-                <p><span class="font-medium">Company:</span> ${safeRender(order.supplier?.companyName || order.supplier?.name) || 'Unknown'}</p>
-                ${order.supplier?.email ? `<p><span class="font-medium">Email:</span> ${safeRender(order.supplier.email)}</p>` : ''}
-                ${order.supplier?.phone ? `<p><span class="font-medium">Phone:</span> ${safeRender(order.supplier.phone)}</p>` : ''}
-                ${order.supplier?.contactPerson ? `<p><span class="font-medium">Contact:</span> ${safeRender(order.supplier.contactPerson)}</p>` : ''}
-                <div class="outstanding-balance">
-                  <p>
-                    <span class="font-medium">Outstanding Balance:</span> ${Math.round(order.supplier?.pendingBalance || 0)}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Items Section -->
-            <div class="items-section">
-              <h5>Items Ordered</h5>
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>PRODUCT</th>
-                    <th class="text-right">QUANTITY</th>
-                    <th class="text-right">UNIT COST</th>
-                    <th class="text-right">TOTAL COST</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${order.items?.map((item, index) => `
-                    <tr>
-                      <td>${index + 1}</td>
-                      <td>
-                        <div class="product-info">
-                          <div class="product-name">${item.product?.isVariant 
-                            ? safeRender(item.product?.displayName || item.product?.variantName || item.product?.name || 'Unknown Variant')
-                            : safeRender(item.product?.name || 'Unknown Product')}</div>
-                          ${item.product?.isVariant ? `<div class="text-xs text-gray-500">${item.product.variantType}: ${item.product.variantValue}</div>` : ''}
-                          ${item.product?.description ? `<div class="product-description">${item.product.description}</div>` : ''}
-                        </div>
-                      </td>
-                      <td class="text-right">${item.quantity}</td>
-                      <td class="text-right">${Math.round(item.unitCost || item.cost || 0)}</td>
-                      <td class="text-right">${Math.round(item.totalCost || (item.quantity * (item.unitCost || item.cost || 0)))}</td>
-                    </tr>
-                  `).join('') || ''}
-                </tbody>
-              </table>
-            </div>
-            
-            <!-- Totals Section -->
-            <div class="totals-section">
-              <div class="totals-container">
-                <div class="space-y-2">
-                  <div class="flex text-sm">
-                    <span class="text-gray-600">Subtotal:</span>
-                    <span class="font-medium">${Math.round(order.subtotal || 0)}</span>
-                  </div>
-                  ${order.tax && order.tax > 0 ? `
-                    <div class="flex text-sm">
-                      <span class="text-gray-600">Tax:</span>
-                      <span class="font-medium">${Math.round(order.tax)}</span>
-                    </div>
-                  ` : ''}
-                  <div class="flex text-sm">
-                    <span class="text-gray-600">PO Total:</span>
-                    <span class="font-medium">${Math.round(order.total || 0)}</span>
-                  </div>
-                  <div class="flex text-sm">
-                    <span class="text-gray-600">Previous Outstanding:</span>
-                    <span class="font-medium text-red-600">${Math.round(order.supplier?.pendingBalance || 0)}</span>
-                  </div>
-                  <div class="flex text-lg font-bold border-t pt-2">
-                    <span>Total Payables:</span>
-                    <span class="text-red-600">${Math.round((order.total || 0) + (order.supplier?.pendingBalance || 0))}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            ${order.notes ? `
-              <div class="notes-section">
-                <h5>Notes</h5>
-                <div class="notes-content">${order.notes}</div>
-              </div>
-            ` : ''}
-            
-            ${order.terms ? `
-              <div class="notes-section">
-                <h5>Terms</h5>
-                <div class="notes-content">${order.terms}</div>
-              </div>
-            ` : ''}
-            
-            <!-- Footer -->
-            <div class="footer">
-              <div class="text-xs text-gray-500">
-                Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    const formatted = formatPurchaseOrderForPrint(order);
+    if (formatted) {
+      setPrintOrderData(formatted);
+      setShowPrintModal(true);
+    }
   };
 
   const handleExport = () => {
@@ -2322,9 +2175,8 @@ export const PurchaseOrders = ({ tabId }) => {
                         />
                         {/* Product Suggestions */}
                         {modalProductsData && modalProductsData.length > 0 && (
-                          <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
+                          <div className="mt-2 max-h-96 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
                             {modalProductsData
-                              .slice(0, 5)
                               .map((product, index) => (
                               <div
                                 key={product._id}
@@ -3054,6 +2906,16 @@ export const PurchaseOrders = ({ tabId }) => {
         </div>
       )}
 
+      <PrintModal
+        isOpen={showPrintModal}
+        onClose={() => {
+          setShowPrintModal(false);
+          setPrintOrderData(null);
+        }}
+        orderData={printOrderData}
+        documentTitle="Purchase Order"
+        partyLabel="Supplier"
+      />
     </div>
   );
 };

@@ -93,12 +93,12 @@ const PrintModal = ({
     partyLabel?.toLowerCase() === 'supplier' ? 'Supplier' : 'Bill To';
 
   const resolvedCompanyName =
-    companySettings.companyName || companyInfo?.name || 'Your Company Name';
+    companySettings?.companyName || companyInfo?.name || 'Your Company Name';
   const resolvedCompanySubtitle = resolvedDocumentTitle;
   const resolvedCompanyAddress =
-    companySettings.address || companyInfo?.address || '';
+    companySettings?.address || companyInfo?.address || '';
   const resolvedCompanyPhone =
-    companySettings.contactNumber || companyInfo?.phone || '';
+    companySettings?.contactNumber || companySettings?.phone || companyInfo?.phone || '';
 
   const partyInfo = useMemo(() => {
     if (!orderData) {
@@ -306,6 +306,40 @@ const PrintModal = ({
               font-size: 16px;
               color: #6b7280;
             }
+            .print-document__logo-wrap {
+              margin-bottom: 16px;
+              text-align: center;
+            }
+            .print-document__logo-img {
+              max-height: 80px;
+              max-width: 250px;
+              width: auto;
+              height: auto;
+              object-fit: contain;
+              display: inline-block;
+            }
+            @media print {
+              .print-document__logo-img {
+                max-height: 72px;
+                max-width: 220px;
+              }
+            }
+            .print-document__logo-placeholder {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              width: 72px;
+              height: 72px;
+              max-width: 220px;
+              max-height: 80px;
+              background: #e5e7eb;
+              color: #6b7280;
+              font-size: 28px;
+              font-weight: 700;
+              border-radius: 8px;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
             .print-document__info-grid {
               display: grid;
               grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -414,7 +448,6 @@ const PrintModal = ({
   if (!isOpen || !orderData) return null;
 
   const documentHeading = `${resolvedDocumentTitle} Details`;
-  const hasCameraTime = orderData?.billStartTime || orderData?.billEndTime;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 p-4 overflow-hidden">
@@ -423,7 +456,7 @@ const PrintModal = ({
           <div className="p-4 print-preview-wrapper w-full">
             <div ref={printRef} className="print-preview-scale">
               <PrintDocument
-                companySettings={companySettings}
+                companySettings={companySettings || {}}
                 orderData={orderData}
                 printSettings={{
                   showLogo,
@@ -441,7 +474,7 @@ const PrintModal = ({
                 documentTitle={resolvedDocumentTitle}
                 partyLabel={partyLabel}
               >
-                {/* No-print Toolbar with Checkboxes */}
+                {/* No-print Toolbar; all print options are controlled from Settings → Print Preview */}
                 <div className="print-document__toolbar no-print mb-6 border-b pb-4">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-gray-800">{documentHeading}</h2>
@@ -463,93 +496,6 @@ const PrintModal = ({
                     </div>
                   </div>
 
-                  {/* Print Options Checkboxes */}
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                    <span className="font-semibold mr-2">Print Options:</span>
-                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
-                      <input
-                        type="checkbox"
-                        checked={showLogo}
-                        onChange={(e) => setShowLogo(e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500"
-                      />
-                      Show Logo
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
-                      <input
-                        type="checkbox"
-                        checked={showCompanyDetails}
-                        onChange={(e) => setShowCompanyDetails(e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500"
-                      />
-                      Show Company Details
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
-                      <input
-                        type="checkbox"
-                        checked={showTax}
-                        onChange={(e) => setShowTax(e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500"
-                      />
-                      Show Tax
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
-                      <input
-                        type="checkbox"
-                        checked={showDiscount}
-                        onChange={(e) => setShowDiscount(e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500"
-                      />
-                      Show Discount
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
-                      <input
-                        type="checkbox"
-                        checked={showDate}
-                        onChange={(e) => setShowDate(e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500"
-                      />
-                      Show Date
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
-                      <input
-                        type="checkbox"
-                        checked={showDescription}
-                        onChange={(e) => setShowDescription(e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500"
-                      />
-                      Show Description
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
-                      <input
-                        type="checkbox"
-                        checked={showEmail}
-                        onChange={(e) => setShowEmail(e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500"
-                      />
-                      Show Email
-                    </label>
-                    {hasCameraTime && (
-                      <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
-                        <input
-                          type="checkbox"
-                          checked={showCameraTime}
-                          onChange={(e) => setShowCameraTime(e.target.checked)}
-                          className="rounded text-blue-600 focus:ring-blue-500"
-                        />
-                        Show Camera Time
-                      </label>
-                    )}
-                    <label className="flex items-center gap-2 cursor-pointer hover:text-blue-600">
-                      <input
-                        type="checkbox"
-                        checked={showFooter}
-                        onChange={(e) => setShowFooter(e.target.checked)}
-                        className="rounded text-blue-600 focus:ring-blue-500"
-                      />
-                      Show Footer
-                    </label>
-                  </div>
                 </div>
               </PrintDocument>
             </div>

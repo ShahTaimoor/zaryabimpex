@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { showSuccessToast, showErrorToast, handleApiError } from '../utils/errorHandler';
 import { formatDate } from '../utils/formatters';
-import PrintModal from '../components/PrintModal';
+import ReceiptPaymentPrintModal from '../components/ReceiptPaymentPrintModal';
 import {
   useGetCashPaymentsQuery,
   useCreateCashPaymentMutation,
@@ -486,31 +486,7 @@ const CashPayments = () => {
   };
 
   const handlePrint = (payment) => {
-    // Format payment data for PrintModal
-    const formattedData = {
-      invoiceNumber: payment.voucherCode,
-      orderNumber: payment.voucherCode,
-      createdAt: payment.date,
-      invoiceDate: payment.date,
-      customer: payment.customer || null,
-      customerInfo: payment.customer || null,
-      supplier: payment.supplier || null,
-      pricing: {
-        subtotal: payment.amount || 0,
-        total: payment.amount || 0,
-        discountAmount: 0,
-        taxAmount: 0
-      },
-      total: payment.amount || 0,
-      subtotal: payment.amount || 0,
-      items: [],
-      payment: {
-        method: 'Cash',
-        amountPaid: payment.amount || 0
-      },
-      notes: payment.notes || payment.particular || ''
-    };
-    setPrintData(formattedData);
+    setPrintData(payment);
     setShowPrintModal(true);
   };
 
@@ -1273,16 +1249,15 @@ const CashPayments = () => {
         </div>
       </div>
 
-      {/* Print Modal */}
-      <PrintModal
+      {/* Payment print modal – dedicated layout for payments only */}
+      <ReceiptPaymentPrintModal
         isOpen={showPrintModal}
         onClose={() => {
           setShowPrintModal(false);
           setPrintData(null);
         }}
-        orderData={printData}
         documentTitle="Cash Payment"
-        partyLabel={printData?.supplier ? 'Supplier' : printData?.customer ? 'Customer' : 'Payee'}
+        receiptData={printData}
       />
 
       {/* Create Modal - Removed */}

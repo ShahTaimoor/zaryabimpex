@@ -217,6 +217,50 @@
   color: #6b7280;
 }
 
+/* Logo: responsive and print-friendly */
+.print-document__logo-wrap {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.print-document__logo-img {
+  max-height: 80px;
+  max-width: 250px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: inline-block;
+}
+
+@media print {
+  .print-document__logo-img {
+    max-height: 72px;
+    max-width: 220px;
+  }
+}
+
+.print-document__logo-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  max-width: 220px;
+  max-height: 80px;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 28px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+@media print {
+  .print-document__logo-placeholder {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 .print-document__toolbar {
   display: flex;
   justify-content: space-between;

@@ -2,6 +2,13 @@ import { api } from '../api';
 
 export const bankReceiptsApi = api.injectEndpoints({
   endpoints: (builder) => ({
+    getBankReceiptById: builder.query({
+      query: (id) => ({
+        url: `bank-receipts/${id}`,
+        method: 'get',
+      }),
+      providesTags: (_result, _error, id) => [{ type: 'BankReceipts', id }],
+    }),
     getBankReceipts: builder.query({
       query: (params) => ({
         url: 'bank-receipts',
@@ -118,6 +125,8 @@ export const bankReceiptsApi = api.injectEndpoints({
 
 export const {
   useGetBankReceiptsQuery,
+  useGetBankReceiptByIdQuery,
+  useLazyGetBankReceiptByIdQuery,
   useCreateBankReceiptMutation,
   useUpdateBankReceiptMutation,
   useDeleteBankReceiptMutation,

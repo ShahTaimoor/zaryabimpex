@@ -1066,7 +1066,8 @@ router.get('/customer/:customerId/transactions', [
           particular: `Sale: ${sale.orderNumber || sale._id}`,
           debitAmount: saleTotal,
           creditAmount: 0,
-          source: 'Sale'
+          source: 'Sale',
+          referenceId: sale._id?.toString?.() || sale._id
         });
       }
     });
@@ -1082,7 +1083,8 @@ router.get('/customer/:customerId/transactions', [
         particular: receipt.particular || `Cash Receipt: ${receipt.voucherCode || receipt._id}`,
         debitAmount: 0,
         creditAmount: receipt.amount || 0,
-        source: 'Cash Receipt'
+        source: 'Cash Receipt',
+        referenceId: receipt._id?.toString?.() || receipt._id
       });
     });
     
@@ -1097,7 +1099,8 @@ router.get('/customer/:customerId/transactions', [
         particular: receipt.particular || `Bank Receipt: ${receipt.voucherCode || receipt._id}`,
         debitAmount: 0,
         creditAmount: receipt.amount || 0,
-        source: 'Bank Receipt'
+        source: 'Bank Receipt',
+        referenceId: receipt._id?.toString?.() || receipt._id
       });
     });
     
@@ -1112,7 +1115,8 @@ router.get('/customer/:customerId/transactions', [
         particular: payment.particular || `Cash Payment: ${payment.voucherCode || payment._id}`,
         debitAmount: payment.amount || 0,
         creditAmount: 0,
-        source: 'Cash Payment'
+        source: 'Cash Payment',
+        referenceId: payment._id?.toString?.() || payment._id
       });
     });
     
@@ -1127,7 +1131,8 @@ router.get('/customer/:customerId/transactions', [
         particular: payment.particular || `Bank Payment: ${payment.voucherCode || payment._id}`,
         debitAmount: payment.amount || 0,
         creditAmount: 0,
-        source: 'Bank Payment'
+        source: 'Bank Payment',
+        referenceId: payment._id?.toString?.() || payment._id
       });
     });
     
@@ -1144,7 +1149,8 @@ router.get('/customer/:customerId/transactions', [
         particular: `Return: ${returnItem.returnNumber || returnItem._id}${returnItem.status === 'pending' ? ' (Pending)' : ''}`,
         debitAmount: 0,
         creditAmount: returnAmount,
-        source: 'Sale Return'
+        source: 'Sale Return',
+        referenceId: returnItem._id?.toString?.() || returnItem._id
       });
     });
     
@@ -1170,7 +1176,9 @@ router.get('/customer/:customerId/transactions', [
         particular: entry.particular,
         debitAmount: entry.debitAmount,
         creditAmount: entry.creditAmount,
-        balance: runningBalance
+        balance: runningBalance,
+        source: entry.source,
+        referenceId: entry.referenceId
       };
     });
 
@@ -1327,7 +1335,8 @@ router.get('/supplier/:supplierId/transactions', [
         particular: `Purchase: ${purchase.poNumber || purchase._id}`,
         debitAmount: 0,
         creditAmount: purchase.total || 0,
-        source: 'Purchase'
+        source: 'Purchase',
+        referenceId: purchase._id?.toString?.() || purchase._id
       });
     });
     
@@ -1342,7 +1351,8 @@ router.get('/supplier/:supplierId/transactions', [
         particular: payment.particular || `Cash Payment: ${payment.voucherCode || payment._id}`,
         debitAmount: payment.amount || 0,
         creditAmount: 0,
-        source: 'Cash Payment'
+        source: 'Cash Payment',
+        referenceId: payment._id?.toString?.() || payment._id
       });
     });
     
@@ -1357,7 +1367,8 @@ router.get('/supplier/:supplierId/transactions', [
         particular: payment.particular || `Bank Payment: ${payment.voucherCode || payment._id}`,
         debitAmount: payment.amount || 0,
         creditAmount: 0,
-        source: 'Bank Payment'
+        source: 'Bank Payment',
+        referenceId: payment._id?.toString?.() || payment._id
       });
     });
     
@@ -1383,7 +1394,9 @@ router.get('/supplier/:supplierId/transactions', [
         particular: entry.particular,
         debitAmount: entry.debitAmount,
         creditAmount: entry.creditAmount,
-        balance: runningBalance
+        balance: runningBalance,
+        source: entry.source,
+        referenceId: entry.referenceId
       };
     });
 

@@ -406,7 +406,7 @@ const SalesOrders = () => {
     {
       threshold: 0.4,
       minScore: 0.3,
-      limit: 50 // Limit results for dropdown
+      limit: null // Show unlimited products
     }
   );
 
@@ -418,7 +418,7 @@ const SalesOrders = () => {
     {
       threshold: 0.4,
       minScore: 0.3,
-      limit: 50
+      limit: null // Show unlimited products
     }
   );
   const modalProductsLoading = productsLoading || variantsLoading;
@@ -1902,6 +1902,7 @@ const SalesOrders = () => {
             loading={customersLoading}
             emptyMessage={customerSearchTerm.length > 0 ? "No customers found" : "Start typing to search customers..."}
             value={customerSearchTerm}
+            rightContentKey="city"
           />
         </div>
 
@@ -2781,19 +2782,30 @@ const SalesOrders = () => {
                   {/* Customer Suggestions */}
                   {customerSearchTerm && customersData?.customers?.length > 0 && (
                     <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                      {customersData.customers.slice(0, 5).map((customer) => (
-                        <div
-                          key={customer._id}
-                          onClick={() => {
-                            setFormData(prev => ({ ...prev, customer: customer._id }));
-                            setCustomerSearchTerm(customer.businessName || customer.name);
-                          }}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                        >
-                          <div className="font-medium">{customer.businessName || customer.name}</div>
-                          <div className="text-sm text-gray-600">{customer.email}</div>
-                        </div>
-                      ))}
+                      {customersData.customers.slice(0, 5).map((customer) => {
+                        // Get city from addresses
+                        const defaultAddress = customer.addresses?.find(addr => addr.isDefault) || customer.addresses?.[0];
+                        const city = defaultAddress?.city || '';
+                        
+                        return (
+                          <div
+                            key={customer._id}
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, customer: customer._id }));
+                              setCustomerSearchTerm(customer.businessName || customer.name);
+                            }}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 flex items-center justify-between"
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium">{customer.businessName || customer.name}</div>
+                              <div className="text-sm text-gray-600">{customer.email}</div>
+                            </div>
+                            {city && (
+                              <div className="text-xs text-gray-500 ml-2">{city}</div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -2929,9 +2941,8 @@ const SalesOrders = () => {
                       />
                       {/* Product Suggestions */}
                       {modalProductSearchTerm && modalProductsData?.length > 0 && (
-                        <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
+                        <div className="mt-2 max-h-96 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
                           {modalProductsData
-                            .slice(0, 5)
                             .map((product, index) => (
                               <div
                                 key={product._id}

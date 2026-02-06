@@ -282,7 +282,7 @@ const ProductSearch = ({ onAddProduct, onRefetchReady }) => {
     {
       threshold: 0.4,
       minScore: 0.3,
-      limit: 15 // Increased limit to show more results including variants
+      limit: null // Show unlimited products
     }
   );
 

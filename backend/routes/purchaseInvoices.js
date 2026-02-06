@@ -14,6 +14,18 @@ const supplierRepository = require('../repositories/SupplierRepository');
 
 const router = express.Router();
 
+// Format supplier address for invoice supplierInfo (for print)
+const formatSupplierAddress = (supplierData) => {
+  if (!supplierData) return '';
+  if (supplierData.address && typeof supplierData.address === 'string') return supplierData.address;
+  if (supplierData.addresses && Array.isArray(supplierData.addresses) && supplierData.addresses.length > 0) {
+    const addr = supplierData.addresses.find(a => a.isDefault) || supplierData.addresses.find(a => a.type === 'billing' || a.type === 'both') || supplierData.addresses[0];
+    const parts = [addr.street, addr.city, addr.state, addr.country, addr.zipCode].filter(Boolean);
+    return parts.join(', ');
+  }
+  return '';
+};
+
 // Helper functions to transform names to uppercase
 const transformSupplierToUppercase = (supplier) => {
   if (!supplier) return supplier;
@@ -370,7 +382,7 @@ router.put('/:id', [
         email: supplierData.email,
         phone: supplierData.phone,
         companyName: supplierData.companyName,
-        address: supplierData.address
+        address: formatSupplierAddress(supplierData)
       } : null;
     }
     

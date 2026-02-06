@@ -120,7 +120,7 @@ const SaleReturns = () => {
         search: productSearchTerm.trim() 
       }).then((result) => {
         if (result.data?.data) {
-          const suggestions = result.data.data.slice(0, 5).map(productData => ({
+          const suggestions = result.data.data.map(productData => ({
             id: productData.product._id,
             name: productData.product.name || 'Unknown Product',
             sku: productData.product.sku || '',
@@ -556,7 +556,7 @@ const SaleReturns = () => {
           {showSuggestions && createPortal(
             <div
               ref={suggestionsRef}
-              className="fixed z-[9999] bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm border border-gray-200"
+              className="fixed z-[9999] bg-white shadow-lg max-h-96 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm border border-gray-200"
               style={{
                 top: `${suggestionsPosition.top}px`,
                 left: `${suggestionsPosition.left}px`,

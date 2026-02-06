@@ -42,6 +42,7 @@ import { useGetBankReceiptsQuery } from '../store/services/bankReceiptsApi';
 import { useGetBankPaymentsQuery } from '../store/services/bankPaymentsApi';
 import { useGetUpcomingExpensesQuery } from '../store/services/expensesApi';
 import { useGetCompanySettingsQuery } from '../store/services/settingsApi';
+import { useFetchCompanyQuery } from '../store/services/companyApi';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { LoadingSpinner, LoadingButton, LoadingCard, LoadingGrid, LoadingPage, LoadingInline } from '../components/LoadingSpinner';
 import PeriodComparisonSection from '../components/PeriodComparisonSection';
@@ -242,6 +243,7 @@ export const Dashboard = () => {
   );
 
   const { data: companySettingsData } = useGetCompanySettingsQuery();
+  const { data: companyData } = useFetchCompanyQuery();
 
   if (summaryLoading || lowStockLoading || inventoryLoading || customersLoading ||
     salesOrdersLoading || pendingSalesOrdersLoading || purchaseOrdersLoading || pendingPurchaseOrdersLoading ||
@@ -455,8 +457,9 @@ export const Dashboard = () => {
   const bankPaymentsDataArray = bankPayments;
 
   const companyInfo = companySettingsData?.data || {};
-  const companyLogo = companyInfo.logo;
-  const companyName = companyInfo.companyName || companyInfo.businessName || '';
+  const companyFromApi = companyData?.data || companyData || {};
+  const companyLogo = companyFromApi.logo || companyInfo.logo;
+  const companyName = companyInfo.companyName || companyInfo.businessName || companyFromApi.companyName || '';
 
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
@@ -533,18 +536,9 @@ export const Dashboard = () => {
                 <Building className="h-20 w-20 text-gray-400" />
               </div>
             )}
-            {companyName && (
+            {companyName ? (
               <h2 className="text-xl font-semibold text-gray-800">{companyName}</h2>
-            )}
-            <p className="text-sm text-gray-500">Dashboard data is hidden. Click &quot;Unhide data&quot; to view again.</p>
-            <button
-              type="button"
-              onClick={toggleDashboardVisibility}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 text-sm font-medium"
-            >
-              <Eye className="h-4 w-4" />
-              Unhide data
-            </button>
+            ) : null}
           </div>
         </div>
       ) : (

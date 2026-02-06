@@ -36,6 +36,18 @@ const parseLocalDate = (dateString) => {
   return new Date(year, month - 1, day, 0, 0, 0, 0);
 };
 
+// Format customer address for order customerInfo (for print)
+const formatCustomerAddress = (customerData) => {
+  if (!customerData) return '';
+  if (customerData.address && typeof customerData.address === 'string') return customerData.address;
+  if (customerData.addresses && Array.isArray(customerData.addresses) && customerData.addresses.length > 0) {
+    const addr = customerData.addresses.find(a => a.isDefault) || customerData.addresses.find(a => a.type === 'billing' || a.type === 'both') || customerData.addresses[0];
+    const parts = [addr.street, addr.city, addr.state, addr.country, addr.zipCode].filter(Boolean);
+    return parts.join(', ');
+  }
+  return '';
+};
+
 // Helper functions to transform names to uppercase
 const transformCustomerToUppercase = (customer) => {
   if (!customer) return customer;
@@ -759,7 +771,8 @@ router.post('/', [
         name: customerData.displayName,
         email: customerData.email,
         phone: customerData.phone,
-        businessName: customerData.businessName
+        businessName: customerData.businessName,
+        address: formatCustomerAddress(customerData)
       } : null,
       items: orderItems,
       pricing: {
@@ -901,17 +914,27 @@ router.post('/', [
       // Reload order after transaction (since it was saved in session)
       const savedOrder = await Sales.findById(orderId);
 
-      // Populate order for response
+      // Populate order for response (include addresses for print preview)
       await savedOrder.populate([
-        { path: 'customer', select: 'firstName lastName businessName email' },
+        { path: 'customer', select: 'firstName lastName businessName email phone addresses' },
         { path: 'items.product', select: 'name description' },
         { path: 'createdBy', select: 'firstName lastName' }
       ]);
 
+      // Send plain object so customerInfo.address is always in JSON (populate is already on savedOrder)
+      const orderForResponse = savedOrder.toObject ? savedOrder.toObject({ virtuals: true }) : { ...savedOrder };
+      if (customerData) {
+        const addr = formatCustomerAddress(customerData);
+        if (addr) {
+          if (!orderForResponse.customerInfo) orderForResponse.customerInfo = {};
+          orderForResponse.customerInfo.address = addr;
+        }
+      }
+
       res.status(201).json({
         success: true,
         message: 'Order created successfully',
-        order: savedOrder
+        order: orderForResponse
       });
     } catch (error) {
       // Rollback transaction on error
@@ -1097,7 +1120,8 @@ router.put('/:id', [
         name: customerData.displayName,
         email: customerData.email,
         phone: customerData.phone,
-        businessName: customerData.businessName
+        businessName: customerData.businessName,
+        address: formatCustomerAddress(customerData)
       } : null;
     }
 
@@ -1411,9 +1435,9 @@ router.put('/:id', [
       }
     }
 
-    // Populate order for response
+    // Populate order for response (include addresses for print)
     await order.populate([
-      { path: 'customer', select: 'firstName lastName businessName email phone' },
+      { path: 'customer', select: 'firstName lastName businessName email phone addresses' },
       { path: 'items.product', select: 'name description pricing' },
       { path: 'createdBy', select: 'firstName lastName' }
     ]);

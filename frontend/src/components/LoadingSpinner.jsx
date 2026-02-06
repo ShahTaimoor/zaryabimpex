@@ -15,14 +15,15 @@ export const LoadingSpinner = ({ size = 'md', className = '', inline = false }) 
   );
 };
 
-export const LoadingButton = ({ isLoading, children, disabled, className = '', ...props }) => {
+export const LoadingButton = ({ isLoading, loading, children, disabled, className = '', ...props }) => {
+  const busy = isLoading || loading;
   return (
     <button
       {...props}
-      disabled={disabled || isLoading}
-      className={`${className} ${(disabled || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+      disabled={disabled || busy}
+      className={`${className} ${(disabled || busy) ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
-      {isLoading ? (
+      {busy ? (
         <div className="flex items-center justify-center">
           <LoadingSpinner size="sm" className="mr-2" />
           <span>Loading...</span>

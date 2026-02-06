@@ -40,12 +40,6 @@ const settingsSchema = new mongoose.Schema({
     trim: true
   },
 
-  // Branding
-  logo: {
-    type: String, // Base64 string or URL
-    trim: true
-  },
-
   // System Settings
   currency: {
     type: String,

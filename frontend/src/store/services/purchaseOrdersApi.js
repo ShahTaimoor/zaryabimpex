@@ -124,6 +124,7 @@ export const purchaseOrdersApi = api.injectEndpoints({
 export const {
   useGetPurchaseOrdersQuery,
   useGetPurchaseOrderQuery,
+  useLazyGetPurchaseOrderQuery,
   useCreatePurchaseOrderMutation,
   useUpdatePurchaseOrderMutation,
   useDeletePurchaseOrderMutation,

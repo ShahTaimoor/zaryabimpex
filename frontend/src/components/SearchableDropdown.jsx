@@ -19,7 +19,8 @@ export const SearchableDropdown = forwardRef(({
   disabled = false,
   showSelected = true,
   value = null,
-  openOnFocus = false
+  openOnFocus = false,
+  rightContentKey = null // Function or key to get right-side content (e.g., city)
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -329,6 +330,27 @@ export const SearchableDropdown = forwardRef(({
     return valueToDisplayString(rawValue) || '';
   };
 
+  // Get right-side content (e.g., city for customers)
+  const getRightContent = (item) => {
+    if (!item || !rightContentKey) return null;
+    
+    if (typeof rightContentKey === 'function') {
+      return rightContentKey(item);
+    }
+    
+    // If rightContentKey is a string, try to get the value
+    if (typeof rightContentKey === 'string') {
+      // Special handling for customer city
+      if (rightContentKey === 'city' && item.addresses && Array.isArray(item.addresses)) {
+        const defaultAddress = item.addresses.find(addr => addr.isDefault) || item.addresses[0];
+        return defaultAddress?.city || '';
+      }
+      return valueToDisplayString(item[rightContentKey]) || '';
+    }
+    
+    return null;
+  };
+
   const getInputValue = () => {
     // If a controlled value is provided, use it (including empty string)
     if (value !== null) {
@@ -401,7 +423,7 @@ export const SearchableDropdown = forwardRef(({
       {isOpen && createPortal(
         <div 
           ref={dropdownRef}
-          className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
@@ -429,10 +451,15 @@ export const SearchableDropdown = forwardRef(({
                       isSelected ? 'bg-primary-50 text-primary-700' : 'text-gray-900'
                     }`}
                   >
-                    {getDisplayValue(item)}
-                    {isItemSelected && (
-                      <Check className="h-4 w-4 text-primary-600" />
-                    )}
+                    <span className="flex-1">{getDisplayValue(item)}</span>
+                    <span className="flex items-center gap-2">
+                      {getRightContent(item) && (
+                        <span className="text-xs text-gray-500">{getRightContent(item)}</span>
+                      )}
+                      {isItemSelected && (
+                        <Check className="h-4 w-4 text-primary-600" />
+                      )}
+                    </span>
                   </button>
                 );
               })}

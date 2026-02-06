@@ -32,7 +32,7 @@ import { useGetSuppliersQuery } from '../store/services/suppliersApi';
 import { useGetCustomersQuery } from '../store/services/customersApi';
 import { useAppDispatch } from '../store/hooks';
 import { api } from '../store/api';
-import PrintModal from '../components/PrintModal';
+import ReceiptPaymentPrintModal from '../components/ReceiptPaymentPrintModal';
 import DateFilter from '../components/DateFilter';
 import { getCurrentDatePakistan } from '../utils/dateUtils';
 
@@ -793,32 +793,7 @@ const CashReceipts = () => {
   };
 
   const handlePrint = (receipt) => {
-    // Format receipt data for PrintModal
-    const formattedData = {
-      invoiceNumber: receipt.voucherCode,
-      orderNumber: receipt.voucherCode,
-      createdAt: receipt.date,
-      invoiceDate: receipt.date,
-      customer: receipt.customer || null,
-      customerInfo: receipt.customer || null,
-      supplier: receipt.supplier || null,
-      pricing: {
-        subtotal: receipt.amount || 0,
-        total: receipt.amount || 0,
-        discountAmount: 0,
-        taxAmount: 0
-      },
-      total: receipt.amount || 0,
-      subtotal: receipt.amount || 0,
-      items: [],
-      payment: {
-        method: 'Cash',
-        status: 'Paid',
-        amountPaid: receipt.amount || 0
-      },
-      notes: receipt.notes || receipt.particular || ''
-    };
-    setPrintData(formattedData);
+    setPrintData(receipt);
     setShowPrintModal(true);
   };
 
@@ -1834,16 +1809,15 @@ const CashReceipts = () => {
         </div>
       )}
 
-      {/* Print Modal */}
-      <PrintModal
+      {/* Receipt print modal – dedicated layout for receipts only */}
+      <ReceiptPaymentPrintModal
         isOpen={showPrintModal}
         onClose={() => {
           setShowPrintModal(false);
           setPrintData(null);
         }}
-        orderData={printData}
         documentTitle="Cash Receipt"
-        partyLabel={printData?.supplier ? 'Supplier' : 'Customer'}
+        receiptData={printData}
       />
     </div>
   );

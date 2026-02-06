@@ -165,6 +165,7 @@ app.use('/api/bank-receipts', require('./routes/bankReceipts'));
 app.use('/api/bank-payments', require('./routes/bankPayments'));
 app.use('/api/banks', require('./routes/banks'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/company', require('./routes/company'));
 app.use('/api/chart-of-accounts', require('./routes/chartOfAccounts'));
 app.use('/api/account-categories', require('./routes/accountCategories'));
 app.use('/api/account-ledger', require('./routes/accountLedger'));

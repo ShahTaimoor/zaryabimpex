@@ -18,6 +18,19 @@ const PrintDocument = ({
         showEmail = true,
         showCameraTime = false,
         showDescription = true,
+        showPrintBusinessName = true,
+        showPrintContactName = true,
+        showPrintAddress = true,
+        showPrintCity = true,
+        showPrintState = true,
+        showPrintPostalCode = true,
+        showPrintInvoiceNumber = true,
+        showPrintInvoiceDate = true,
+        showPrintInvoiceStatus = true,
+        showPrintInvoiceType = true,
+        showPrintPaymentStatus = true,
+        showPrintPaymentMethod = true,
+        showPrintPaymentAmount = true,
         headerText = '',
         footerText = ''
     } = printSettings || {};
@@ -68,7 +81,7 @@ const PrintDocument = ({
     const resolvedDocumentTitle = documentTitle || 'Invoice';
     const resolvedCompanySubtitle = resolvedDocumentTitle;
     const resolvedCompanyAddress = safeCompanySettings.address || '';
-    const resolvedCompanyPhone = safeCompanySettings.contactNumber || '';
+    const resolvedCompanyPhone = safeCompanySettings.contactNumber || safeCompanySettings.phone || '';
 
     const partyInfo = useMemo(() => {
         if (!orderData) {
@@ -77,48 +90,85 @@ const PrintDocument = ({
                 email: 'N/A',
                 phone: 'N/A',
                 extra: '',
-                address: ''
+                address: '',
+                street: '',
+                city: '',
+                state: '',
+                postalCode: ''
             };
         }
 
+        // Party: customer (sales) or supplier (purchase). Prefer explicit customerInfo/supplierInfo for stored snapshot.
         const customer =
-            orderData.customerInfo || orderData.customer || orderData.supplier || {};
+            orderData.customerInfo || orderData.customer || orderData.supplierInfo || orderData.supplier || {};
         const composedName =
             customer.displayName ||
             customer.businessName ||
             customer.name ||
+            customer.companyName ||
             (customer.firstName || customer.lastName
                 ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
                 : '') ||
             'Walk-in Customer';
-        
-        // Get customer address from addresses array
+        const businessName =
+            customer.businessName ||
+            customer.companyName ||
+            orderData.customerInfo?.businessName ||
+            orderData.customer?.businessName ||
+            '';
+
+        // Get customer/supplier address: addresses array (with street/city/state/postalCode), then full string fallback
         let customerAddress = '';
+        let street = '';
+        let city = '';
+        let state = '';
+        let postalCode = '';
+        const pickAddr = (defaultAddress) => {
+            if (!defaultAddress) return;
+            street = defaultAddress.street || '';
+            city = defaultAddress.city || '';
+            state = defaultAddress.state || '';
+            postalCode = defaultAddress.zipCode || defaultAddress.zip || defaultAddress.postalCode || '';
+            customerAddress = [street, city, state, defaultAddress.country, postalCode].filter(Boolean).join(', ');
+        };
         if (customer.addresses && Array.isArray(customer.addresses) && customer.addresses.length > 0) {
-            // Try to find default address first, then billing address, then first address
             const defaultAddress = customer.addresses.find(addr => addr.isDefault) ||
-                                   customer.addresses.find(addr => addr.type === 'billing' || addr.type === 'both') ||
-                                   customer.addresses[0];
-            
-            if (defaultAddress) {
-                const addressParts = [];
-                if (defaultAddress.street) addressParts.push(defaultAddress.street);
-                if (defaultAddress.city) addressParts.push(defaultAddress.city);
-                if (defaultAddress.state) addressParts.push(defaultAddress.state);
-                customerAddress = addressParts.join(', ');
+                customer.addresses.find(addr => addr.type === 'billing' || addr.type === 'both') ||
+                customer.addresses[0];
+            pickAddr(defaultAddress);
+        }
+        if (!customerAddress) {
+            const refParty = orderData.customer || orderData.supplier;
+            if (refParty?.addresses && Array.isArray(refParty.addresses) && refParty.addresses.length > 0) {
+                const defaultAddress = refParty.addresses.find(addr => addr.isDefault) ||
+                    refParty.addresses.find(addr => addr.type === 'billing' || addr.type === 'both') ||
+                    refParty.addresses[0];
+                pickAddr(defaultAddress);
             }
         }
-        
+        if (!customerAddress) {
+            customerAddress =
+                customer.address ||
+                customer.location ||
+                customer.companyAddress ||
+                customer.billingAddress ||
+                orderData.customerInfo?.address ||
+                orderData.supplierInfo?.address ||
+                orderData.shippingAddress ||
+                orderData.billingAddress ||
+                '';
+        }
+
         return {
             name: composedName,
             email: customer.email || 'N/A',
             phone: customer.phone || 'N/A',
-            extra:
-                customer.companyName ||
-                orderData.customerInfo?.businessName ||
-                orderData.customer?.businessName ||
-                '',
-            address: customerAddress || orderData.customerInfo?.address || ''
+            extra: businessName,
+            address: customerAddress,
+            street,
+            city,
+            state,
+            postalCode
         };
     }, [orderData]);
 
@@ -193,28 +243,28 @@ const PrintDocument = ({
     const generatedAt = new Date();
 
     const billToLines = [
-        partyInfo.name,
-        partyInfo.extra || null,
-        partyInfo.email !== 'N/A' && showEmail ? partyInfo.email : null,
+        showPrintContactName ? partyInfo.name : null,
+        showPrintBusinessName && partyInfo.extra ? partyInfo.extra : null,
+        showEmail && partyInfo.email !== 'N/A' ? partyInfo.email : null,
         partyInfo.phone !== 'N/A' ? partyInfo.phone : null,
-        partyInfo.address || null
+        showPrintAddress && (partyInfo.street || partyInfo.address) ? (partyInfo.street || partyInfo.address) : null,
+        showPrintCity && partyInfo.city ? partyInfo.city : null,
+        showPrintState && partyInfo.state ? partyInfo.state : null,
+        showPrintPostalCode && partyInfo.postalCode ? partyInfo.postalCode : null
     ].filter(Boolean);
 
     const invoiceDetailLines = [
-        { label: 'Invoice #:', value: formatText(documentNumber) },
-        showDate ? {
-            label: 'Date:',
-            value: formatDate(orderData?.createdAt || orderData?.invoiceDate)
-        } : null,
-        { label: 'Status:', value: formatText(documentStatus) },
-        { label: 'Type:', value: formatText(documentType) }
+        showPrintInvoiceNumber ? { label: 'Invoice #:', value: formatText(documentNumber) } : null,
+        (showPrintInvoiceDate && showDate) ? { label: 'Date:', value: formatDate(orderData?.createdAt || orderData?.invoiceDate) } : null,
+        showPrintInvoiceStatus ? { label: 'Status:', value: formatText(documentStatus) } : null,
+        showPrintInvoiceType ? { label: 'Type:', value: formatText(documentType) } : null
     ].filter(Boolean);
 
     const paymentDetailLines = [
-        { label: 'Status:', value: formatText(paymentStatus) },
-        { label: 'Method:', value: formatText(paymentMethod) },
-        { label: 'Amount:', value: formatCurrency(paymentAmount) }
-    ];
+        showPrintPaymentStatus ? { label: 'Status:', value: formatText(paymentStatus) } : null,
+        showPrintPaymentMethod ? { label: 'Method:', value: formatText(paymentMethod) } : null,
+        showPrintPaymentAmount ? { label: 'Amount:', value: formatCurrency(paymentAmount) } : null
+    ].filter(Boolean);
 
     const hasCameraTime = orderData?.billStartTime || orderData?.billEndTime;
 
@@ -230,23 +280,24 @@ const PrintDocument = ({
                 </div>
             )}
 
-            {/* Company Header */}
+            {/* Company Header - logo from Redux/companySettings, placeholder when none */}
             <div className="print-document__company">
-                {showLogo && safeCompanySettings.logo ? (
-                    <div style={{ marginBottom: '16px', textAlign: 'center' }}>
-                        <img
-                            src={safeCompanySettings.logo}
-                            alt="Company Logo"
-                            style={{ maxHeight: '80px', maxWidth: '250px', display: 'inline-block' }}
-                        />
+                {showLogo && (
+                    <div className="print-document__logo-wrap">
+                        {safeCompanySettings.logo ? (
+                            <img
+                                src={safeCompanySettings.logo}
+                                alt="Company Logo"
+                                className="print-document__logo-img"
+                            />
+                        ) : (
+                            <div className="print-document__logo-placeholder" aria-hidden>
+                                {resolvedCompanyName
+                                    ? resolvedCompanyName.charAt(0).toUpperCase()
+                                    : '?'}
+                            </div>
+                        )}
                     </div>
-                ) : showLogo && (
-                    // Placeholder if logo is enabled but missing (useful for preview)
-                    // or just render nothing if we strictly follow PrintModal logic?
-                    // PrintModal rendered empty div or nothing?
-                    // PrintModal checked `showLogo && companySettings.logo`.
-                    // So if no logo, nothing is shown. 
-                    null
                 )}
 
                 <div className="print-document__company-name">{resolvedCompanyName}</div>
@@ -267,24 +318,28 @@ const PrintDocument = ({
                         </div>
                     ))}
                 </div>
-                <div className="print-document__info-block">
-                    <div className="print-document__section-label">Invoice Details:</div>
-                    {invoiceDetailLines.map((line, idx) => (
-                        <div key={`inv-${idx}`} className="print-document__info-line">
-                            <span className="print-document__info-label">{line.label}</span>
-                            <span className="print-document__info-value">{line.value}</span>
-                        </div>
-                    ))}
-                </div>
-                <div className="print-document__info-block">
-                    <div className="print-document__section-label">Payment:</div>
-                    {paymentDetailLines.map((line, idx) => (
-                        <div key={`pay-${idx}`} className="print-document__info-line">
-                            <span className="print-document__info-label">{line.label}</span>
-                            <span className="print-document__info-value">{line.value}</span>
-                        </div>
-                    ))}
-                </div>
+                {invoiceDetailLines.length > 0 && (
+                    <div className="print-document__info-block">
+                        <div className="print-document__section-label">Invoice Details:</div>
+                        {invoiceDetailLines.map((line, idx) => (
+                            <div key={`inv-${idx}`} className="print-document__info-line">
+                                <span className="print-document__info-label">{line.label}</span>
+                                <span className="print-document__info-value">{line.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {paymentDetailLines.length > 0 && (
+                    <div className="print-document__info-block">
+                        <div className="print-document__section-label">Payment:</div>
+                        {paymentDetailLines.map((line, idx) => (
+                            <div key={`pay-${idx}`} className="print-document__info-line">
+                                <span className="print-document__info-label">{line.label}</span>
+                                <span className="print-document__info-value">{line.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* CCTV Camera Time Section */}

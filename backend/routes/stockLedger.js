@@ -121,7 +121,7 @@ router.get('/', [
             invoiceDate: sale.billDate || sale.createdAt,
             invoiceNo: sale.orderNumber || sale._id.toString(),
             invoiceType: 'SALE',
-            customerSupplier: sale.customer?.name || sale.customer?.businessName || sale.customerInfo?.name || 'Walk-in Customer',
+            customerSupplier: sale.customer?.businessName || sale.customer?.name || sale.customerInfo?.businessName || sale.customerInfo?.name || 'Walk-in Customer',
             productId: item.product._id,
             productName: item.product.name || 'Unknown Product',
             price: item.unitPrice || 0,
@@ -161,8 +161,8 @@ router.get('/', [
             invoiceDate: purchase.invoiceDate || purchase.createdAt,
             invoiceNo: purchase.invoiceNumber || purchase._id.toString(),
             invoiceType: 'PURCHASE',
-            customerSupplier: purchase.supplier?.name || purchase.supplier?.businessName || 
-                             purchase.supplier?.companyName || purchase.supplierInfo?.name || 'Unknown Supplier',
+            customerSupplier: purchase.supplier?.companyName || purchase.supplier?.businessName || purchase.supplier?.name || 
+                             purchase.supplierInfo?.companyName || purchase.supplierInfo?.name || 'Unknown Supplier',
             productId: item.product._id,
             productName: item.product.name || 'Unknown Product',
             price: item.unitCost || 0,
@@ -207,7 +207,7 @@ router.get('/', [
             invoiceDate: returnDoc.returnDate || returnDoc.createdAt,
             invoiceNo: invoiceNo,
             invoiceType: 'SALE RETURN',
-            customerSupplier: returnDoc.customer?.name || returnDoc.customer?.businessName || 'Unknown Customer',
+            customerSupplier: returnDoc.customer?.businessName || returnDoc.customer?.name || 'Unknown Customer',
             productId: item.product._id,
             productName: item.product.name || 'Unknown Product',
             price: item.originalPrice || 0,
@@ -252,8 +252,7 @@ router.get('/', [
             invoiceDate: returnDoc.returnDate || returnDoc.createdAt,
             invoiceNo: invoiceNo,
             invoiceType: 'PURCHASE RETURN',
-            customerSupplier: returnDoc.supplier?.name || returnDoc.supplier?.businessName || 
-                            returnDoc.supplier?.companyName || 'Unknown Supplier',
+            customerSupplier: returnDoc.supplier?.companyName || returnDoc.supplier?.businessName || returnDoc.supplier?.name || 'Unknown Supplier',
             productId: item.product._id,
             productName: item.product.name || 'Unknown Product',
             price: item.originalPrice || 0,
@@ -287,10 +286,10 @@ router.get('/', [
 
         let customerSupplier = 'N/A';
         if (damage.customer) {
-          customerSupplier = damage.customer.name || damage.customer.businessName || 'Unknown Customer';
+          customerSupplier = damage.customer.businessName || damage.customer.name || 'Unknown Customer';
         } else if (damage.supplier) {
-          customerSupplier = damage.supplier.name || damage.supplier.businessName || 
-                           damage.supplier.companyName || 'Unknown Supplier';
+          customerSupplier = damage.supplier.companyName || damage.supplier.businessName || 
+                           damage.supplier.name || 'Unknown Supplier';
         }
 
         addEntry({

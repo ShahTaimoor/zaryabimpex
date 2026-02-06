@@ -24,11 +24,11 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen min-h-screen flex overflow-hidden">
       {/* Left Side - Image Background */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden min-h-0">
         <img
-          src="/images/Black and White Modern Business Meeting Zoom Virtual Background.png"
+          src="/images/Purple and Blue Modern Company Meeting Zoom Virtual Background.webp"
           alt="Login Background"
           className="w-full h-full object-cover"
         />
@@ -69,8 +69,9 @@ export const Login = () => {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md">
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
             <div className="mx-auto h-14 w-14 flex items-center justify-center rounded-2xl bg-gray-800 shadow-lg mb-4">
@@ -177,35 +178,35 @@ export const Login = () => {
               <p className="text-center text-sm font-medium text-gray-600 mb-4">
                 Need Help?
               </p>
-              <div className="space-y-2">
+              <div className="flex flex-col items-start gap-2">
                 <a
                   href="mailto:wiserconsulting.info@gmail.com"
-                  className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
+                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
                 >
-                  <Mail className="w-4 h-4 mr-2 text-gray-500" />
-                  wiserconsulting.info@gmail.com
+                  <Mail className="w-4 h-4 shrink-0 text-gray-500" />
+                  <span>wiserconsulting.info@gmail.com</span>
                 </a>
                 <a
                   href="https://wa.me/923130922988"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center text-sm text-gray-600 hover:text-[#25D366] transition-colors duration-200"
+                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-[#25D366] transition-colors duration-200"
                 >
-                  <MessageCircle className="w-4 h-4 mr-2 text-[#25D366]" />
-                  WhatsApp: +92 313 0922988
+                  <MessageCircle className="w-4 h-4 shrink-0 text-[#25D366]" />
+                  <span>WhatsApp: +92 313 0922988</span>
                 </a>
                 <a
                   href="https://www.wiserconsulting.info"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
+                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
                 >
-                  <Globe className="w-4 h-4 mr-2 text-gray-500" />
-                  www.wiserconsulting.info
+                  <Globe className="w-4 h-4 shrink-0 text-gray-500" />
+                  <span>www.wiserconsulting.info</span>
                 </a>
-                <div className="flex items-center justify-center text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200">
-                  <MapPin className="w-4 h-4 mr-2 text-gray-500" />
-                  UG 390, Deans Trade Center, Cantt Peshawar
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <MapPin className="w-4 h-4 shrink-0 text-gray-500" />
+                  <span>UG 390, Deans Trade Center, Cantt Peshawar</span>
                 </div>
               </div>
             </div>
@@ -215,6 +216,7 @@ export const Login = () => {
           <p className="mt-6 text-center text-xs text-gray-500">
             © 2024 POS System. All rights reserved.
           </p>
+          </div>
         </div>
       </div>
     </div>

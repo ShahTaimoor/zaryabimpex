@@ -33,8 +33,11 @@ const axiosBaseQuery = ({ baseUrl = '' } = {}) => {
         config.url = config.url.substring(1);
       }
 
-      // Sanitize request data for security
-      if (config.data) {
+      // FormData: do not sanitize and let axios set Content-Type (multipart/form-data)
+      if (config.data instanceof FormData) {
+        config.headers = config.headers ? { ...config.headers } : {};
+        delete config.headers['Content-Type'];
+      } else if (config.data) {
         config.data = sanitizeRequestData(config.data);
       }
 

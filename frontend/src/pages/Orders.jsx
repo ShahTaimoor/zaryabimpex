@@ -1109,19 +1109,30 @@ export const Orders = () => {
                     {/* Customer Suggestions */}
                     {customerSearchTerm && customers?.length > 0 && (
                       <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                        {customers.slice(0, 5).map((customer) => (
-                          <div
-                            key={customer._id}
-                            onClick={() => {
-                              setEditFormData({...editFormData, customer: customer._id});
-                              setCustomerSearchTerm(customer.displayName);
-                            }}
-                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                          >
-                            <div className="font-medium">{customer.displayName}</div>
-                            <div className="text-sm text-gray-600">{customer.email}</div>
-                          </div>
-                        ))}
+                        {customers.slice(0, 5).map((customer) => {
+                          // Get city from addresses
+                          const defaultAddress = customer.addresses?.find(addr => addr.isDefault) || customer.addresses?.[0];
+                          const city = defaultAddress?.city || '';
+                          
+                          return (
+                            <div
+                              key={customer._id}
+                              onClick={() => {
+                                setEditFormData({...editFormData, customer: customer._id});
+                                setCustomerSearchTerm(customer.displayName);
+                              }}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 flex items-center justify-between"
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium">{customer.displayName}</div>
+                                <div className="text-sm text-gray-600">{customer.email}</div>
+                              </div>
+                              {city && (
+                                <div className="text-xs text-gray-500 ml-2">{city}</div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                     {/* Selected Customer Display */}

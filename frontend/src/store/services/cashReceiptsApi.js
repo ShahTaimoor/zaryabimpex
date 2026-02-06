@@ -2,6 +2,13 @@ import { api } from '../api';
 
 export const cashReceiptsApi = api.injectEndpoints({
   endpoints: (builder) => ({
+    getCashReceiptById: builder.query({
+      query: (id) => ({
+        url: `cash-receipts/${id}`,
+        method: 'get',
+      }),
+      providesTags: (_result, _error, id) => [{ type: 'CashReceipts', id }],
+    }),
     getCashReceipts: builder.query({
       query: (params) => ({
         url: 'cash-receipts',
@@ -144,6 +151,8 @@ export const cashReceiptsApi = api.injectEndpoints({
 
 export const {
   useGetCashReceiptsQuery,
+  useGetCashReceiptByIdQuery,
+  useLazyGetCashReceiptByIdQuery,
   useCreateCashReceiptMutation,
   useUpdateCashReceiptMutation,
   useDeleteCashReceiptMutation,

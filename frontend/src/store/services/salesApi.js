@@ -49,6 +49,13 @@ export const salesApi = api.injectEndpoints({
           ]
           : [{ type: 'Sales', id: 'LIST' }],
     }),
+    getOrderById: builder.query({
+      query: (id) => ({
+        url: `sales/${id}`,
+        method: 'get',
+      }),
+      providesTags: (_result, _error, id) => [{ type: 'Sales', id }],
+    }),
     getTodaySummary: builder.query({
       query: () => ({
         url: 'sales/today/summary',
@@ -117,6 +124,8 @@ export const {
   useGetSalesQuery,
   useCreateSaleMutation,
   useGetOrdersQuery,
+  useGetOrderByIdQuery,
+  useLazyGetOrderByIdQuery,
   useGetTodaySummaryQuery,
   useGetPeriodSummaryQuery,
   useLazyGetPeriodSummaryQuery,
