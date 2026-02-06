@@ -52,11 +52,14 @@ export const StockLedger = () => {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Customer/Supplier block: close both (single combined dropdown or either list)
       if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target)) {
         setShowCustomerDropdown(false);
+        setShowSupplierDropdown(false);
       }
       if (supplierDropdownRef.current && !supplierDropdownRef.current.contains(event.target)) {
         setShowSupplierDropdown(false);
+        setShowCustomerDropdown(false);
       }
       if (productDropdownRef.current && !productDropdownRef.current.contains(event.target)) {
         setShowProductDropdown(false);
@@ -283,29 +286,40 @@ export const StockLedger = () => {
                   placeholder="Select customer or supplier..."
                   value={customerSearchQuery || supplierSearchQuery}
                   onChange={(e) => {
+                    const value = e.target.value;
                     if (filters.customer) {
-                      setCustomerSearchQuery(e.target.value);
+                      setCustomerSearchQuery(value);
+                      setShowCustomerDropdown(true);
+                      setShowSupplierDropdown(false);
                     } else if (filters.supplier) {
-                      setSupplierSearchQuery(e.target.value);
+                      setSupplierSearchQuery(value);
+                      setShowSupplierDropdown(true);
+                      setShowCustomerDropdown(false);
                     } else {
-                      setCustomerSearchQuery(e.target.value);
+                      // Single search filters both: show one dropdown with customers + suppliers
+                      setCustomerSearchQuery(value);
+                      setSupplierSearchQuery(value);
+                      setShowCustomerDropdown(true);
+                      setShowSupplierDropdown(true);
                     }
-                    setShowCustomerDropdown(true);
-                    setShowSupplierDropdown(true);
                   }}
                   onFocus={() => {
                     if (filters.customer) {
                       setShowCustomerDropdown(true);
+                      setShowSupplierDropdown(false);
                     } else if (filters.supplier) {
                       setShowSupplierDropdown(true);
+                      setShowCustomerDropdown(false);
                     } else {
                       setShowCustomerDropdown(true);
+                      setShowSupplierDropdown(true);
                     }
                   }}
                   className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm hover:border-gray-400"
                 />
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                {showCustomerDropdown && !filters.supplier && filteredCustomers.length > 0 && (
+                {/* When a customer is already selected: show only customer list for re-search */}
+                {showCustomerDropdown && filters.customer && filteredCustomers.length > 0 && (
                   <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                     {filteredCustomers.map((customer) => (
                       <button
@@ -323,7 +337,8 @@ export const StockLedger = () => {
                     ))}
                   </div>
                 )}
-                {showSupplierDropdown && !filters.customer && filteredSuppliers.length > 0 && (
+                {/* When a supplier is already selected: show only supplier list for re-search */}
+                {showSupplierDropdown && filters.supplier && filteredSuppliers.length > 0 && (
                   <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                     {filteredSuppliers.map((supplier) => (
                       <button
@@ -339,6 +354,53 @@ export const StockLedger = () => {
                         )}
                       </button>
                     ))}
+                  </div>
+                )}
+                {/* When neither selected: one combined dropdown with customers + suppliers filtered by search */}
+                {!filters.customer && !filters.supplier && (showCustomerDropdown || showSupplierDropdown) && (filteredCustomers.length > 0 || filteredSuppliers.length > 0) && (
+                  <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                    {filteredCustomers.length > 0 && (
+                      <>
+                        <div className="px-3 py-2 bg-gray-100 text-xs font-semibold text-gray-600 uppercase tracking-wider sticky top-0">
+                          Customers
+                        </div>
+                        {filteredCustomers.map((customer) => (
+                          <button
+                            key={`c-${customer._id}`}
+                            onClick={() => handleCustomerSelect(customer)}
+                            className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="text-sm font-semibold text-gray-900">
+                              {customer.businessName || customer.name}
+                            </div>
+                            {customer.email && (
+                              <div className="text-xs text-gray-500 mt-0.5">{customer.email}</div>
+                            )}
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {filteredSuppliers.length > 0 && (
+                      <>
+                        <div className="px-3 py-2 bg-gray-100 text-xs font-semibold text-gray-600 uppercase tracking-wider sticky top-0">
+                          Suppliers
+                        </div>
+                        {filteredSuppliers.map((supplier) => (
+                          <button
+                            key={`s-${supplier._id}`}
+                            onClick={() => handleSupplierSelect(supplier)}
+                            className="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="text-sm font-semibold text-gray-900">
+                              {supplier.companyName || supplier.name}
+                            </div>
+                            {supplier.email && (
+                              <div className="text-xs text-gray-500 mt-0.5">{supplier.email}</div>
+                            )}
+                          </button>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
