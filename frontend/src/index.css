@@ -162,19 +162,19 @@
 .print-preview-wrapper {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: calc(92vh - 40px);
 }
 
 .print-preview-scale {
-  transform: scale(1.5);
+  transform: scale(1.1);
   transform-origin: top center;
   transition: transform 0.2s ease;
 }
 
 @media (max-width: 1024px) {
   .print-preview-scale {
-    transform: scale(1.05);
+    transform: scale(1);
   }
 }
 

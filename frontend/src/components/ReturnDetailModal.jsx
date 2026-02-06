@@ -115,6 +115,26 @@ const ReturnDetailModal = ({
     }
   };
 
+  // Helper function to format dates properly
+  const formatDate = (dateValue, options = {}) => {
+    if (!dateValue) return 'N/A';
+    
+    try {
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return 'N/A';
+      
+      if (options.format === 'datetime') {
+        return date.toLocaleString();
+      } else if (options.format === 'date') {
+        return date.toLocaleDateString();
+      } else {
+        return date.toLocaleDateString();
+      }
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
 
   const handlePrint = () => {
     // Create a new window for printing
@@ -211,7 +231,12 @@ const ReturnDetailModal = ({
             </div>
             <div class="info-row">
               <span class="info-label">Return Date:</span>
-              <span class="info-value">${new Date(returnData.returnDate).toLocaleDateString()}</span>
+              <span class="info-value">${returnData.returnDate 
+                ? (() => {
+                    const date = new Date(returnData.returnDate);
+                    return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+                  })()
+                : 'N/A'}</span>
             </div>
             <div class="info-row">
               <span class="info-label">Refund Method:</span>
@@ -338,14 +363,14 @@ const ReturnDetailModal = ({
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+      <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-xl font-medium text-gray-900">
               Return {returnInfo.returnNumber}
             </h3>
             <p className="text-sm text-gray-500">
-              Created {new Date(returnInfo.returnDate).toLocaleDateString()}
+              Created {formatDate(returnInfo.returnDate)}
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -401,8 +426,8 @@ const ReturnDetailModal = ({
           </nav>
         </div>
 
-        {/* Tab Content */}
-        <div className="min-h-[400px]">
+        {/* Tab Content - Scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto pr-2">
           {activeTab === 'details' && (
             <div className="space-y-6">
               {/* Customer/Supplier Information */}
@@ -460,42 +485,50 @@ const ReturnDetailModal = ({
                   </div>
                 </div>
 
-                <div className="card">
-                  <div className="card-header">
-                    <h4 className="text-lg font-medium text-gray-900">
-                      {returnInfo.origin === 'purchase' ? 'Purchase Invoice' : 'Order'} Information
-                    </h4>
-                  </div>
-                  <div className="card-content">
-                    <div className="space-y-3">
-                      <div className="flex items-center">
-                        <FileText className="h-5 w-5 text-gray-400 mr-3" />
-                        <div>
-                          <div className="font-medium">
-                            {returnInfo.origin === 'purchase' 
-                              ? (returnInfo.originalOrder?.invoiceNumber || returnInfo.originalOrder?.poNumber || 'N/A')
-                              : (returnInfo.originalOrder?.orderNumber || returnInfo.originalOrder?.invoiceNumber || 'N/A')}
+                {(returnInfo.originalOrder?.orderNumber || returnInfo.originalOrder?.invoiceNumber || returnInfo.originalOrder?.poNumber || returnInfo.originalOrder?.createdAt || returnInfo.originalOrder?.total) && (
+                  <div className="card">
+                    <div className="card-header">
+                      <h4 className="text-lg font-medium text-gray-900">
+                        {returnInfo.origin === 'purchase' ? 'Purchase Invoice' : 'Order'} Information
+                      </h4>
+                    </div>
+                    <div className="card-content">
+                      <div className="space-y-3">
+                        {(returnInfo.originalOrder?.orderNumber || returnInfo.originalOrder?.invoiceNumber || returnInfo.originalOrder?.poNumber) && (
+                          <div className="flex items-center">
+                            <FileText className="h-5 w-5 text-gray-400 mr-3" />
+                            <div>
+                              <div className="font-medium">
+                                {returnInfo.origin === 'purchase' 
+                                  ? (returnInfo.originalOrder?.invoiceNumber || returnInfo.originalOrder?.poNumber)
+                                  : (returnInfo.originalOrder?.orderNumber || returnInfo.originalOrder?.invoiceNumber)}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                Original {returnInfo.origin === 'purchase' ? 'invoice' : 'order'}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            Original {returnInfo.origin === 'purchase' ? 'invoice' : 'order'}
+                        )}
+                        {returnInfo.originalOrder?.createdAt && formatDate(returnInfo.originalOrder.createdAt) !== 'N/A' && (
+                          <div className="flex items-center">
+                            <Calendar className="h-5 w-5 text-gray-400 mr-3" />
+                            <span>
+                              {formatDate(returnInfo.originalOrder.createdAt)}
+                            </span>
                           </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        <Calendar className="h-5 w-5 text-gray-400 mr-3" />
-                        <span>
-                          {new Date(returnInfo.originalOrder?.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <TrendingUp className="h-5 w-5 text-gray-400 mr-3" />
-                        <span>
-                          {returnInfo.originalOrder?.total?.toFixed(2)}
-                        </span>
+                        )}
+                        {returnInfo.originalOrder?.total && (
+                          <div className="flex items-center">
+                            <TrendingUp className="h-5 w-5 text-gray-400 mr-3" />
+                            <span>
+                              ${returnInfo.originalOrder.total.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Return Details */}
@@ -541,7 +574,7 @@ const ReturnDetailModal = ({
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-900">Return Requested</p>
                         <p className="text-sm text-gray-500">
-                          {new Date(returnInfo.returnDate).toLocaleString()}
+                          {formatDate(returnInfo.returnDate, { format: 'datetime' })}
                         </p>
                       </div>
                     </div>
@@ -556,7 +589,7 @@ const ReturnDetailModal = ({
                         <div className="ml-4">
                           <p className="text-sm font-medium text-gray-900">Completed</p>
                           <p className="text-sm text-gray-500">
-                            {new Date(returnInfo.completionDate).toLocaleString()}
+                            {formatDate(returnInfo.completionDate, { format: 'datetime' })}
                           </p>
                         </div>
                       </div>
@@ -629,7 +662,7 @@ const ReturnDetailModal = ({
                       <div className="flex justify-between items-start">
                         <p className="text-sm text-gray-900">{note.note}</p>
                         <div className="text-xs text-gray-500 ml-3">
-                          {new Date(note.addedAt).toLocaleDateString()}
+                          {formatDate(note.addedAt)}
                         </div>
                       </div>
                       {note.addedBy && (
@@ -684,7 +717,7 @@ const ReturnDetailModal = ({
                           <p className="text-sm text-gray-900 mt-1">{comm.message}</p>
                         </div>
                         <div className="text-xs text-gray-500 ml-3">
-                          {new Date(comm.sentAt).toLocaleDateString()}
+                          {formatDate(comm.sentAt)}
                         </div>
                       </div>
                       {comm.sentBy && (

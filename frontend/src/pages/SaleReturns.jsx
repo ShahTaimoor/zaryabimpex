@@ -445,13 +445,13 @@ const SaleReturns = () => {
       {/* Step 1: Customer Selection */}
       {step === 'customer' && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Step 1: Select Customer</h2>
-            <p className="text-sm text-gray-600">Choose a customer to view their sales and create a return</p>
-          </div>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Step 1: Select Customer</h2>
+              <p className="text-sm text-gray-600">Choose a customer to view their sales and create a return</p>
+            </div>
 
-          <div className="space-y-4">
-            <div>
+            <div className="flex-1 md:max-w-md">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Search Customer
               </label>

@@ -91,7 +91,7 @@ export const salesApi = api.injectEndpoints({
     }),
     getLastPrices: builder.query({
       query: (customerId) => ({
-        url: `orders/customer/${customerId}/last-prices`,
+        url: `sales/customer/${customerId}/last-prices`,
         method: 'get',
       }),
     }),

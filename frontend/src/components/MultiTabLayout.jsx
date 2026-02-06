@@ -31,7 +31,9 @@ import {
   Wallet,
   ChevronRight,
   ChevronDown,
-  Camera
+  Camera,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTab } from '../contexts/TabContext';
@@ -64,7 +66,6 @@ export const navigation = [
   { type: 'heading', name: 'Operations Section', color: 'bg-teal-500' },
   { name: 'Sale Returns', href: '/sale-returns', icon: RotateCcw, permission: 'view_returns' },
   { name: 'Purchase Returns', href: '/purchase-returns', icon: RotateCcw, permission: 'view_returns' },
-  { name: 'Returns', href: '/returns', icon: RotateCcw, permission: 'view_returns' },
   { name: 'Discounts', href: '/discounts', icon: Tag, permission: 'view_discounts' },
   { name: 'CCTV Access', href: '/cctv-access', icon: Camera, permission: 'view_sales_invoices', allowMultiple: true },
 
@@ -161,6 +162,20 @@ export const MultiTabLayout = ({ children }) => {
   const navigate = useNavigate();
   const { isMobile, isTablet } = useResponsive();
   const { openTab, tabs, switchToTab, triggerTabHighlight, activeTabId } = useTab();
+
+  // Dashboard visibility state
+  const [dashboardHidden, setDashboardHidden] = useState(() => {
+    const saved = localStorage.getItem('dashboardDataHidden');
+    return saved === 'true';
+  });
+
+  const toggleDashboardVisibility = () => {
+    const next = !dashboardHidden;
+    setDashboardHidden(next);
+    localStorage.setItem('dashboardDataHidden', String(next));
+    // Trigger a custom event to notify Dashboard component
+    window.dispatchEvent(new CustomEvent('dashboardVisibilityChanged', { detail: { hidden: next } }));
+  };
 
   // Sidebar visibility state
   const [sidebarConfig, setSidebarConfig] = useState(() => {
@@ -614,6 +629,15 @@ export const MultiTabLayout = ({ children }) => {
 
             {/* Action Buttons Container - Center/Mid-Left with Horizontal Scroll - Hidden on Mobile */}
             <div className="hidden lg:flex items-center gap-1.5 sm:gap-2 overflow-x-auto flex-1 min-w-0 scrollbar-hide overflow-y-visible">
+              {/* Cash Receiving Button - Left side, desktop only */}
+              <button
+                onClick={() => navigate('/cash-receiving')}
+                className="btn btn-primary items-center justify-center gap-1.5 px-2.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex text-xs sm:text-sm font-medium flex-shrink-0 whitespace-nowrap"
+              >
+                <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span>Cash Receiving</span>
+              </button>
+              
               {/* Green Buttons - Receipt related */}
               {sidebarConfig['Cash Receipts'] !== false && (
                 <button
@@ -669,6 +693,7 @@ export const MultiTabLayout = ({ children }) => {
                   <span className="sm:hidden">Expense</span>
                 </button>
               )}
+
             </div>
 
 

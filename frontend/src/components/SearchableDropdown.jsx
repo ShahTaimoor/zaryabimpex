@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, ChevronDown, Check } from 'lucide-react';
 
+const EMPTY_ARRAY = [];
+
 export const SearchableDropdown = forwardRef(({
   placeholder = "Search...",
-  items = [],
+  items = EMPTY_ARRAY,
   onSelect,
   onSearch,
   onKeyDown,
@@ -113,13 +115,21 @@ export const SearchableDropdown = forwardRef(({
     }
   }, [value]);
 
+  // Store displayKey in a ref to avoid unnecessary re-renders when it's a function
+  const displayKeyRef = useRef(displayKey);
+  useEffect(() => {
+    displayKeyRef.current = displayKey;
+  }, [displayKey]);
+
   // Filter items based on search term
   useEffect(() => {
     const currentSearchTerm = value !== null ? value : searchTerm;
+    const currentDisplayKey = displayKeyRef.current;
+    
     if (currentSearchTerm) {
       const filtered = items.filter(item => {
         // If displayKey is a function, try to filter by common searchable fields
-        if (typeof displayKey === 'function') {
+        if (typeof currentDisplayKey === 'function') {
           const searchableFields = [
             item.displayName,
             item.name,
@@ -135,7 +145,7 @@ export const SearchableDropdown = forwardRef(({
         }
         
         // If displayKey is a string, filter normally
-        const displayValue = valueToDisplayString(item[displayKey]);
+        const displayValue = valueToDisplayString(item[currentDisplayKey]);
         if (!displayValue) {
           return false;
         }
@@ -146,7 +156,7 @@ export const SearchableDropdown = forwardRef(({
       setFilteredItems(items);
     }
     setSelectedIndex(-1);
-  }, [value, searchTerm, items, displayKey]);
+  }, [value, searchTerm, items]); // Removed displayKey from deps, using ref instead
 
   // Handle search
   const handleSearch = (term) => {

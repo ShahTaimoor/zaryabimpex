@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ShoppingCart,
@@ -103,6 +103,17 @@ export const Dashboard = () => {
       localStorage.setItem(DASHBOARD_HIDDEN_KEY, String(next));
     } catch (_) {}
   };
+
+  // Listen for dashboard visibility changes from MultiTabLayout
+  useEffect(() => {
+    const handleVisibilityChange = (event) => {
+      setDashboardHidden(event.detail.hidden);
+    };
+    window.addEventListener('dashboardVisibilityChanged', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('dashboardVisibilityChanged', handleVisibilityChange);
+    };
+  }, []);
 
   // Modal states
   const [showSalesOrdersModal, setShowSalesOrdersModal] = useState(false);
@@ -454,34 +465,57 @@ export const Dashboard = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm sm:text-base text-gray-600">Welcome back! Here's what's happening today.</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+
+        {/* Hide Data Button - Mobile only (no date filter here to save space) */}
+        <div className="flex items-center justify-end gap-2 w-full sm:w-auto lg:hidden">
           <button
             type="button"
             onClick={toggleDashboardVisibility}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-xs font-medium transition-colors"
             title={dashboardHidden ? 'Show dashboard data' : 'Hide dashboard data'}
           >
             {dashboardHidden ? (
               <>
-                <Eye className="h-4 w-4" />
-                <span>Unhide data</span>
+                <Eye className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>Show data</span>
               </>
             ) : (
               <>
-                <EyeOff className="h-4 w-4" />
+                <EyeOff className="h-3.5 w-3.5 flex-shrink-0" />
                 <span>Hide data</span>
               </>
             )}
           </button>
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              onClick={() => navigate('/cash-receiving')}
-              className="btn btn-primary items-center justify-center space-x-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 flex"
-            >
-              <Receipt className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="text-sm sm:text-base font-medium">Cash Receiving</span>
-            </button>
-          </div>
+        </div>
+
+        {/* Date Filter and Hide Data Button - Desktop only */}
+        <div className="hidden lg:flex items-center gap-3 w-full sm:w-auto">
+          <DateFilter
+            startDate={startDate}
+            endDate={endDate}
+            onDateChange={handleDateChange}
+            compact={true}
+            showPresets={true}
+            className="w-full"
+          />
+          <button
+            type="button"
+            onClick={toggleDashboardVisibility}
+            className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 text-xs sm:text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap"
+            title={dashboardHidden ? 'Show dashboard data' : 'Hide dashboard data'}
+          >
+            {dashboardHidden ? (
+              <>
+                <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span>Unhide data</span>
+              </>
+            ) : (
+              <>
+                <EyeOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span>Hide data</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
@@ -582,7 +616,8 @@ export const Dashboard = () => {
         <div className="card-header">
           <div className="flex flex-col items-center space-y-2 sm:space-y-4">
             <h2 className="text-sm sm:text-lg font-medium text-gray-900">Financial Overview</h2>
-            <div className="flex flex-row items-center space-x-1.5 sm:space-x-4 w-full sm:w-auto">
+            {/* Date Filter - Mobile only */}
+            <div className="flex flex-row items-center space-x-1.5 sm:space-x-4 w-full sm:w-auto lg:hidden">
               <div className="w-full sm:w-auto">
                 <DateFilter
                   startDate={startDate}
@@ -605,54 +640,54 @@ export const Dashboard = () => {
 
               {/* Sales */}
               <div
-                className="text-center p-2 sm:p-3 md:p-4 border-2 border-green-300 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100 hover:border-green-400 transition-colors relative group"
+                className="text-center p-2 sm:p-3 md:p-4 border border-gray-200 bg-white rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-colors relative group shadow-sm"
                 onClick={() => setShowSalesInvoicesModal(true)}
               >
                 <div className="absolute top-1 right-1 sm:top-2 sm:right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
                 </div>
                 <div className="flex justify-center mb-1 sm:mb-2">
                   <div className="p-2 sm:p-2.5 md:p-3 bg-green-500 rounded-full">
                     <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-green-700 mb-1">Sales (Revenue)</p>
-                <p className="text-base sm:text-lg md:text-xl font-bold text-green-800 break-words">{Math.round(totalSales).toLocaleString()}</p>
-                <p className="text-[10px] sm:text-xs text-green-600 mt-1 hidden sm:block">SO: {Math.round(salesOrdersTotal)} | SI: {Math.round(salesInvoicesTotal)}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Sales (Revenue)</p>
+                <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-words">{Math.round(totalSales).toLocaleString()}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1 hidden sm:block">SO: {Math.round(salesOrdersTotal)} | SI: {Math.round(salesInvoicesTotal)}</p>
               </div>
 
               {/* Purchase (COGS) */}
               <div
-                className="text-center p-2 sm:p-3 md:p-4 border-2 border-purple-300 bg-purple-50 rounded-lg cursor-pointer hover:bg-purple-100 hover:border-purple-400 transition-colors relative group"
+                className="text-center p-2 sm:p-3 md:p-4 border border-gray-200 bg-white rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-colors relative group shadow-sm"
                 onClick={() => setShowPurchaseInvoicesModal(true)}
               >
                 <div className="absolute top-1 right-1 sm:top-2 sm:right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
                 </div>
                 <div className="flex justify-center mb-1 sm:mb-2">
                   <div className="p-2 sm:p-2.5 md:p-3 bg-purple-500 rounded-full">
                     <Truck className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-purple-700 mb-1">Purchase (COGS)</p>
-                <p className="text-base sm:text-lg md:text-xl font-bold text-purple-800 break-words">{Math.round(totalPurchases).toLocaleString()}</p>
-                <p className="text-[10px] sm:text-xs text-purple-600 mt-1 hidden sm:block">PO: {Math.round(purchaseOrdersTotal)} | PI: {Math.round(purchaseInvoicesTotal)}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Purchase (COGS)</p>
+                <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-words">{Math.round(totalPurchases).toLocaleString()}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1 hidden sm:block">PO: {Math.round(purchaseOrdersTotal)} | PI: {Math.round(purchaseInvoicesTotal)}</p>
               </div>
 
               {/* Discount */}
-              <div className="text-center p-2 sm:p-3 md:p-4 border-2 border-red-300 bg-red-50 rounded-lg">
+              <div className="text-center p-2 sm:p-3 md:p-4 border border-gray-200 bg-white rounded-lg shadow-sm">
                 <div className="flex justify-center mb-1 sm:mb-2">
                   <div className="p-2 sm:p-2.5 md:p-3 bg-red-500 rounded-full">
                     <Tag className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-red-700 mb-1">Discount Given</p>
-                <p className="text-base sm:text-lg md:text-xl font-bold text-red-800 break-words">{Math.round(totalDiscounts).toLocaleString()}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Discount Given</p>
+                <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-words">{Math.round(totalDiscounts).toLocaleString()}</p>
               </div>
 
               {/* Pending Sales Orders */}
               <div
-                className="text-center p-2 sm:p-3 md:p-4 border-2 border-cyan-300 bg-cyan-50 rounded-lg cursor-pointer hover:bg-cyan-100 hover:border-cyan-400 transition-colors"
+                className="text-center p-2 sm:p-3 md:p-4 border border-gray-200 bg-white rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
                 onClick={() => navigate('/sales-orders')}
               >
                 <div className="flex justify-center mb-1 sm:mb-2">
@@ -660,13 +695,13 @@ export const Dashboard = () => {
                     <FileText className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-cyan-700 mb-1">Pending Sales Orders</p>
-                <p className="text-base sm:text-lg md:text-xl font-bold text-cyan-800 break-words">{pendingSalesOrdersCount}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Pending Sales Orders</p>
+                <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-words">{pendingSalesOrdersCount}</p>
               </div>
 
               {/* Pending Purchase Orders */}
               <div
-                className="text-center p-2 sm:p-3 md:p-4 border-2 border-indigo-300 bg-indigo-50 rounded-lg cursor-pointer hover:bg-indigo-100 hover:border-indigo-400 transition-colors"
+                className="text-center p-2 sm:p-3 md:p-4 border border-gray-200 bg-white rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
                 onClick={() => navigate('/purchase-orders')}
               >
                 <div className="flex justify-center mb-1 sm:mb-2">
@@ -674,8 +709,8 @@ export const Dashboard = () => {
                     <Receipt className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-indigo-700 mb-1">Pending Purchase Orders</p>
-                <p className="text-base sm:text-lg md:text-xl font-bold text-indigo-800 break-words">{pendingPurchaseOrdersCount}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Pending Purchase Orders</p>
+                <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-words">{pendingPurchaseOrdersCount}</p>
               </div>
             </div>
           </div>
@@ -686,78 +721,78 @@ export const Dashboard = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
 
               {/* Gross Profit */}
-              <div className="text-center p-2 sm:p-3 md:p-4 border-2 border-blue-300 bg-blue-50 rounded-lg">
+              <div className="text-center p-2 sm:p-3 md:p-4 border border-gray-200 bg-white rounded-lg shadow-sm">
                 <div className="flex justify-center mb-1 sm:mb-2">
                   <div className="p-2 sm:p-2.5 md:p-3 bg-blue-500 rounded-full">
                     <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                   </div>
                 </div>
                 <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Gross Profit</p>
-                <p className={`text-base sm:text-lg md:text-xl font-bold break-words ${grossProfit >= 0 ? 'text-blue-700' : 'text-red-600'}`}>
+                <p className={`text-base sm:text-lg md:text-xl font-bold break-words ${grossProfit >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                   {Math.round(grossProfit).toLocaleString()}
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-600 mt-1 hidden sm:block">Revenue - COGS</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1 hidden sm:block">Revenue - COGS</p>
               </div>
 
               {/* Total Receipts */}
               <div
-                className="text-center p-2 sm:p-3 md:p-4 border-2 border-emerald-300 bg-emerald-50 rounded-lg cursor-pointer hover:bg-emerald-100 hover:border-emerald-400 transition-colors relative group"
+                className="text-center p-2 sm:p-3 md:p-4 border border-gray-200 bg-white rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-colors relative group shadow-sm"
                 onClick={() => setShowCashReceiptsModal(true)}
               >
                 <div className="absolute top-1 right-1 sm:top-2 sm:right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600" />
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
                 </div>
                 <div className="flex justify-center mb-1 sm:mb-2">
                   <div className="p-2 sm:p-2.5 md:p-3 bg-emerald-500 rounded-full">
                     <Receipt className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-emerald-700 mb-1">Total Receipts</p>
-                <p className="text-base sm:text-lg md:text-xl font-bold text-emerald-800 break-words">{Math.round(totalReceipts).toLocaleString()}</p>
-                <p className="text-[10px] sm:text-xs text-emerald-600 mt-1 hidden sm:block">Cash: {Math.round(totalCashReceipts)} | Bank: {Math.round(totalBankReceipts)}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Total Receipts</p>
+                <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-words">{Math.round(totalReceipts).toLocaleString()}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1 hidden sm:block">Cash: {Math.round(totalCashReceipts)} | Bank: {Math.round(totalBankReceipts)}</p>
               </div>
 
               {/* Total Payments */}
               <div
-                className="text-center p-2 sm:p-3 md:p-4 border-2 border-orange-300 bg-orange-50 rounded-lg cursor-pointer hover:bg-orange-100 hover:border-orange-400 transition-colors relative group"
+                className="text-center p-2 sm:p-3 md:p-4 border border-gray-200 bg-white rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-colors relative group shadow-sm"
                 onClick={() => setShowCashPaymentsModal(true)}
               >
                 <div className="absolute top-1 right-1 sm:top-2 sm:right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
                 </div>
                 <div className="flex justify-center mb-1 sm:mb-2">
                   <div className="p-2 sm:p-2.5 md:p-3 bg-orange-500 rounded-full">
                     <Banknote className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-orange-700 mb-1">Total Payments</p>
-                <p className="text-base sm:text-lg md:text-xl font-bold text-orange-800 break-words">{Math.round(totalPayments).toLocaleString()}</p>
-                <p className="text-[10px] sm:text-xs text-orange-600 mt-1 hidden sm:block">Cash: {Math.round(totalCashPayments)} | Bank: {Math.round(totalBankPayments)}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Total Payments</p>
+                <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-words">{Math.round(totalPayments).toLocaleString()}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1 hidden sm:block">Cash: {Math.round(totalCashPayments)} | Bank: {Math.round(totalBankPayments)}</p>
               </div>
 
               {/* Net Cash Flow */}
-              <div className={`text-center p-2 sm:p-3 md:p-4 border-2 rounded-lg ${netCashFlow >= 0 ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'}`}>
+              <div className="text-center p-2 sm:p-3 md:p-4 border border-gray-200 bg-white rounded-lg shadow-sm">
                 <div className="flex justify-center mb-1 sm:mb-2">
                   <div className={`p-2 sm:p-2.5 md:p-3 rounded-full ${netCashFlow >= 0 ? 'bg-green-500' : 'bg-red-500'}`}>
                     <Wallet className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                   </div>
                 </div>
                 <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Net Cash Flow</p>
-                <p className={`text-base sm:text-lg md:text-xl font-bold break-words ${netCashFlow >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                <p className={`text-base sm:text-lg md:text-xl font-bold break-words ${netCashFlow >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
                   {Math.round(netCashFlow).toLocaleString()}
                 </p>
-                <p className="text-[10px] sm:text-xs text-gray-600 mt-1 hidden sm:block">Receipts - Payments</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1 hidden sm:block">Receipts - Payments</p>
               </div>
 
               {/* Total Orders */}
-              <div className="text-center p-2 sm:p-3 md:p-4 border-2 border-yellow-300 bg-yellow-50 rounded-lg">
+              <div className="text-center p-2 sm:p-3 md:p-4 border border-gray-200 bg-white rounded-lg shadow-sm">
                 <div className="flex justify-center mb-1 sm:mb-2">
                   <div className="p-2 sm:p-2.5 md:p-3 bg-yellow-500 rounded-full">
                     <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-yellow-700 mb-1">Total Transactions</p>
-                <p className="text-base sm:text-lg md:text-xl font-bold text-yellow-800 break-words">{summary.totalOrders || 0}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-1">Total Transactions</p>
+                <p className="text-base sm:text-lg md:text-xl font-bold text-gray-900 break-words">{summary.totalOrders || 0}</p>
               </div>
 
             </div>
@@ -950,10 +985,10 @@ export const Dashboard = () => {
       )}
 
       {/* Financial Metrics Legend */}
-      <div className="card bg-blue-50 border-blue-200">
+      <div className="card bg-gray-50 border-gray-200">
         <div className="card-content">
-          <h3 className="text-xs sm:text-sm font-semibold text-blue-900 mb-3">📊 Financial Metrics Explained</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 text-xs text-blue-800">
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-3">📊 Financial Metrics Explained</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 text-xs text-gray-700">
             <div><strong>Sales:</strong> Total revenue from Sales Orders + Sales Invoices</div>
             <div><strong>Net Revenue:</strong> Sales minus discounts given</div>
             <div><strong>Purchase (COGS):</strong> Cost of goods purchased from suppliers</div>

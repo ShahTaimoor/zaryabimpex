@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   FileText,
   Search,
-  Plus,
   Eye,
   Edit,
   Trash2,
@@ -11,7 +10,6 @@ import {
   Clock,
   TrendingUp,
   Printer,
-  Filter,
   Calendar
 } from 'lucide-react';
 import {
@@ -433,92 +431,57 @@ export const PurchaseInvoices = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden px-2 sm:px-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Purchase Invoices</h1>
           <p className="text-sm sm:text-base text-gray-600">Track and manage supplier invoices and receipts</p>
         </div>
-        <button
-          onClick={() => {
-            const componentInfo = getComponentInfo('/purchase');
-            if (componentInfo) {
-              openTab({
-                title: 'New Purchase Invoice',
-                path: '/purchase',
-                component: componentInfo.component,
-                icon: componentInfo.icon,
-                allowMultiple: true
-              });
-            }
-          }}
-          className="btn btn-primary btn-md flex items-center justify-center gap-2 w-full sm:w-auto"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Invoice</span>
-        </button>
+        
+        {/* Date Filter using DateFilter component */}
+        <div className="w-full sm:w-auto">
+          <DateFilter
+            startDate={dateFrom}
+            endDate={dateTo}
+            onDateChange={(start, end) => {
+              setDateFrom(start || '');
+              setDateTo(end || '');
+            }}
+            compact={true}
+            showPresets={true}
+            className="w-full"
+          />
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="card">
-        <div className="card-header">
-          <div className="flex items-center space-x-2">
-            <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-            <h3 className="text-base sm:text-lg font-medium text-gray-900">Filters</h3>
+      {/* Search and Filters */}
+      <div className="space-y-3 sm:space-y-4">
+        {/* Search and Status Filter */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+          <div className="flex-1 relative min-w-0">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by invoice number, supplier name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input pl-10 w-full text-sm sm:text-base"
+            />
           </div>
-        </div>
-        <div className="card-content">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {/* Search */}
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                Search
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Invoice number, supplier, amount..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="input pl-10 w-full h-[42px] text-sm sm:text-base"
-                />
-              </div>
-            </div>
-
-            {/* Date Filter */}
-            <div className="col-span-2">
-              <DateFilter
-                startDate={dateFrom}
-                endDate={dateTo}
-                onDateChange={(start, end) => {
-                  setDateFrom(start || '');
-                  setDateTo(end || '');
-                }}
-                compact={true}
-                showPresets={true}
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                Status
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="input h-[42px] text-sm sm:text-base"
-              >
-                <option value="">All Status</option>
-                <option value="draft">Draft</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="received">Received</option>
-                <option value="paid">Paid</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="closed">Closed</option>
-              </select>
-            </div>
+          <div className="flex-shrink-0 w-full sm:w-auto sm:min-w-[140px]">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="input w-full text-sm sm:text-base"
+            >
+              <option value="">All Status</option>
+              <option value="draft">Draft</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="received">Received</option>
+              <option value="paid">Paid</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="closed">Closed</option>
+            </select>
           </div>
         </div>
       </div>

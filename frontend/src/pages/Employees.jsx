@@ -15,8 +15,7 @@ import {
   TrendingUp,
   Building,
   Clock,
-  Filter,
-  RefreshCw
+  Filter
 } from 'lucide-react';
 import {
   useGetEmployeesQuery,
@@ -245,13 +244,6 @@ const Employees = () => {
         </div>
         
         <div className="flex items-center space-x-3">
-          <button 
-            onClick={() => refetch()}
-            className="flex items-center space-x-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
           <button 
             onClick={() => {
               resetForm();

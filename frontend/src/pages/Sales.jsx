@@ -25,7 +25,7 @@ import {
 import { useGetProductsQuery, useLazyGetLastPurchasePriceQuery, useGetLastPurchasePricesMutation } from '../store/services/productsApi';
 import { useGetVariantsQuery, useGetVariantsByBaseProductQuery } from '../store/services/productVariantsApi';
 import { useGetCustomersQuery, useLazySearchCustomersQuery } from '../store/services/customersApi';
-import { useCreateSaleMutation, useUpdateOrderMutation } from '../store/services/salesApi';
+import { useCreateSaleMutation, useUpdateOrderMutation, useLazyGetLastPricesQuery } from '../store/services/salesApi';
 import { useGetBanksQuery } from '../store/services/banksApi';
 import { useFuzzySearch } from '../hooks/useFuzzySearch';
 import { SearchableDropdown } from '../components/SearchableDropdown';
@@ -845,6 +845,7 @@ export const Sales = ({ tabId, editData }) => {
   // Sales mutations
   const [createSale, { isLoading: isCreatingSale }] = useCreateSaleMutation();
   const [updateOrder, { isLoading: isUpdatingOrder }] = useUpdateOrderMutation();
+  const [getLastPrices] = useLazyGetLastPricesQuery();
 
   // Duplicate prevention: use BOTH ref (synchronous check) and state (button disable)
   const isSubmittingRef = useRef(false); // For immediate synchronous checks
@@ -1186,10 +1187,31 @@ export const Sales = ({ tabId, editData }) => {
 
     setIsLoadingLastPrices(true);
     try {
-      const response = await salesAPI.getLastPrices(selectedCustomer._id);
-      const { prices, orderNumber, orderDate } = response.data;
+      const result = await getLastPrices(selectedCustomer._id);
+      
+      // Check if there was an error in the request
+      if (result.error) {
+        showErrorToast(result.error?.data?.message || 'Failed to retrieve last prices');
+        setIsLoadingLastPrices(false);
+        return;
+      }
+      
+      // Check if the request was successful and has data
+      if (!result || !result.data) {
+        showErrorToast('No previous order found for this customer');
+        setIsLoadingLastPrices(false);
+        return;
+      }
 
-      if (!prices || Object.keys(prices).length === 0) {
+      // The API returns data directly: { success, prices, orderNumber, orderDate }
+      const response = result.data;
+      
+      // Handle both possible response structures
+      const prices = response?.prices || (response?.data && response.data.prices);
+      const orderNumber = response?.orderNumber || (response?.data && response.data.orderNumber);
+      const orderDate = response?.orderDate || (response?.data && response.data.orderDate);
+
+      if (!prices || (typeof prices === 'object' && Object.keys(prices).length === 0)) {
         showErrorToast('No previous order found for this customer');
         setIsLoadingLastPrices(false);
         return;

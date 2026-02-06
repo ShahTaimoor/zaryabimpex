@@ -23,9 +23,9 @@ export const employeesApi = api.injectEndpoints({
         const list = result?.data?.employees || result?.employees || result?.items || [];
         return list.length
           ? [
-              ...list.map(({ _id, id }) => ({ type: 'Users', id: _id || id })),
-              { type: 'Users', id: 'EMPLOYEES_LIST' },
-            ]
+            ...list.map(({ _id, id }) => ({ type: 'Users', id: _id || id })),
+            { type: 'Users', id: 'EMPLOYEES_LIST' },
+          ]
           : [{ type: 'Users', id: 'EMPLOYEES_LIST' }];
       },
     }),

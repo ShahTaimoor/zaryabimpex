@@ -296,10 +296,7 @@ const SalesOrders = () => {
 
   // Update tab title when selectedCustomer changes (after render)
   useEffect(() => {
-    if (!updateTabTitle || !activeTabId || !tabs) return;
-
-    const activeTab = tabs.find(tab => tab.id === activeTabId);
-    if (!activeTab) return;
+    if (!updateTabTitle || !activeTabId) return;
 
     let newTitle;
     if (selectedCustomer) {
@@ -311,11 +308,11 @@ const SalesOrders = () => {
       return; // Don't update title when in edit modal
     }
 
-    // Only update if the title actually changed
-    if (activeTab.title !== newTitle) {
-      updateTabTitle(activeTab.id, newTitle);
+    // Only update if we have a valid tab ID
+    if (activeTabId) {
+      updateTabTitle(activeTabId, newTitle);
     }
-  }, [selectedCustomer, updateTabTitle, activeTabId, tabs, showEditModal]);
+  }, [selectedCustomer, updateTabTitle, activeTabId, showEditModal]);
 
   // Fetch sales orders
   const {
@@ -484,7 +481,7 @@ const SalesOrders = () => {
     // Tab title will be updated by useEffect when selectedCustomer changes
   };
 
-  const customerDisplayKey = (customer) => {
+  const customerDisplayKey = useCallback((customer) => {
     const receivables = (customer.pendingBalance || 0);
     const advance = (customer.advanceBalance || 0);
     const netBalance = receivables - advance;
@@ -495,7 +492,6 @@ const SalesOrders = () => {
     return (
       <div>
         <div className="font-medium">{customer.displayName || customer.businessName || customer.name || 'Unknown'}</div>
-        {customer.email && <div className="text-sm text-gray-600">{customer.email}</div>}
         {hasBalance && (
           <div className={`text-sm ${isPayable ? 'text-red-600' : 'text-green-600'}`}>
             {isPayable ? 'Payables:' : 'Receivables:'} ${Math.abs(netBalance).toFixed(2)}
@@ -503,7 +499,7 @@ const SalesOrders = () => {
         )}
       </div>
     );
-  };
+  }, []);
 
   const handleCustomerSelect = (customer) => {
     // SearchableDropdown passes the full customer object, not just the ID
@@ -657,7 +653,7 @@ const SalesOrders = () => {
     }
   };
 
-  const productDisplayKey = (product) => {
+  const productDisplayKey = useCallback((product) => {
     const inventory = product.inventory || {};
     const isLowStock = inventory.currentStock <= (inventory.reorderPoint || inventory.minStock || 0);
     const isOutOfStock = inventory.currentStock === 0;
@@ -699,7 +695,7 @@ const SalesOrders = () => {
         </div>
       </div>
     );
-  };
+  }, [priceType]);
 
   const handleAddItem = async () => {
     if (!selectedProduct) return;
@@ -1898,7 +1894,7 @@ const SalesOrders = () => {
           <SearchableDropdown
             ref={customerSearchRef}
             placeholder="Search customers by name, email, or business..."
-            items={customers || []}
+            items={customers}
             onSelect={handleCustomerSelect}
             onSearch={handleCustomerSearch}
             displayKey={customerDisplayKey}
@@ -1920,9 +1916,6 @@ const SalesOrders = () => {
                   <p className="text-sm text-gray-600 capitalize">
                     {selectedCustomer.businessType || 'Business'} • {selectedCustomer.phone || 'No phone'}
                   </p>
-                  {selectedCustomer.email && (
-                    <p className="text-sm text-gray-600">{selectedCustomer.email}</p>
-                  )}
                   <div className="flex items-center space-x-4 mt-2">
                     {(() => {
                       const receivables = (selectedCustomer.pendingBalance || 0);
@@ -3160,7 +3153,7 @@ const SalesOrders = () => {
           </div>
         </div>
         <div className="card-content">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {/* Date Range */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

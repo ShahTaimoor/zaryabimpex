@@ -802,12 +802,6 @@ const BankPayments = () => {
                                   <span>{customer.phone}</span>
                                 </div>
                               )}
-                              {customer.email && (
-                                <div className="flex items-center space-x-1 text-sm text-gray-500">
-                                  <Mail className="h-3 w-3" />
-                                  <span>{customer.email}</span>
-                                </div>
-                              )}
                             </div>
                           </div>
                         );
@@ -850,12 +844,6 @@ const BankPayments = () => {
                                 </div>
                               ) : null;
                             })()}
-                            {selectedCustomer.email && (
-                              <div className="flex items-center space-x-1">
-                                <Mail className="h-3 w-3 text-gray-400" />
-                                <span className="text-xs text-gray-500">{selectedCustomer.email}</span>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>

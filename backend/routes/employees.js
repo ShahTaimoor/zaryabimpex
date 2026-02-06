@@ -135,6 +135,7 @@ router.put('/:id', [
   body('email').optional().isEmail().normalizeEmail(),
   body('phone').optional().isString(),
   body('position').optional().trim().isLength({ min: 1 }),
+  body('department').optional().isString(),
   body('status').optional().isIn(['active', 'inactive', 'terminated', 'on_leave']),
   body('userAccount').optional().isMongoId(),
   handleValidationErrors, // Use as middleware

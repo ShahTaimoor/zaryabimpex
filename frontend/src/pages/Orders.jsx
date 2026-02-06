@@ -10,8 +10,7 @@ import {
   XCircle,
   Trash2,
   Edit,
-  Printer,
-  Calendar
+  Printer
 } from 'lucide-react';
 import {
   useGetOrdersQuery,
@@ -24,6 +23,7 @@ import { useGetCompanySettingsQuery } from '../store/services/settingsApi';
 import { handleApiError, showSuccessToast, showErrorToast } from '../utils/errorHandler';
 import { useTab } from '../contexts/TabContext';
 import { getComponentInfo } from '../components/ComponentRegistry';
+import DateFilter from '../components/DateFilter';
 
 // Helper function to get local date in YYYY-MM-DD format (avoids timezone issues with toISOString)
 const getLocalDateString = (date = new Date()) => {
@@ -141,6 +141,13 @@ export const Orders = () => {
   const today = getLocalDateString();
   const [fromDate, setFromDate] = useState(today); // Today
   const [toDate, setToDate] = useState(today); // Today
+  
+  // Handle date change from DateFilter component
+  const handleDateChange = (newStartDate, newEndDate) => {
+    setFromDate(newStartDate || '');
+    setToDate(newEndDate || '');
+  };
+  
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -548,25 +555,18 @@ export const Orders = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Sales Invoices</h1>
           <p className="text-sm sm:text-base text-gray-600">View and manage sales invoices</p>
         </div>
-        <button 
-          onClick={() => {
-            const componentInfo = getComponentInfo('/sales');
-            if (componentInfo) {
-              openTab({
-                title: 'New Invoice',
-                path: '/sales',
-                component: componentInfo.component,
-                icon: componentInfo.icon,
-                allowMultiple: true
-              });
-            }
-          }}
-          className="btn btn-primary btn-sm sm:btn-md w-full sm:w-auto"
-        >
-          <Plus className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">New Invoice</span>
-          <span className="sm:hidden">New Invoice</span>
-        </button>
+        
+        {/* Date Filter using DateFilter component */}
+        <div className="w-full sm:w-auto">
+          <DateFilter
+            startDate={fromDate}
+            endDate={toDate}
+            onDateChange={handleDateChange}
+            compact={true}
+            showPresets={true}
+            className="w-full"
+          />
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -597,29 +597,6 @@ export const Orders = () => {
               <option value="delivered">Delivered</option>
               <option value="cancelled">Cancelled</option>
             </select>
-          </div>
-        </div>
-        
-        {/* Date Filters */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-          <div className="flex items-center gap-2 flex-1 sm:flex-none">
-            <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-            <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">From Date:</label>
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="input flex-1 sm:flex-none text-sm sm:text-base"
-            />
-          </div>
-          <div className="flex items-center gap-2 flex-1 sm:flex-none">
-            <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">To Date:</label>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="input flex-1 sm:flex-none text-sm sm:text-base"
-            />
           </div>
         </div>
       </div>

@@ -52,6 +52,8 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
     'https://sa.wiserconsulting.info',
     'http://localhost:3000', // Allow local development
     'http://localhost:5173', // Allow Vite dev server
+    'http://localhost:5174',
+    'http://localhost:5175', // Allow Vite dev server
     process.env.FRONTEND_URL // Allow from environment variable if set
   ].filter(Boolean); // Remove undefined values
 
