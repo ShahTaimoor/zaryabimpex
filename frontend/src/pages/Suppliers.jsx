@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { 
-  Building, 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  Phone, 
-  Mail, 
+import {
+  Building,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Phone,
+  Mail,
   MapPin,
   Star,
   Clock,
@@ -88,8 +88,8 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen }) => {
 
   const { data: citiesResponse, isLoading: citiesLoading } = useGetActiveCitiesQuery();
   // Extract cities array from response (handle both direct array and object with data property)
-  const citiesData = Array.isArray(citiesResponse) 
-    ? citiesResponse 
+  const citiesData = Array.isArray(citiesResponse)
+    ? citiesResponse
     : (citiesResponse?.data || []);
 
   const ledgerOptions = useMemo(() => {
@@ -132,7 +132,7 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen }) => {
         const name = (account.accountName || account.name || '').toLowerCase();
         return name === 'accounts payable' || account.accountCode === '2110';
       }) || ledgerOptions[0];
-      
+
       if (supplier) {
         const derivedOpeningBalance =
           typeof supplier.openingBalance === 'number'
@@ -283,7 +283,7 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Client-side validation
     if (!formData.companyName?.trim()) {
       toast.error('Company name is required');
@@ -293,7 +293,7 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen }) => {
       toast.error('Contact name is required');
       return;
     }
-    
+
     // Prevent submission if duplicates exist
     if (emailExists) {
       toast.error('Please use a different email address');
@@ -307,7 +307,7 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen }) => {
       toast.error('Please use a different contact name');
       return;
     }
-    
+
     onSave({
       ...formData,
       creditLimit: parseFloat(formData.creditLimit) || 0,
@@ -395,15 +395,15 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen }) => {
                     const currentLedgerId = formData.ledgerAccount;
                     const accountsPayable = ledgerOptions.find((account) => {
                       const accountId = account._id || account.id;
-                      return accountId === currentLedgerId || 
-                             (account.accountName || account.name || '').toLowerCase() === 'accounts payable' ||
-                             account.accountCode === '2110';
+                      return accountId === currentLedgerId ||
+                        (account.accountName || account.name || '').toLowerCase() === 'accounts payable' ||
+                        account.accountCode === '2110';
                     }) || ledgerOptions[0];
-                    
-                    const displayValue = accountsPayable 
+
+                    const displayValue = accountsPayable
                       ? `${accountsPayable.accountCode || '2110'} - ${accountsPayable.accountName || accountsPayable.name || 'Accounts Payable'}`
                       : '2110 - Accounts Payable';
-                    
+
                     return (
                       <>
                         <input
@@ -551,7 +551,7 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Credit Limit ($)
+                    Credit Limit
                   </label>
                   <input
                     type="number"
@@ -562,22 +562,22 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen }) => {
                     placeholder="0"
                   />
                 </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Opening Balance ($)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.openingBalance}
-                  onChange={(e) => setFormData({ ...formData, openingBalance: parseFloat(e.target.value) || 0 })}
-                  className="input"
-                  placeholder="0.00"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Positive means you owe the supplier. Use a negative value if the supplier has an advance/credit.
-                </p>
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Opening Balance
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.openingBalance}
+                    onChange={(e) => setFormData({ ...formData, openingBalance: parseFloat(e.target.value) || 0 })}
+                    className="input"
+                    placeholder="0.00"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Positive means you owe the supplier. Use a negative value if the supplier has an advance/credit.
+                  </p>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Lead Time (days)
@@ -593,7 +593,7 @@ const SupplierForm = ({ supplier, onSave, onCancel, isOpen }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Min Order Amount ($)
+                    Min Order Amount
                   </label>
                   <input
                     type="number"
@@ -779,7 +779,7 @@ export const Suppliers = () => {
   const [showNotes, setShowNotes] = useState(false);
   const [notesEntity, setNotesEntity] = useState(null);
 
-  const queryParams = { 
+  const queryParams = {
     search: searchTerm,
     limit: 999999, // Get all suppliers without pagination
     ...filters
@@ -938,13 +938,13 @@ export const Suppliers = () => {
       </div>
 
       {/* Import/Export Section */}
-      <SupplierImportExport 
+      <SupplierImportExport
         onImportComplete={() => queryClient.invalidateQueries('suppliers')}
         filters={queryParams}
       />
 
       {/* Advanced Filters */}
-      <SupplierFilters 
+      <SupplierFilters
         filters={filters}
         onFiltersChange={handleFiltersChange}
         onClearFilters={handleClearFilters}
@@ -964,40 +964,40 @@ export const Suppliers = () => {
       ) : filteredSuppliers.length > 0 ? (
         <div className="card w-full">
           <div className="card-content p-0 w-full">
-              {/* Table Header - Hidden on mobile */}
-              <div className="hidden md:block bg-gray-50 px-4 lg:px-8 py-4 lg:py-6 border-b border-gray-200">
-                <div className="grid grid-cols-12 gap-4 lg:gap-6 items-center">
-                  <div className="col-span-4">
-                    <h3 className="text-sm lg:text-base font-medium text-gray-700">Company Name</h3>
-                    <p className="text-xs lg:text-sm text-gray-500">Contact Person</p>
-                  </div>
-                  <div className="col-span-2">
-                    <h3 className="text-sm lg:text-base font-medium text-gray-700">Email</h3>
-                  </div>
-                  <div className="col-span-1">
-                    <h3 className="text-sm lg:text-base font-medium text-gray-700">Phone</h3>
-                  </div>
-                  <div className="col-span-1">
-                    <h3 className="text-sm lg:text-base font-medium text-gray-700">Status</h3>
-                  </div>
-                  <div className="col-span-1">
-                    <h3 className="text-sm lg:text-base font-medium text-gray-700">Type</h3>
-                  </div>
-                  <div className="col-span-1">
-                    <h3 className="text-sm lg:text-base font-medium text-gray-700">Rating</h3>
-                  </div>
-                  <div className="col-span-1">
-                    <h3 className="text-sm lg:text-base font-medium text-gray-700">Credit</h3>
-                  </div>
-                  <div className="col-span-1">
-                    <h3 className="text-sm lg:text-base font-medium text-gray-700">Actions</h3>
-                  </div>
+            {/* Table Header - Hidden on mobile */}
+            <div className="hidden md:block bg-gray-50 px-4 lg:px-8 py-4 lg:py-6 border-b border-gray-200">
+              <div className="grid grid-cols-12 gap-4 lg:gap-6 items-center">
+                <div className="col-span-4">
+                  <h3 className="text-sm lg:text-base font-medium text-gray-700">Company Name</h3>
+                  <p className="text-xs lg:text-sm text-gray-500">Contact Person</p>
+                </div>
+                <div className="col-span-2">
+                  <h3 className="text-sm lg:text-base font-medium text-gray-700">Email</h3>
+                </div>
+                <div className="col-span-1">
+                  <h3 className="text-sm lg:text-base font-medium text-gray-700">Phone</h3>
+                </div>
+                <div className="col-span-1">
+                  <h3 className="text-sm lg:text-base font-medium text-gray-700">Status</h3>
+                </div>
+                <div className="col-span-1">
+                  <h3 className="text-sm lg:text-base font-medium text-gray-700">Type</h3>
+                </div>
+                <div className="col-span-1">
+                  <h3 className="text-sm lg:text-base font-medium text-gray-700">Rating</h3>
+                </div>
+                <div className="col-span-1">
+                  <h3 className="text-sm lg:text-base font-medium text-gray-700">Credit</h3>
+                </div>
+                <div className="col-span-1">
+                  <h3 className="text-sm lg:text-base font-medium text-gray-700">Actions</h3>
                 </div>
               </div>
+            </div>
 
-              {/* Supplier Rows */}
-              <div className="divide-y divide-gray-200">
-                {filteredSuppliers.map((supplier) => (
+            {/* Supplier Rows */}
+            <div className="divide-y divide-gray-200">
+              {filteredSuppliers.map((supplier) => (
                 <div key={supplier._id} className="px-4 py-4 lg:px-8 lg:py-6 hover:bg-gray-50">
                   {/* Mobile Card Layout */}
                   <div className="md:hidden space-y-4">
@@ -1038,7 +1038,7 @@ export const Suppliers = () => {
                         </button>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
                         <p className="text-gray-500 mb-1">Email</p>
@@ -1050,19 +1050,17 @@ export const Suppliers = () => {
                       </div>
                       <div>
                         <p className="text-gray-500 mb-1">Status</p>
-                        <span className={`badge ${
-                          supplier.status === 'active' ? 'badge-success' : 
-                          supplier.status === 'inactive' ? 'badge-gray' :
-                          supplier.status === 'suspended' ? 'badge-danger' : 'badge-gray'
-                        }`}>
+                        <span className={`badge ${supplier.status === 'active' ? 'badge-success' :
+                            supplier.status === 'inactive' ? 'badge-gray' :
+                              supplier.status === 'suspended' ? 'badge-danger' : 'badge-gray'
+                          }`}>
                           {supplier.status}
                         </span>
                       </div>
                       <div>
                         <p className="text-gray-500 mb-1">Type</p>
-                        <span className={`badge ${
-                          supplier.businessType === 'wholesaler' ? 'badge-info' : 'badge-gray'
-                        }`}>
+                        <span className={`badge ${supplier.businessType === 'wholesaler' ? 'badge-info' : 'badge-gray'
+                          }`}>
                           {supplier.businessType}
                         </span>
                       </div>
@@ -1072,9 +1070,8 @@ export const Suppliers = () => {
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className={`h-3 w-3 ${
-                                i < supplier.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                              }`}
+                              className={`h-3 w-3 ${i < supplier.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                }`}
                             />
                           ))}
                           <span className="ml-1 text-xs text-gray-600">({supplier.rating})</span>
@@ -1116,20 +1113,18 @@ export const Suppliers = () => {
 
                     {/* Status */}
                     <div className="col-span-1">
-                      <span className={`badge ${
-                        supplier.status === 'active' ? 'badge-success' : 
-                        supplier.status === 'inactive' ? 'badge-gray' :
-                        supplier.status === 'suspended' ? 'badge-danger' : 'badge-gray'
-                      }`}>
+                      <span className={`badge ${supplier.status === 'active' ? 'badge-success' :
+                          supplier.status === 'inactive' ? 'badge-gray' :
+                            supplier.status === 'suspended' ? 'badge-danger' : 'badge-gray'
+                        }`}>
                         {supplier.status}
                       </span>
                     </div>
 
                     {/* Type */}
                     <div className="col-span-1">
-                      <span className={`badge ${
-                        supplier.businessType === 'wholesaler' ? 'badge-info' : 'badge-gray'
-                      }`}>
+                      <span className={`badge ${supplier.businessType === 'wholesaler' ? 'badge-info' : 'badge-gray'
+                        }`}>
                         {supplier.businessType}
                       </span>
                     </div>
@@ -1140,9 +1135,8 @@ export const Suppliers = () => {
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`h-3 w-3 ${
-                              i < supplier.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                            }`}
+                            className={`h-3 w-3 ${i < supplier.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                              }`}
                           />
                         ))}
                         <span className="ml-1 text-xs text-gray-600">({supplier.rating})</span>
@@ -1193,7 +1187,7 @@ export const Suppliers = () => {
             <Building className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-4 text-lg font-medium text-gray-900">No suppliers found</h3>
             <p className="mt-2 text-gray-600">
-              {searchTerm 
+              {searchTerm
                 ? 'Try adjusting your search terms.'
                 : 'Get started by adding your first supplier'
               }

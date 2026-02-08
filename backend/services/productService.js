@@ -492,6 +492,49 @@ class ProductService {
       throw new Error('Product was modified by another user. Please refresh and try again.');
     }
 
+    // Sync inventory fields to Inventory collection (source of truth for list/detail views)
+    if (updateData.inventory) {
+      const inventoryUpdate = {};
+      if (typeof updateData.inventory.reorderPoint === 'number') {
+        inventoryUpdate.reorderPoint = updateData.inventory.reorderPoint;
+      }
+      if (typeof updateData.inventory.currentStock === 'number') {
+        inventoryUpdate.currentStock = updateData.inventory.currentStock;
+      }
+      if (typeof updateData.inventory.maxStock === 'number') {
+        inventoryUpdate.maxStock = updateData.inventory.maxStock;
+      }
+      if (Object.keys(inventoryUpdate).length > 0) {
+        try {
+          const invFilter = { product: id, productModel: 'Product' };
+          const existingInv = await Inventory.findOne(invFilter).lean();
+          if (existingInv) {
+            await Inventory.updateOne(invFilter, { $set: inventoryUpdate });
+          } else {
+            // Create Inventory record so reorder point is persisted (used when listing products)
+            const currentStock = inventoryUpdate.currentStock ?? updatedProduct.inventory?.currentStock ?? 0;
+            const reorderPoint = inventoryUpdate.reorderPoint ?? updatedProduct.inventory?.reorderPoint ?? 10;
+            await Inventory.create({
+              product: id,
+              productModel: 'Product',
+              currentStock,
+              reorderPoint,
+              reorderQuantity: 50,
+              maxStock: inventoryUpdate.maxStock,
+              status: 'active',
+              reservedStock: 0,
+              availableStock: currentStock,
+              movements: [],
+              cost: { average: updatedProduct.pricing?.cost ?? 0, lastPurchase: updatedProduct.pricing?.cost ?? 0, fifo: [] }
+            });
+          }
+        } catch (invErr) {
+          console.error('Inventory sync on product update:', invErr);
+          // Don't fail the product update if inventory sync fails
+        }
+      }
+    }
+
     // Log audit trail
     try {
       if (req) {

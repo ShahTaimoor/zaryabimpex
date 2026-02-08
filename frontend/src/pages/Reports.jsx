@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
+import {
+  BarChart3,
+  TrendingUp,
+  Users,
   Package,
   Calendar,
   Download
@@ -84,13 +84,13 @@ export const Reports = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  ${salesSummary.totalRevenue?.toFixed(2) || '0.00'}
+                  {salesSummary.totalRevenue?.toFixed(2) || '0.00'}
                 </p>
               </div>
             </div>
           </div>
         </div>
-        
+
         <div className="card">
           <div className="card-content">
             <div className="flex items-center">
@@ -106,7 +106,7 @@ export const Reports = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="card">
           <div className="card-content">
             <div className="flex items-center">
@@ -122,7 +122,7 @@ export const Reports = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="card">
           <div className="card-content">
             <div className="flex items-center">
@@ -132,7 +132,7 @@ export const Reports = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Avg Order Value</p>
                 <p className="text-2xl font-semibold text-gray-900">
-                  ${salesSummary.averageOrderValue?.toFixed(2) || '0.00'}
+                  {salesSummary.averageOrderValue?.toFixed(2) || '0.00'}
                 </p>
               </div>
             </div>
@@ -166,7 +166,7 @@ export const Reports = () => {
                         {product.totalQuantity} sold
                       </p>
                       <p className="text-xs text-gray-500">
-                        ${product.totalRevenue.toFixed(2)}
+                        {product.totalRevenue.toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -204,7 +204,7 @@ export const Reports = () => {
                         {customer.totalOrders} orders
                       </p>
                       <p className="text-xs text-gray-500">
-                        ${customer.totalRevenue.toFixed(2)}
+                        {customer.totalRevenue.toFixed(2)}
                       </p>
                     </div>
                   </div>

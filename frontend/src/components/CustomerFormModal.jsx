@@ -182,8 +182,8 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
     refetchOnMountOrArgChange: true, // Refetch when modal opens
   });
   // Extract cities array from response (handle both direct array and object with data property)
-  const citiesData = Array.isArray(citiesResponse) 
-    ? citiesResponse 
+  const citiesData = Array.isArray(citiesResponse)
+    ? citiesResponse
     : (citiesResponse?.data || []);
 
   const handleCitySubmit = (e) => {
@@ -269,7 +269,7 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
         const name = (account.accountName || account.name || '').toLowerCase();
         return name === 'accounts receivable' || account.accountCode === '1130';
       }) || ledgerOptions[0];
-      
+
       if (accountsReceivable && (!customer || !customer.ledgerAccount)) {
         const accountId = accountsReceivable._id || accountsReceivable.id;
         if (accountId) {
@@ -358,7 +358,7 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
-                    {...register('email', { 
+                    {...register('email', {
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                         message: 'Invalid email address'
@@ -381,7 +381,7 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
                   <p className="text-red-500 text-sm mt-1">Email already exists</p>
                 )}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Phone
@@ -410,7 +410,7 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
                   <option value="distributor">Distributor</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Customer Tier
@@ -427,10 +427,10 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Credit Limit ($)
+                  Credit Limit
                 </label>
                 <input
-                  {...register('creditLimit', { 
+                  {...register('creditLimit', {
                     valueAsNumber: true,
                     min: { value: 0, message: 'Credit limit must be positive' }
                   })}
@@ -443,10 +443,10 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
                   <p className="text-red-500 text-sm mt-1">{errors.creditLimit.message}</p>
                 )}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Opening Balance ($)
+                  Opening Balance
                 </label>
                 <input
                   {...register('openingBalance', { valueAsNumber: true })}
@@ -459,7 +459,7 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
                   Positive means the customer owes you. Use a negative value if you owe the customer.
                 </p>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Status
@@ -559,15 +559,15 @@ export const CustomerFormModal = ({ customer, onSave, onCancel, isSubmitting }) 
                 const currentLedgerId = watch('ledgerAccount');
                 const accountsReceivable = ledgerOptions.find((account) => {
                   const accountId = account._id || account.id;
-                  return accountId === currentLedgerId || 
-                         (account.accountName || account.name || '').toLowerCase() === 'accounts receivable' ||
-                         account.accountCode === '1130';
+                  return accountId === currentLedgerId ||
+                    (account.accountName || account.name || '').toLowerCase() === 'accounts receivable' ||
+                    account.accountCode === '1130';
                 }) || ledgerOptions[0];
-                
-                const displayValue = accountsReceivable 
+
+                const displayValue = accountsReceivable
                   ? `${accountsReceivable.accountCode || '1130'} - ${accountsReceivable.accountName || accountsReceivable.name || 'Accounts Receivable'}`
                   : '1130 - Accounts Receivable';
-                
+
                 return (
                   <>
                     <input

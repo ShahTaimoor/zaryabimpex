@@ -209,8 +209,9 @@ const InventoryReports = () => {
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
   };
 
@@ -373,11 +374,10 @@ const InventoryReports = () => {
                 {quickStockLevels.stockLevels.slice(0, 5).map((item, index) => (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className={`w-2 h-2 rounded-full mr-3 ${
-                        item.metrics.stockStatus === 'out_of_stock' ? 'bg-red-500' :
-                        item.metrics.stockStatus === 'low_stock' ? 'bg-orange-500' :
-                        'bg-green-500'
-                      }`}></div>
+                      <div className={`w-2 h-2 rounded-full mr-3 ${item.metrics.stockStatus === 'out_of_stock' ? 'bg-red-500' :
+                          item.metrics.stockStatus === 'low_stock' ? 'bg-orange-500' :
+                            'bg-green-500'
+                        }`}></div>
                       <span className="text-sm font-medium text-gray-900 truncate">
                         {item.product.name}
                       </span>
@@ -484,11 +484,10 @@ const InventoryReports = () => {
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`inline-flex items-center px-3 py-2 border text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  showFilters
+                className={`inline-flex items-center px-3 py-2 border text-sm leading-4 font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${showFilters
                     ? 'border-blue-500 text-blue-700 bg-blue-50'
                     : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <Filter className="h-4 w-4 mr-2" />
                 Filters
@@ -660,11 +659,10 @@ const InventoryReports = () => {
                     <button
                       key={i}
                       onClick={() => setFilters(prev => ({ ...prev, page: i + 1 }))}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        pagination.current === i + 1
+                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${pagination.current === i + 1
                           ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                           : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       {i + 1}
                     </button>

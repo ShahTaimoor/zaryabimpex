@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  FileText, 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  CheckCircle, 
-  XCircle, 
+import {
+  FileText,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
   Clock,
   Package,
   Building,
@@ -90,36 +90,36 @@ const PurchaseOrderCard = ({ po, onEdit, onDelete, onConfirm, onCancel, onClose,
             <h3 className="font-semibold text-gray-900">{po.poNumber}</h3>
             <StatusBadge status={po.status} />
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex items-center text-sm text-gray-600">
               <Building className="h-4 w-4 mr-2" />
               {po.supplier?.companyName || (typeof po.supplier === 'string' ? `Supplier ID: ${po.supplier}` : 'Unknown Supplier')}
             </div>
-            
+
             <div className="flex items-center text-sm text-gray-600">
               <User className="h-4 w-4 mr-2" />
               {po.createdBy.firstName} {po.createdBy.lastName}
             </div>
-            
+
             <div className="flex items-center text-sm text-gray-600">
               <Calendar className="h-4 w-4 mr-2" />
               {new Date(po.orderDate).toLocaleDateString()}
             </div>
-            
+
             {po.expectedDelivery && (
               <div className="flex items-center text-sm text-gray-600">
                 <Package className="h-4 w-4 mr-2" />
                 Expected: {new Date(po.expectedDelivery).toLocaleDateString()}
               </div>
             )}
-            
+
             <div className="flex items-center text-sm text-gray-600">
               <TrendingUp className="h-4 w-4 mr-2" />
               {Math.round(po.subtotal)} ({po.items.length} items)
             </div>
           </div>
-          
+
           {/* Progress Bar for Received Orders */}
           {(po.status === 'partially_received' || po.status === 'fully_received') && (
             <div className="mt-3">
@@ -128,7 +128,7 @@ const PurchaseOrderCard = ({ po, onEdit, onDelete, onConfirm, onCancel, onClose,
                 <span>{po.progressPercentage}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
+                <div
                   className="bg-green-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${po.progressPercentage}%` }}
                 ></div>
@@ -136,7 +136,7 @@ const PurchaseOrderCard = ({ po, onEdit, onDelete, onConfirm, onCancel, onClose,
             </div>
           )}
         </div>
-        
+
         <div className="flex flex-col space-y-2">
           <button
             onClick={() => onView(po)}
@@ -145,7 +145,7 @@ const PurchaseOrderCard = ({ po, onEdit, onDelete, onConfirm, onCancel, onClose,
           >
             <Eye className="h-4 w-4" />
           </button>
-          
+
           {(po.status === 'draft' || po.status === 'confirmed' || po.status === 'partially_received' || po.status === 'cancelled') && (
             <button
               onClick={() => onEdit(po)}
@@ -155,7 +155,7 @@ const PurchaseOrderCard = ({ po, onEdit, onDelete, onConfirm, onCancel, onClose,
               <Edit className="h-4 w-4" />
             </button>
           )}
-          
+
           {po.status === 'draft' && (
             <button
               onClick={() => onConfirm(po)}
@@ -165,7 +165,7 @@ const PurchaseOrderCard = ({ po, onEdit, onDelete, onConfirm, onCancel, onClose,
               <CheckCircle className="h-4 w-4" />
             </button>
           )}
-          
+
           {(po.status === 'draft' || po.status === 'cancelled' || po.status === 'confirmed' || po.status === 'partially_received' || !po.supplier) && (
             <button
               onClick={() => onDelete(po)}
@@ -175,7 +175,7 @@ const PurchaseOrderCard = ({ po, onEdit, onDelete, onConfirm, onCancel, onClose,
               <Trash2 className="h-4 w-4" />
             </button>
           )}
-          
+
           {po.status === 'confirmed' && (
             <button
               onClick={() => onCancel(po)}
@@ -185,7 +185,7 @@ const PurchaseOrderCard = ({ po, onEdit, onDelete, onConfirm, onCancel, onClose,
               <XCircle className="h-4 w-4" />
             </button>
           )}
-          
+
           {po.status === 'fully_received' && (
             <button
               onClick={() => onClose(po)}
@@ -195,7 +195,7 @@ const PurchaseOrderCard = ({ po, onEdit, onDelete, onConfirm, onCancel, onClose,
               <X className="h-4 w-4" />
             </button>
           )}
-          
+
           {(po.status === 'confirmed' || po.status === 'partially_received') && po.remainingItemsCount > 0 && (
             <button
               onClick={() => onConvert(po)}
@@ -218,11 +218,11 @@ export const PurchaseOrders = ({ tabId }) => {
   const resolvedCompanyName = companySettings.companyName || 'Company Name';
   const resolvedCompanyAddress = companySettings.address || companySettings.billingAddress || '';
   const resolvedCompanyPhone = companySettings.contactNumber || '';
-  
+
   // Calculate default date range (14 days ago to today)
   const today = getCurrentDatePakistan();
   const fromDateDefault = getDateDaysAgo(14);
-  
+
   // State for filters and pagination
   const [filters, setFilters] = useState({
     fromDate: fromDateDefault, // 14 days ago
@@ -232,7 +232,7 @@ export const PurchaseOrders = ({ tabId }) => {
     status: '',
     paymentStatus: ''
   });
-  
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 999999 // Get all purchase orders without pagination
@@ -272,12 +272,12 @@ export const PurchaseOrders = ({ tabId }) => {
   const [customCost, setCustomCost] = useState('');
   const [selectedProductIndex, setSelectedProductIndex] = useState(-1);
   const [searchKey, setSearchKey] = useState(0); // Key to force re-render
-  
+
   // Modal-specific product selection state
   const [modalProductSearchTerm, setModalProductSearchTerm] = useState('');
   const [modalSelectedProduct, setModalSelectedProduct] = useState(null);
   const [modalSelectedSuggestionIndex, setModalSelectedSuggestionIndex] = useState(-1);
-  
+
   // Refs
   const productSearchRef = useRef(null);
   const supplierSearchRef = useRef(null);
@@ -297,7 +297,7 @@ export const PurchaseOrders = ({ tabId }) => {
     if (showEditModal) {
       // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
-      
+
       // Focus on the first input field in the modal after a short delay
       const timer = setTimeout(() => {
         const modalInput = document.querySelector('.modal-product-search input');
@@ -305,7 +305,7 @@ export const PurchaseOrders = ({ tabId }) => {
           modalInput.focus();
         }
       }, 100);
-      
+
       return () => {
         clearTimeout(timer);
         document.body.style.overflow = 'unset';
@@ -365,7 +365,7 @@ export const PurchaseOrders = ({ tabId }) => {
   // Fetch suppliers for dropdown
   const { data: suppliersData, isLoading: suppliersLoading, refetch: refetchSuppliers } = useGetSuppliersQuery(
     { search: '', limit: 100 },
-    { 
+    {
       skip: false,
       staleTime: 0, // Always consider data stale to get fresh balance information
       refetchOnMountOrArgChange: true, // Refetch when component mounts or params change
@@ -460,7 +460,7 @@ export const PurchaseOrders = ({ tabId }) => {
       limit: null // Show unlimited products
     }
   );
-  
+
   // Show all results when searching
   const productsData = React.useMemo(() => {
     if (!productSearchTerm || productSearchTerm.trim().length === 0) {
@@ -481,7 +481,7 @@ export const PurchaseOrders = ({ tabId }) => {
       limit: null // Show unlimited products
     }
   );
-  
+
   // Show all results when searching
   const modalProductsData = React.useMemo(() => {
     if (!modalProductSearchTerm || modalProductSearchTerm.trim().length === 0) {
@@ -490,7 +490,7 @@ export const PurchaseOrders = ({ tabId }) => {
     }
     return modalFuzzySearchResults;
   }, [modalProductSearchTerm, allItems, modalFuzzySearchResults]);
-  
+
   const modalProductsLoading = productsLoading || variantsLoading;
 
   // Auto-scroll selected product into view when navigating with keyboard
@@ -498,7 +498,7 @@ export const PurchaseOrders = ({ tabId }) => {
     if (selectedProductIndex >= 0 && productSearchTerm && productsData) {
       const productList = document.querySelector('.product-list-container');
       const selectedProductElement = productList?.querySelector(`[data-product-index="${selectedProductIndex}"]`);
-      
+
       if (selectedProductElement && productList) {
         selectedProductElement.scrollIntoView({
           behavior: 'smooth',
@@ -536,7 +536,7 @@ export const PurchaseOrders = ({ tabId }) => {
     setQuantity(1);
     setCustomCost('');
     setSearchKey(prev => prev + 1); // Force re-render of search components
-    
+
     // Reset tab title to default
     if (updateTabTitle && getActiveTab) {
       const activeTab = getActiveTab();
@@ -551,7 +551,7 @@ export const PurchaseOrders = ({ tabId }) => {
       <div>
         <div className="font-medium">{supplier.displayName || supplier.companyName || supplier.name || 'Unknown'}</div>
         <div className="text-sm text-gray-600">
-          Outstanding Balance: ${(supplier.pendingBalance || 0).toFixed(2)}
+          Outstanding Balance: {(supplier.pendingBalance || 0).toFixed(2)}
         </div>
       </div>
     );
@@ -561,11 +561,11 @@ export const PurchaseOrders = ({ tabId }) => {
     // SearchableDropdown passes the full supplier object, not just the ID
     const supplierId = typeof supplier === 'string' ? supplier : supplier._id;
     const supplierObj = typeof supplier === 'object' ? supplier : suppliers?.find(s => s._id === supplierId);
-    
+
     setSelectedSupplier(supplierObj);
     setFormData(prev => ({ ...prev, supplier: supplierId }));
     setSupplierSearchTerm(supplierObj?.companyName || supplierObj?.name || '');
-    
+
     // Update tab title to show supplier name
     if (updateTabTitle && getActiveTab && supplierObj) {
       const activeTab = getActiveTab();
@@ -577,11 +577,11 @@ export const PurchaseOrders = ({ tabId }) => {
 
   const handleSupplierSearch = (searchTerm) => {
     setSupplierSearchTerm(searchTerm);
-    
+
     if (searchTerm === '') {
       setSelectedSupplier(null);
       setFormData(prev => ({ ...prev, supplier: '' }));
-      
+
       // Reset tab title to default when supplier is cleared
       if (updateTabTitle && getActiveTab) {
         const activeTab = getActiveTab();
@@ -596,21 +596,21 @@ export const PurchaseOrders = ({ tabId }) => {
     const inventory = product.inventory || {};
     const isLowStock = inventory.currentStock <= (inventory.reorderPoint || inventory.minStock || 0);
     const isOutOfStock = inventory.currentStock === 0;
-    
+
     // Get display name - use variant display name if it's a variant
-    const displayName = product.isVariant 
+    const displayName = product.isVariant
       ? (product.displayName || product.variantName || product.name)
       : product.name;
-    
+
     // Get cost price
     const pricing = product.pricing || {};
     const cost = pricing.cost || 0;
-    
+
     // Show variant indicator
-    const variantInfo = product.isVariant 
+    const variantInfo = product.isVariant
       ? <span className="text-xs text-blue-600 font-semibold">({product.variantType}: {product.variantValue})</span>
       : null;
-    
+
     return (
       <div className="flex items-center justify-between w-full">
         <div className="flex flex-col">
@@ -621,7 +621,7 @@ export const PurchaseOrders = ({ tabId }) => {
           <div className={`text-sm ${isOutOfStock ? 'text-red-600' : isLowStock ? 'text-orange-600' : 'text-gray-600'}`}>
             Stock: {inventory.currentStock || 0}
           </div>
-          <div className="text-sm text-gray-600">Cost: ${Math.round(cost)}</div>
+          <div className="text-sm text-gray-600">Cost: {Math.round(cost)}</div>
         </div>
       </div>
     );
@@ -633,7 +633,7 @@ export const PurchaseOrders = ({ tabId }) => {
     const cost = product.pricing?.cost || 0;
     setCustomCost(cost.toString());
     // Show product/variant name in the field
-    const displayName = product.isVariant 
+    const displayName = product.isVariant
       ? (product.displayName || product.variantName || product.name)
       : product.name;
     setProductSearchTerm(displayName);
@@ -643,13 +643,13 @@ export const PurchaseOrders = ({ tabId }) => {
   const handleProductSearch = (searchTerm) => {
     setProductSearchTerm(searchTerm);
     setSelectedProductIndex(-1); // Reset selection when searching
-    
+
     // Clear selected product if search term doesn't match the selected product name
     if (selectedProduct && searchTerm !== selectedProduct.name) {
       setSelectedProduct(null);
       setCustomCost('');
     }
-    
+
     if (searchTerm === '') {
       setSelectedProduct(null);
       setCustomCost('');
@@ -691,7 +691,7 @@ export const PurchaseOrders = ({ tabId }) => {
     setQuantity(1);
     setCustomCost('');
     setSearchKey(prev => prev + 1); // Force re-render of search components
-    
+
     // Focus back to product search input
     setTimeout(() => {
       if (productSearchRef.current) {
@@ -723,7 +723,7 @@ export const PurchaseOrders = ({ tabId }) => {
         }
 
         return (
-          (productData.isVariant 
+          (productData.isVariant
             ? (productData.displayName || productData.variantName || productData.name)
             : productData.name) ||
           productData.title ||
@@ -794,7 +794,7 @@ export const PurchaseOrders = ({ tabId }) => {
       .unwrap()
       .then(() => {
         toast.success('Purchase order created successfully');
-        
+
         // Refetch suppliers list to update balances (so new supplier selection works without refresh)
         if (refetchSuppliers && typeof refetchSuppliers === 'function') {
           try {
@@ -803,7 +803,7 @@ export const PurchaseOrders = ({ tabId }) => {
             // Failed to refetch suppliers - silent fail
           }
         }
-        
+
         // Reset form (clears supplier and enables supplier selection UI for next order)
         resetForm();
         if (updateTabTitle && getActiveTab) {
@@ -832,13 +832,13 @@ export const PurchaseOrders = ({ tabId }) => {
         remainingQuantity: item.remainingQuantity || item.quantity
       }))
     };
-    
+
     updatePurchaseOrderMutation({ id: selectedOrder._id, ...cleanedData })
       .unwrap()
       .then(() => {
         setShowEditModal(false);
         setSelectedOrder(null);
-        
+
         // Immediately refetch supplier to update outstanding balance (BEFORE resetting form)
         // Only refetch if supplier is selected (query is not skipped)
         if (selectedSupplier?._id && refetchSupplier && typeof refetchSupplier === 'function') {
@@ -861,7 +861,7 @@ export const PurchaseOrders = ({ tabId }) => {
             }
           }
         }
-        
+
         // Also refetch suppliers list to update balances
         if (refetchSuppliers && typeof refetchSuppliers === 'function') {
           try {
@@ -870,7 +870,7 @@ export const PurchaseOrders = ({ tabId }) => {
             // Failed to refetch suppliers - silent fail
           }
         }
-        
+
         resetForm();
         toast.success('Purchase order updated successfully');
         if (updateTabTitle && getActiveTab) {
@@ -931,7 +931,7 @@ export const PurchaseOrders = ({ tabId }) => {
 
   const handleEdit = (order) => {
     setSelectedOrder(order);
-    
+
     // Process items to ensure productData is available and costPerUnit is preserved
     const processedItems = (order.items || []).map(item => {
       // Use saved costPerUnit, or fallback to product's default cost price if saved cost is 0
@@ -939,7 +939,7 @@ export const PurchaseOrders = ({ tabId }) => {
       if (finalCostPerUnit === 0 && item.product?.pricing?.cost) {
         finalCostPerUnit = item.product.pricing.cost;
       }
-      
+
       return {
         product: item.product?._id || item.product,
         quantity: item.quantity,
@@ -950,7 +950,7 @@ export const PurchaseOrders = ({ tabId }) => {
         productData: item.product || null // Use the populated product data
       };
     });
-    
+
     const newFormData = {
       supplier: order.supplier?._id || '',
       items: processedItems,
@@ -959,17 +959,17 @@ export const PurchaseOrders = ({ tabId }) => {
       terms: order.terms || '',
       isTaxExempt: order.isTaxExempt !== undefined ? order.isTaxExempt : true
     };
-    
+
     setFormData(newFormData);
-    
+
     // Set the selected supplier and update tab title
     if (order.supplier) {
       setSelectedSupplier(order.supplier);
       setSupplierSearchTerm(order.supplier.companyName || order.supplier.name || '');
-                      
-                      // Update tab title to show supplier name
-                      if (updateTabTitle && getActiveTab) {
-                        const activeTab = getActiveTab();
+
+      // Update tab title to show supplier name
+      if (updateTabTitle && getActiveTab) {
+        const activeTab = getActiveTab();
         if (activeTab) {
           updateTabTitle(activeTab.id, `PO - ${order.supplier.companyName || order.supplier.name || 'Unknown'}`);
         }
@@ -977,7 +977,7 @@ export const PurchaseOrders = ({ tabId }) => {
     } else {
       setSelectedSupplier(null);
       setSupplierSearchTerm('');
-      
+
       // Reset tab title to default
       if (updateTabTitle && getActiveTab) {
         const activeTab = getActiveTab();
@@ -986,7 +986,7 @@ export const PurchaseOrders = ({ tabId }) => {
         }
       }
     }
-    
+
     setShowEditModal(true);
   };
 
@@ -1045,7 +1045,7 @@ export const PurchaseOrders = ({ tabId }) => {
     try {
       // Get all purchase orders (or filtered ones)
       const ordersToExport = purchaseOrders || [];
-      
+
       if (ordersToExport.length === 0) {
         toast.error('No purchase orders to export');
         return;
@@ -1070,10 +1070,10 @@ export const PurchaseOrders = ({ tabId }) => {
       ];
 
       ordersToExport.forEach(order => {
-        const supplierName = order.supplier?.companyName || 
-                           order.supplier?.name || 
-                           order.supplierInfo?.companyName || 
-                           'N/A';
+        const supplierName = order.supplier?.companyName ||
+          order.supplier?.name ||
+          order.supplierInfo?.companyName ||
+          'N/A';
         const status = order.status || 'N/A';
         const subtotal = order.subtotal || order.pricing?.subtotal || 0;
         const tax = order.tax || order.pricing?.taxAmount || 0;
@@ -1129,19 +1129,19 @@ export const PurchaseOrders = ({ tabId }) => {
     if (Array.isArray(purchaseOrdersData?.data)) return purchaseOrdersData.data;
     return [];
   }, [purchaseOrdersData]);
-  
+
   const paginationInfo = purchaseOrdersData?.data?.pagination || purchaseOrdersData?.pagination || {};
   const { subtotal, tax, total, supplierOutstanding, totalPayables } = calculateTotals();
 
   return (
     <div className="space-y-4 lg:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-                      <div>
+        <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Purchase Orders</h1>
           <p className="text-sm sm:text-base text-gray-600">Process purchase order transactions</p>
-                        </div>
+        </div>
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-            <button
+          <button
             onClick={handleExport}
             className="btn btn-secondary btn-md flex-1 sm:flex-initial"
           >
@@ -1155,9 +1155,9 @@ export const PurchaseOrders = ({ tabId }) => {
             <Plus className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">New Purchase Order</span>
             <span className="sm:hidden">New PO</span>
-            </button>
-                      </div>
-          </div>
+          </button>
+        </div>
+      </div>
 
       {/* Supplier Selection and Information Row */}
       <div className="flex flex-col md:flex-row items-start space-y-4 md:space-y-0 md:space-x-4">
@@ -1198,8 +1198,8 @@ export const PurchaseOrders = ({ tabId }) => {
             emptyMessage={supplierSearchTerm.length > 0 ? "No suppliers found" : "Start typing to search suppliers..."}
             value={supplierSearchTerm}
           />
-              </div>
-              
+        </div>
+
         {/* Supplier Information - Right Side */}
         <div className="flex-1">
           {selectedSupplier ? (
@@ -1215,14 +1215,14 @@ export const PurchaseOrders = ({ tabId }) => {
                     <div className="flex items-center space-x-1">
                       <span className="text-xs text-gray-500">Outstanding Balance:</span>
                       <span className={`text-sm font-medium ${(selectedSupplier.outstandingBalance || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {Math.round(selectedSupplier.outstandingBalance || 0)}
-                        </span>
+                        {Math.round(selectedSupplier.outstandingBalance || 0)}
+                      </span>
                     </div>
                     {selectedSupplier.phone && (
                       <div className="flex items-center space-x-1">
                         <Phone className="h-3 w-3 text-gray-400" />
                         <span className="text-xs text-gray-500">{selectedSupplier.phone}</span>
-                    </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1231,10 +1231,10 @@ export const PurchaseOrders = ({ tabId }) => {
           ) : (
             <div className="hidden lg:block">
               {/* Empty space to maintain layout consistency */}
-                </div>
-              )}
             </div>
-          </div>
+          )}
+        </div>
+      </div>
 
       {/* Combined Product Selection and Cart Section */}
       <div className="card">
@@ -1278,7 +1278,7 @@ export const PurchaseOrders = ({ tabId }) => {
                       {selectedProduct ? selectedProduct.inventory?.currentStock || 0 : '0'}
                     </span>
                   </div>
-                  
+
                   {/* Amount */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -1288,7 +1288,7 @@ export const PurchaseOrders = ({ tabId }) => {
                       {selectedProduct ? Math.round(quantity * parseFloat(customCost || 0)) : 0}
                     </span>
                   </div>
-                  
+
                   {/* Quantity */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -1304,7 +1304,7 @@ export const PurchaseOrders = ({ tabId }) => {
                       placeholder="1"
                     />
                   </div>
-                  
+
                   {/* Cost */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -1359,80 +1359,80 @@ export const PurchaseOrders = ({ tabId }) => {
                     value={productSearchTerm}
                   />
                 </div>
-                  
-                  {/* Stock - 1 column */}
-                  <div className="col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Stock
-                    </label>
-                    <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1.5 rounded border border-gray-200 block text-center h-12 flex items-center justify-center">
-                      {selectedProduct ? selectedProduct.inventory?.currentStock || 0 : '0'}
-                    </span>
-                  </div>
-                  
-                  {/* Quantity - 1 column */}
-                  <div className="col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Quantity
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                      onKeyDown={handleInputKeyDown}
-                      className="input text-center h-12"
+
+                {/* Stock - 1 column */}
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Stock
+                  </label>
+                  <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1.5 rounded border border-gray-200 block text-center h-12 flex items-center justify-center">
+                    {selectedProduct ? selectedProduct.inventory?.currentStock || 0 : '0'}
+                  </span>
+                </div>
+
+                {/* Quantity - 1 column */}
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    onKeyDown={handleInputKeyDown}
+                    className="input text-center h-12"
                     placeholder="1 (Enter to add & focus search)"
-                    />
-                  </div>
-                  
+                  />
+                </div>
+
                 {/* Cost - 1 column */}
-                  <div className="col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Cost
-                    </label>
-                    <input
-                      type="number"
+                  </label>
+                  <input
+                    type="number"
                     step="1"
-                      value={customCost}
-                      onChange={(e) => setCustomCost(e.target.value)}
-                      onKeyDown={handleInputKeyDown}
-                      className="input text-center h-12"
+                    value={customCost}
+                    onChange={(e) => setCustomCost(e.target.value)}
+                    onKeyDown={handleInputKeyDown}
+                    className="input text-center h-12"
                     placeholder="0 (Enter to add & focus search)"
                     required
-                    />
-                  </div>
-                  
+                  />
+                </div>
+
                 {/* Amount - 1 column */}
                 <div className="col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Amount
-                    </label>
-                    <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1.5 rounded border border-gray-200 block text-center h-12 flex items-center justify-center">
-                      {selectedProduct ? Math.round(quantity * parseFloat(customCost || 0)) : 0}
-                    </span>
-                  </div>
-                  
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amount
+                  </label>
+                  <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1.5 rounded border border-gray-200 block text-center h-12 flex items-center justify-center">
+                    {selectedProduct ? Math.round(quantity * parseFloat(customCost || 0)) : 0}
+                  </span>
+                </div>
+
                 {/* Add Button - 1 column */}
                 <div className="col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      &nbsp;
-                    </label>
-                    <button
-                      type="button"
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    &nbsp;
+                  </label>
+                  <button
+                    type="button"
                     onClick={handleAddItem}
-                      className="w-full btn btn-primary flex items-center justify-center px-3 h-12"
-                      disabled={!selectedProduct}
-                      title="Add to cart (or press Enter in Quantity/Cost fields - focus returns to search)"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add
-                    </button>
+                    className="w-full btn btn-primary flex items-center justify-center px-3 h-12"
+                    disabled={!selectedProduct}
+                    title="Add to cart (or press Enter in Quantity/Cost fields - focus returns to search)"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-              
+
           {/* Cart Items */}
           {formData.items.length === 0 ? (
             <div className="p-8 text-center text-gray-500 border-t border-gray-200">
@@ -1454,7 +1454,7 @@ export const PurchaseOrders = ({ tabId }) => {
                   <span className="sm:hidden">Sort</span>
                 </button>
               </div>
-              
+
               {/* Desktop Table Header */}
               <div className="hidden md:grid grid-cols-12 gap-4 items-center pb-2 border-b border-gray-300 mb-2">
                 <div className="col-span-1">
@@ -1479,15 +1479,15 @@ export const PurchaseOrders = ({ tabId }) => {
                   <span className="text-xs font-semibold text-gray-600 uppercase">Action</span>
                 </div>
               </div>
-              
+
               {formData.items.map((item, index) => {
                 const product = item.productData || item.product; // Use stored product/variant data or fallback to product
-                const displayName = product?.isVariant 
+                const displayName = product?.isVariant
                   ? (product?.displayName || product?.variantName || product?.name || 'Unknown Variant')
                   : (product?.name || 'Unknown Product');
                 const totalPrice = item.costPerUnit * item.quantity;
                 const isLowStock = product?.inventory?.currentStock <= (product?.inventory?.reorderPoint || 0);
-                
+
                 return (
                   <div key={index}>
                     {/* Mobile Card View */}
@@ -1497,7 +1497,7 @@ export const PurchaseOrders = ({ tabId }) => {
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">#{index + 1}</span>
                             <span className="font-medium text-sm truncate">
-                              {product?.isVariant 
+                              {product?.isVariant
                                 ? safeRender(product?.displayName || product?.variantName || product?.name || 'Unknown Variant')
                                 : safeRender(product?.name || 'Unknown Product')}
                             </span>
@@ -1545,7 +1545,7 @@ export const PurchaseOrders = ({ tabId }) => {
                               }
                               setFormData(prev => ({
                                 ...prev,
-                                items: prev.items.map((itm, i) => 
+                                items: prev.items.map((itm, i) =>
                                   i === index ? { ...itm, quantity: newQuantity, totalCost: newQuantity * itm.costPerUnit } : itm
                                 )
                               }));
@@ -1564,7 +1564,7 @@ export const PurchaseOrders = ({ tabId }) => {
                               const newCost = parseFloat(e.target.value) || 0;
                               setFormData(prev => ({
                                 ...prev,
-                                items: prev.items.map((itm, i) => 
+                                items: prev.items.map((itm, i) =>
                                   i === index ? { ...itm, costPerUnit: newCost, totalCost: itm.quantity * newCost } : itm
                                 )
                               }));
@@ -1585,12 +1585,12 @@ export const PurchaseOrders = ({ tabId }) => {
                             {index + 1}
                           </span>
                         </div>
-                        
+
                         {/* Product Name - 6 columns (adjusted to align with Product Search 7 columns) */}
                         <div className="col-span-6 flex items-center h-8">
                           <div className="flex flex-col">
                             <span className="font-medium text-sm truncate">
-                              {product?.isVariant 
+                              {product?.isVariant
                                 ? safeRender(product?.displayName || product?.variantName || product?.name || 'Unknown Variant')
                                 : safeRender(product?.name || 'Unknown Product')}
                               {isLowStock && <span className="text-yellow-600 text-xs ml-2">⚠️ Low</span>}
@@ -1602,14 +1602,14 @@ export const PurchaseOrders = ({ tabId }) => {
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Stock - 1 column (matches Product Selection Stock) */}
                         <div className="col-span-1">
                           <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center h-8 flex items-center justify-center">
                             {product?.inventory?.currentStock || 0}
                           </span>
                         </div>
-                        
+
                         {/* Quantity - 1 column (matches Product Selection Quantity) */}
                         <div className="col-span-1">
                           <input
@@ -1623,7 +1623,7 @@ export const PurchaseOrders = ({ tabId }) => {
                               }
                               setFormData(prev => ({
                                 ...prev,
-                                items: prev.items.map((itm, i) => 
+                                items: prev.items.map((itm, i) =>
                                   i === index ? { ...itm, quantity: newQuantity, totalCost: newQuantity * itm.costPerUnit } : itm
                                 )
                               }));
@@ -1632,7 +1632,7 @@ export const PurchaseOrders = ({ tabId }) => {
                             min="1"
                           />
                         </div>
-                        
+
                         {/* Cost - 1 column (matches Product Selection Cost) */}
                         <div className="col-span-1">
                           <input
@@ -1643,7 +1643,7 @@ export const PurchaseOrders = ({ tabId }) => {
                               const newCost = parseFloat(e.target.value) || 0;
                               setFormData(prev => ({
                                 ...prev,
-                                items: prev.items.map((itm, i) => 
+                                items: prev.items.map((itm, i) =>
                                   i === index ? { ...itm, costPerUnit: newCost, totalCost: itm.quantity * newCost } : itm
                                 )
                               }));
@@ -1652,14 +1652,14 @@ export const PurchaseOrders = ({ tabId }) => {
                             min="0"
                           />
                         </div>
-                        
+
                         {/* Total - 1 column (matches Product Selection Amount) */}
                         <div className="col-span-1">
                           <span className="text-sm font-semibold text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200 block text-center h-8 flex items-center justify-center">
                             {Math.round(totalPrice)}
                           </span>
                         </div>
-                        
+
                         {/* Delete Button - 1 column (matches Product Selection Add Button) */}
                         <div className="col-span-1">
                           <button
@@ -1840,99 +1840,99 @@ export const PurchaseOrders = ({ tabId }) => {
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4 border-t border-blue-200 mt-6">
               <h3 className="text-lg font-semibold text-white">Order Summary</h3>
             </div>
-            
+
             {/* Order Summary Details */}
             <div className="px-6 py-4">
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-800 font-semibold">Subtotal:</span>
-                    <span className="text-xl font-bold text-gray-900">{Math.round(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-800 font-semibold">
-                      {formData.isTaxExempt ? 'Tax (Exempt):' : 'Tax (8%):'}
-                    </span>
-                    <span className="text-xl font-bold text-gray-900">{Math.round(tax)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-800 font-semibold">PO Total:</span>
-                    <span className="text-xl font-bold text-gray-900">{Math.round(total)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-800 font-semibold">Previous Outstanding:</span>
-                    <span className="text-xl font-bold text-red-600">{Math.round(supplierOutstanding)}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xl font-bold border-t-2 border-blue-400 pt-3 mt-2">
-                    <span className="text-blue-900">Total Payables:</span>
-                    <span className="text-blue-900 text-3xl">{Math.round(totalPayables)}</span>
-                  </div>
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-800 font-semibold">Subtotal:</span>
+                  <span className="text-xl font-bold text-gray-900">{Math.round(subtotal)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-800 font-semibold">
+                    {formData.isTaxExempt ? 'Tax (Exempt):' : 'Tax (8%):'}
+                  </span>
+                  <span className="text-xl font-bold text-gray-900">{Math.round(tax)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-800 font-semibold">PO Total:</span>
+                  <span className="text-xl font-bold text-gray-900">{Math.round(total)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-800 font-semibold">Previous Outstanding:</span>
+                  <span className="text-xl font-bold text-red-600">{Math.round(supplierOutstanding)}</span>
+                </div>
+                <div className="flex justify-between items-center text-xl font-bold border-t-2 border-blue-400 pt-3 mt-2">
+                  <span className="text-blue-900">Total Payables:</span>
+                  <span className="text-blue-900 text-3xl">{Math.round(totalPayables)}</span>
                 </div>
               </div>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex space-x-3 mt-6 px-6 pb-6">
-                {formData.items.length > 0 && !showEditModal && (
-                  <button
-                    onClick={resetForm}
-                    className="btn btn-secondary flex-1"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear Cart
-                  </button>
-                )}
-                {formData.items.length > 0 && (
-                  <button
-                    onClick={() => {
-                      // Create temporary order data for print preview
-                      const tempOrder = {
-                        poNumber: `PO-${Date.now()}`,
-                        supplier: selectedSupplier,
-                        items: formData.items.map(item => {
-                          const product = productsData?.find(p => p._id === item.product);
-                          return {
-                            product: product,
-                            quantity: item.quantity,
-                            unitCost: item.costPerUnit,
-                            totalCost: item.quantity * item.costPerUnit
-                          };
-                        }),
-                        subtotal: subtotal,
-                        discount: 0,
-                        tax: tax,
-                        total: total,
-                        expectedDelivery: formData.expectedDelivery,
-                        notes: formData.notes,
-                        terms: formData.terms,
-                        createdAt: new Date().toISOString()
-                      };
-                      handlePrint(tempOrder);
-                    }}
-                    className="btn btn-secondary flex-1"
-                  >
-                    <Receipt className="h-4 w-4 mr-2" />
-                    Print Preview
-                  </button>
-                )}
+            {/* Action Buttons */}
+            <div className="flex space-x-3 mt-6 px-6 pb-6">
+              {formData.items.length > 0 && !showEditModal && (
                 <button
-                  onClick={handleCreate}
-                  disabled={creating || formData.items.length === 0}
-                  className="btn btn-primary btn-lg flex-2"
+                  onClick={resetForm}
+                  className="btn btn-secondary flex-1"
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  {creating ? 'Creating...' : 'Create Purchase Order'}
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear Cart
                 </button>
-              </div>
+              )}
+              {formData.items.length > 0 && (
+                <button
+                  onClick={() => {
+                    // Create temporary order data for print preview
+                    const tempOrder = {
+                      poNumber: `PO-${Date.now()}`,
+                      supplier: selectedSupplier,
+                      items: formData.items.map(item => {
+                        const product = productsData?.find(p => p._id === item.product);
+                        return {
+                          product: product,
+                          quantity: item.quantity,
+                          unitCost: item.costPerUnit,
+                          totalCost: item.quantity * item.costPerUnit
+                        };
+                      }),
+                      subtotal: subtotal,
+                      discount: 0,
+                      tax: tax,
+                      total: total,
+                      expectedDelivery: formData.expectedDelivery,
+                      notes: formData.notes,
+                      terms: formData.terms,
+                      createdAt: new Date().toISOString()
+                    };
+                    handlePrint(tempOrder);
+                  }}
+                  className="btn btn-secondary flex-1"
+                >
+                  <Receipt className="h-4 w-4 mr-2" />
+                  Print Preview
+                </button>
+              )}
+              <button
+                onClick={handleCreate}
+                disabled={creating || formData.items.length === 0}
+                className="btn btn-primary btn-lg flex-2"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {creating ? 'Creating...' : 'Create Purchase Order'}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Edit Modal */}
       {showEditModal && selectedOrder && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           onClick={(e) => e.stopPropagation()}
         >
-          <div 
+          <div
             className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
@@ -2083,7 +2083,7 @@ export const PurchaseOrders = ({ tabId }) => {
                           placeholder="Add any notes or comments..."
                         />
                       </div>
-                      
+
                       {/* Terms Column */}
                       <div className="flex flex-col">
                         <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -2103,7 +2103,7 @@ export const PurchaseOrders = ({ tabId }) => {
                 {/* Product Selection & Cart Items */}
                 <div className="px-6 py-4 border-t border-blue-200">
                   <h4 className="text-sm font-medium text-gray-900 mb-3">Product Selection & Cart Items</h4>
-                  
+
                   {/* Product Search */}
                   <div className="mb-4">
                     <div className="grid grid-cols-12 gap-4 items-end">
@@ -2124,21 +2124,21 @@ export const PurchaseOrders = ({ tabId }) => {
                           onFocus={(e) => e.stopPropagation()}
                           onKeyDown={(e) => {
                             e.stopPropagation();
-                            
+
                             if (!modalProductsData?.length) return;
-                            
+
                             const maxIndex = Math.min(modalProductsData.length - 1, 4); // Max 5 suggestions
-                            
+
                             switch (e.key) {
                               case 'ArrowDown':
                                 e.preventDefault();
-                                setModalSelectedSuggestionIndex(prev => 
+                                setModalSelectedSuggestionIndex(prev =>
                                   prev < maxIndex ? prev + 1 : 0
                                 );
                                 break;
                               case 'ArrowUp':
                                 e.preventDefault();
-                                setModalSelectedSuggestionIndex(prev => 
+                                setModalSelectedSuggestionIndex(prev =>
                                   prev > 0 ? prev - 1 : maxIndex
                                 );
                                 break;
@@ -2149,12 +2149,12 @@ export const PurchaseOrders = ({ tabId }) => {
                                   setModalSelectedProduct(product);
                                   setEditProductCost(product.pricing?.costPrice || 0);
                                   setEditProductQuantity(1);
-                                  const displayName = product.isVariant 
-                                  ? (product.displayName || product.variantName || product.name)
-                                  : product.name;
-                                setModalProductSearchTerm(displayName);
+                                  const displayName = product.isVariant
+                                    ? (product.displayName || product.variantName || product.name)
+                                    : product.name;
+                                  setModalProductSearchTerm(displayName);
                                   setModalSelectedSuggestionIndex(-1);
-                                  
+
                                   // Move focus to quantity field after selecting product
                                   setTimeout(() => {
                                     const quantityInput = document.querySelector('.modal-quantity-input');
@@ -2178,50 +2178,49 @@ export const PurchaseOrders = ({ tabId }) => {
                           <div className="mt-2 max-h-96 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
                             {modalProductsData
                               .map((product, index) => (
-                              <div
-                                key={product._id}
-                                onClick={() => {
-                                  setModalSelectedProduct(product);
-                                  setEditProductCost(product.pricing?.costPrice || 0);
-                                  setEditProductQuantity(1);
-                                  const displayName = product.isVariant 
-                                  ? (product.displayName || product.variantName || product.name)
-                                  : product.name;
-                                setModalProductSearchTerm(displayName);
-                                  setModalSelectedSuggestionIndex(-1);
-                                  
-                                  // Move focus to quantity field after selecting product
-                                  setTimeout(() => {
-                                    const quantityInput = document.querySelector('.modal-quantity-input');
-                                    if (quantityInput) {
-                                      quantityInput.focus();
-                                    }
-                                  }, 100);
-                                }}
-                                className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                                  modalSelectedSuggestionIndex === index 
-                                    ? 'bg-blue-100 border-blue-200' 
-                                    : 'hover:bg-gray-100'
-                                }`}
-                              >
-                                <div className="flex flex-col">
-                                  <div className="font-medium">
-                                    {product.isVariant 
+                                <div
+                                  key={product._id}
+                                  onClick={() => {
+                                    setModalSelectedProduct(product);
+                                    setEditProductCost(product.pricing?.costPrice || 0);
+                                    setEditProductQuantity(1);
+                                    const displayName = product.isVariant
                                       ? (product.displayName || product.variantName || product.name)
-                                      : product.name}
-                                  </div>
-                                  {product.isVariant && (
-                                    <div className="text-xs text-gray-500">
-                                      {product.variantType}: {product.variantValue}
+                                      : product.name;
+                                    setModalProductSearchTerm(displayName);
+                                    setModalSelectedSuggestionIndex(-1);
+
+                                    // Move focus to quantity field after selecting product
+                                    setTimeout(() => {
+                                      const quantityInput = document.querySelector('.modal-quantity-input');
+                                      if (quantityInput) {
+                                        quantityInput.focus();
+                                      }
+                                    }, 100);
+                                  }}
+                                  className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${modalSelectedSuggestionIndex === index
+                                      ? 'bg-blue-100 border-blue-200'
+                                      : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                  <div className="flex flex-col">
+                                    <div className="font-medium">
+                                      {product.isVariant
+                                        ? (product.displayName || product.variantName || product.name)
+                                        : product.name}
                                     </div>
-                                  )}
+                                    {product.isVariant && (
+                                      <div className="text-xs text-gray-500">
+                                        {product.variantType}: {product.variantValue}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    Stock: {product.inventory?.currentStock || 0} |
+                                    Cost: {product.pricing?.costPrice || 0}
+                                  </div>
                                 </div>
-                                <div className="text-sm text-gray-600">
-                                  Stock: {product.inventory?.currentStock || 0} | 
-                                  Cost: {product.pricing?.costPrice || 0}
-                                </div>
-                              </div>
-                            ))}
+                              ))}
                           </div>
                         )}
                       </div>
@@ -2300,11 +2299,11 @@ export const PurchaseOrders = ({ tabId }) => {
                         <div key={index} className="flex items-center p-3 bg-white border border-gray-200 rounded-lg">
                           {/* Product Name */}
                           <div className="font-medium text-gray-900 min-w-[200px] mr-4">
-                            {item.productData?.isVariant 
+                            {item.productData?.isVariant
                               ? (item.productData?.displayName || item.productData?.variantName || item.productData?.name || 'Unknown Variant')
                               : (item.productData?.name || 'Unknown Product')}
                           </div>
-                          
+
                           {/* Quantity, Cost, Total and Delete - Grouped Together */}
                           <div className="flex items-center space-x-3 ml-auto">
                             {/* Quantity Field */}
@@ -2324,7 +2323,7 @@ export const PurchaseOrders = ({ tabId }) => {
                                 className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
                             </div>
-                            
+
                             {/* Cost Field */}
                             <div className="flex items-center space-x-1">
                               <label className="text-xs text-gray-600">× Cost:</label>
@@ -2343,7 +2342,7 @@ export const PurchaseOrders = ({ tabId }) => {
                                 className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
                             </div>
-                            
+
                             {/* Total Display */}
                             <div className="flex items-center space-x-1">
                               <label className="text-xs text-gray-600">=</label>
@@ -2351,7 +2350,7 @@ export const PurchaseOrders = ({ tabId }) => {
                                 {item.totalCost.toFixed(2)}
                               </span>
                             </div>
-                            
+
                             {/* Remove Button */}
                             <button
                               type="button"
@@ -2408,32 +2407,32 @@ export const PurchaseOrders = ({ tabId }) => {
                   </div>
                 </div>
 
-            {/* Modal Footer */}
-            <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setSelectedOrder(null);
-                  setSupplierSearchTerm('');
-                  setModalProductSearchTerm('');
-                  setModalSelectedProduct(null);
-                  setEditProductQuantity(1);
-                  setEditProductCost(0);
-                  setModalSelectedSuggestionIndex(-1);
-                  resetForm();
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdate}
-                disabled={updating || formData.items.length === 0}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                {updating ? 'Updating...' : 'Update Purchase Order'}
-              </button>
-            </div>
+                {/* Modal Footer */}
+                <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setSelectedOrder(null);
+                      setSupplierSearchTerm('');
+                      setModalProductSearchTerm('');
+                      setModalSelectedProduct(null);
+                      setEditProductQuantity(1);
+                      setEditProductCost(0);
+                      setModalSelectedSuggestionIndex(-1);
+                      resetForm();
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdate}
+                    disabled={updating || formData.items.length === 0}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {updating ? 'Updating...' : 'Update Purchase Order'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -2446,7 +2445,7 @@ export const PurchaseOrders = ({ tabId }) => {
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
             <h3 className="text-lg font-medium text-gray-900">Filters</h3>
-    </div>
+          </div>
         </div>
         <div className="card-content">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
@@ -2552,7 +2551,7 @@ export const PurchaseOrders = ({ tabId }) => {
       {/* Results */}
       <div className="card">
         <div className="card-header">
-      <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium text-gray-900">
               Purchase Orders From: {formatDate(filters.fromDate)} To: {formatDate(filters.toDate)}
             </h3>
@@ -2567,7 +2566,7 @@ export const PurchaseOrders = ({ tabId }) => {
               >
                 <RefreshCw className="h-4 w-4" />
               </button>
-        </div>
+            </div>
           </div>
         </div>
         <div className="card-content p-0">
@@ -2685,7 +2684,7 @@ export const PurchaseOrders = ({ tabId }) => {
                   ))}
                 </tbody>
               </table>
-      </div>
+            </div>
           )}
         </div>
       </div>
@@ -2729,15 +2728,14 @@ export const PurchaseOrders = ({ tabId }) => {
                   <div className="space-y-1 text-sm">
                     <p><span className="font-medium">PO Number:</span> {selectedOrder.poNumber}</p>
                     <p><span className="font-medium">Date:</span> {formatDate(selectedOrder.createdAt)}</p>
-                    <p><span className="font-medium">Status:</span> 
-                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                        selectedOrder.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                        selectedOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                        selectedOrder.status === 'partially_received' ? 'bg-yellow-100 text-yellow-800' :
-                        selectedOrder.status === 'fully_received' ? 'bg-green-100 text-green-800' :
-                        selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                    <p><span className="font-medium">Status:</span>
+                      <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedOrder.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                          selectedOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                            selectedOrder.status === 'partially_received' ? 'bg-yellow-100 text-yellow-800' :
+                              selectedOrder.status === 'fully_received' ? 'bg-green-100 text-green-800' :
+                                selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                        }`}>
                         {selectedOrder.status === 'draft' ? 'Pending' : selectedOrder.status.replace('_', ' ')}
                       </span>
                     </p>

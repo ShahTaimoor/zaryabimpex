@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  BarChart3, 
-  Users, 
-  Package, 
+import {
+  TrendingUp,
+  TrendingDown,
+  BarChart3,
+  Users,
+  Package,
   UserCheck,
   Calendar,
   Download,
@@ -245,8 +245,9 @@ const SalesPerformanceReports = () => {
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
   };
 
@@ -318,11 +319,10 @@ const SalesPerformanceReports = () => {
                       )}
                     </p>
                     {quickSummary?.comparison?.changes?.revenueChangePercentage !== undefined && (
-                      <span className={`ml-2 text-sm ${
-                        quickSummary.comparison.changes.revenueChangePercentage >= 0 
-                          ? 'text-green-600' 
+                      <span className={`ml-2 text-sm ${quickSummary.comparison.changes.revenueChangePercentage >= 0
+                          ? 'text-green-600'
                           : 'text-red-600'
-                      }`}>
+                        }`}>
                         {quickSummary.comparison.changes.revenueChangePercentage >= 0 ? (
                           <TrendingUp className="h-4 w-4 inline" />
                         ) : (
@@ -355,11 +355,10 @@ const SalesPerformanceReports = () => {
                       )}
                     </p>
                     {quickSummary?.comparison?.changes?.orderChangePercentage !== undefined && (
-                      <span className={`ml-2 text-sm ${
-                        quickSummary.comparison.changes.orderChangePercentage >= 0 
-                          ? 'text-green-600' 
+                      <span className={`ml-2 text-sm ${quickSummary.comparison.changes.orderChangePercentage >= 0
+                          ? 'text-green-600'
                           : 'text-red-600'
-                      }`}>
+                        }`}>
                         {quickSummary.comparison.changes.orderChangePercentage >= 0 ? (
                           <TrendingUp className="h-4 w-4 inline" />
                         ) : (
@@ -392,11 +391,10 @@ const SalesPerformanceReports = () => {
                       )}
                     </p>
                     {quickSummary?.comparison?.changes?.aovChangePercentage !== undefined && (
-                      <span className={`ml-2 text-sm ${
-                        quickSummary.comparison.changes.aovChangePercentage >= 0 
-                          ? 'text-green-600' 
+                      <span className={`ml-2 text-sm ${quickSummary.comparison.changes.aovChangePercentage >= 0
+                          ? 'text-green-600'
                           : 'text-red-600'
-                      }`}>
+                        }`}>
                         {quickSummary.comparison.changes.aovChangePercentage >= 0 ? (
                           <TrendingUp className="h-4 w-4 inline" />
                         ) : (
@@ -429,11 +427,10 @@ const SalesPerformanceReports = () => {
                       )}
                     </p>
                     {quickSummary?.comparison?.changes?.customerChangePercentage !== undefined && (
-                      <span className={`ml-2 text-sm ${
-                        quickSummary.comparison.changes.customerChangePercentage >= 0 
-                          ? 'text-green-600' 
+                      <span className={`ml-2 text-sm ${quickSummary.comparison.changes.customerChangePercentage >= 0
+                          ? 'text-green-600'
                           : 'text-red-600'
-                      }`}>
+                        }`}>
                         {quickSummary.comparison.changes.customerChangePercentage >= 0 ? (
                           <TrendingUp className="h-4 w-4 inline" />
                         ) : (
@@ -668,11 +665,10 @@ const SalesPerformanceReports = () => {
                         </button>
                         <button
                           onClick={() => handleToggleFavorite(report.reportId, !report.isFavorite)}
-                          className={`${
-                            report.isFavorite 
-                              ? 'text-yellow-500 hover:text-yellow-600' 
+                          className={`${report.isFavorite
+                              ? 'text-yellow-500 hover:text-yellow-600'
                               : 'text-gray-400 hover:text-gray-600'
-                          }`}
+                            }`}
                           title={report.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                         >
                           <Star className={`h-4 w-4 ${report.isFavorite ? 'fill-current' : ''}`} />

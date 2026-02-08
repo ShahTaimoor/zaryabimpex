@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  RotateCcw, 
-  Search, 
-  Plus, 
-  Eye, 
-  CheckCircle, 
+import {
+  RotateCcw,
+  Search,
+  Plus,
+  Eye,
+  CheckCircle,
   XCircle,
   Clock,
   AlertCircle,
@@ -51,11 +51,11 @@ const SaleReturns = () => {
   const [suggestionsPosition, setSuggestionsPosition] = useState({ top: 0, left: 0, width: 0 });
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
-  
+
   // Date filter states using Pakistan timezone
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
-  
+
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
@@ -88,9 +88,9 @@ const SaleReturns = () => {
   const customers = customersData?.data?.customers || customersData?.customers || customersData?.items || [];
 
   // Search products for customer
-  const [searchCustomerProducts, { 
-    data: productsData, 
-    isLoading: productsLoading 
+  const [searchCustomerProducts, {
+    data: productsData,
+    isLoading: productsLoading
   }] = useLazySearchCustomerProductsQuery();
 
   const products = productsData?.data || [];
@@ -115,9 +115,9 @@ const SaleReturns = () => {
     setShowSuggestions(true);
 
     const timeoutId = setTimeout(() => {
-      searchCustomerProducts({ 
-        customerId: selectedCustomer._id, 
-        search: productSearchTerm.trim() 
+      searchCustomerProducts({
+        customerId: selectedCustomer._id,
+        search: productSearchTerm.trim()
       }).then((result) => {
         if (result.data?.data) {
           const suggestions = result.data.data.map(productData => ({
@@ -159,11 +159,11 @@ const SaleReturns = () => {
       };
 
       updatePosition();
-      
+
       // Update position on scroll or resize
       window.addEventListener('scroll', updatePosition, true);
       window.addEventListener('resize', updatePosition);
-      
+
       return () => {
         window.removeEventListener('scroll', updatePosition, true);
         window.removeEventListener('resize', updatePosition);
@@ -179,7 +179,7 @@ const SaleReturns = () => {
       const target = event.target;
       const isClickInSuggestions = suggestionsRef.current?.contains(target);
       const isClickInInput = searchInputRef.current?.contains(target);
-      
+
       if (!isClickInSuggestions && !isClickInInput) {
         setShowSuggestions(false);
       }
@@ -190,9 +190,9 @@ const SaleReturns = () => {
   }, [showSuggestions]);
 
   // Fetch sale returns (use dates from filters)
-  const { 
-    data: returnsData, 
-    isLoading: returnsLoading, 
+  const {
+    data: returnsData,
+    isLoading: returnsLoading,
     error: returnsError,
     refetch: refetchReturns
   } = useGetSaleReturnsQuery({
@@ -209,15 +209,15 @@ const SaleReturns = () => {
   const pagination = returnsData?.pagination || {};
 
   // Fetch return statistics (use dates from filters)
-  const { 
-    data: statsData, 
-    isLoading: statsLoading 
+  const {
+    data: statsData,
+    isLoading: statsLoading
   } = useGetSaleReturnStatsQuery(
     filters.startDate && filters.endDate
       ? {
-          startDate: filters.startDate,
-          endDate: filters.endDate
-        }
+        startDate: filters.startDate,
+        endDate: filters.endDate
+      }
       : {}
   );
 
@@ -245,9 +245,9 @@ const SaleReturns = () => {
       return;
     }
     setShowSuggestions(false); // Hide suggestions before opening modal
-    searchCustomerProducts({ 
-      customerId: selectedCustomer._id, 
-      search: term.trim() 
+    searchCustomerProducts({
+      customerId: selectedCustomer._id,
+      search: term.trim()
     });
     setShowProductModal(true);
   };
@@ -329,8 +329,9 @@ const SaleReturns = () => {
   // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+      style: 'decimal',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount || 0);
   };
 
@@ -344,7 +345,7 @@ const SaleReturns = () => {
       const year = date.getFullYear();
       const month = date.getMonth();
       const day = date.getDate();
-      
+
       // Create a new date with local components
       const localDate = new Date(year, month, day);
       return localDate.toLocaleDateString('en-US', {
@@ -388,7 +389,7 @@ const SaleReturns = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Sale Returns</h1>
           <p className="text-sm sm:text-base text-gray-600">Manage customer returns and refunds</p>
         </div>
-        
+
         {/* Date Filter using DateFilter component */}
         <div className="w-full sm:w-auto">
           <DateFilter
@@ -463,8 +464,8 @@ const SaleReturns = () => {
                   items={customers}
                   onSelect={handleCustomerSelect}
                   displayKey={(customer) => {
-                    const name = customer.displayName || customer.businessName || customer.name || 
-                                `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Unknown';
+                    const name = customer.displayName || customer.businessName || customer.name ||
+                      `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Unknown';
                     return (
                       <div>
                         <div className="font-medium">{name}</div>
@@ -501,8 +502,8 @@ const SaleReturns = () => {
                 </h2>
                 <p className="text-sm text-gray-600">
                   Customer: <span className="font-medium">
-                    {selectedCustomer.displayName || selectedCustomer.businessName || selectedCustomer.name || 
-                     `${selectedCustomer.firstName || ''} ${selectedCustomer.lastName || ''}`.trim()}
+                    {selectedCustomer.displayName || selectedCustomer.businessName || selectedCustomer.name ||
+                      `${selectedCustomer.firstName || ''} ${selectedCustomer.lastName || ''}`.trim()}
                   </span>
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
@@ -648,15 +649,15 @@ const SaleReturns = () => {
                         {returnItem.returnNumber}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                        {returnItem.customer?.displayName || returnItem.customer?.businessName || 
-                         returnItem.customer?.name || 'N/A'}
+                        {returnItem.customer?.displayName || returnItem.customer?.businessName ||
+                          returnItem.customer?.name || 'N/A'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                        {returnItem.originalOrder?.orderNumber || 
-                         returnItem.originalOrder?.soNumber || 
-                         returnItem.originalOrder?.invoiceNumber || 
-                         returnItem.originalOrder?.poNumber ||
-                         (returnItem.originalOrder?._id ? `Order ${returnItem.originalOrder._id.toString().slice(-6)}` : 'N/A')}
+                        {returnItem.originalOrder?.orderNumber ||
+                          returnItem.originalOrder?.soNumber ||
+                          returnItem.originalOrder?.invoiceNumber ||
+                          returnItem.originalOrder?.poNumber ||
+                          (returnItem.originalOrder?._id ? `Order ${returnItem.originalOrder._id.toString().slice(-6)}` : 'N/A')}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                         {formatCurrency(returnItem.netRefundAmount || 0)}

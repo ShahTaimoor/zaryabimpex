@@ -263,9 +263,9 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
         const loss = lastPurchasePrice - unitPrice;
         const lossPercent = ((loss / lastPurchasePrice) * 100).toFixed(1);
         const shouldProceed = window.confirm(
-          `⚠️ WARNING: Sale price ($${unitPrice}) is below cost price ($${Math.round(lastPurchasePrice)}).\n\n` +
-          `Loss per unit: $${Math.round(loss)} (${lossPercent}%)\n` +
-          `Total loss for ${quantity} unit(s): $${Math.round(loss * quantity)}\n\n` +
+          `⚠️ WARNING: Sale price (${unitPrice}) is below cost price (${Math.round(lastPurchasePrice)}).\n\n` +
+          `Loss per unit: ${Math.round(loss)} (${lossPercent}%)\n` +
+          `Total loss for ${quantity} unit(s): ${Math.round(loss * quantity)}\n\n` +
           `Do you want to proceed?`
         );
         if (!shouldProceed) {
@@ -273,7 +273,7 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
         }
         // Show warning toast even if proceeding
         toast.warning(
-          `Product added with loss: $${Math.round(loss)} per unit (${lossPercent}%)`,
+          `Product added with loss: ${Math.round(loss)} per unit (${lossPercent}%)`,
           { duration: 6000 }
         );
       }
@@ -368,9 +368,9 @@ const ProductSearch = ({ onAddProduct, selectedCustomer, showCostPrice, onLastPu
             Stock: {inventory.currentStock || 0}
           </div>
           {showCostPrice && hasCostPricePermission && purchasePrice > 0 && (
-            <div className="text-sm text-red-600 font-medium">Cost: ${Math.round(purchasePrice)}</div>
+            <div className="text-sm text-red-600 font-medium">Cost: {Math.round(purchasePrice)}</div>
           )}
-          <div className="text-sm text-gray-600">Price: ${Math.round(unitPrice)}</div>
+          <div className="text-sm text-gray-600">Price: {Math.round(unitPrice)}</div>
         </div>
       </div>
     );
@@ -1188,14 +1188,14 @@ export const Sales = ({ tabId, editData }) => {
     setIsLoadingLastPrices(true);
     try {
       const result = await getLastPrices(selectedCustomer._id);
-      
+
       // Check if there was an error in the request
       if (result.error) {
         showErrorToast(result.error?.data?.message || 'Failed to retrieve last prices');
         setIsLoadingLastPrices(false);
         return;
       }
-      
+
       // Check if the request was successful and has data
       if (!result || !result.data) {
         showErrorToast('No previous order found for this customer');
@@ -1205,7 +1205,7 @@ export const Sales = ({ tabId, editData }) => {
 
       // The API returns data directly: { success, prices, orderNumber, orderDate }
       const response = result.data;
-      
+
       // Handle both possible response structures
       const prices = response?.prices || (response?.data && response.data.prices);
       const orderNumber = response?.orderNumber || (response?.data && response.data.orderNumber);
@@ -1992,7 +1992,7 @@ export const Sales = ({ tabId, editData }) => {
                     <div className="font-medium">{customer.displayName}</div>
                     {hasBalance ? (
                       <div className={`text-sm ${isPayable ? 'text-red-600' : 'text-green-600'}`}>
-                        Total Balance: {isPayable ? '-' : '+'}${Math.abs(totalBalance).toFixed(2)}
+                        Total Balance: {isPayable ? '-' : '+'}{Math.abs(totalBalance).toFixed(2)}
                       </div>
                     ) : null}
                   </div>
@@ -2029,7 +2029,7 @@ export const Sales = ({ tabId, editData }) => {
                             <span className="text-xs text-gray-500">Total Balance:</span>
                             <span className={`text-sm font-medium ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'
                               }`}>
-                              {isPayable ? '-' : '+'}${Math.abs(totalBalance).toFixed(2)}
+                              {isPayable ? '-' : '+'}{Math.abs(totalBalance).toFixed(2)}
                             </span>
                           </div>
                         ) : null;
@@ -2044,7 +2044,7 @@ export const Sales = ({ tabId, editData }) => {
                               : 'text-blue-600'
                         ) : 'text-gray-600'
                           }`}>
-                          ${(selectedCustomer.creditLimit || 0).toFixed(2)}
+                          {(selectedCustomer.creditLimit || 0).toFixed(2)}
                         </span>
                         {selectedCustomer.creditLimit > 0 &&
                           (selectedCustomer.currentBalance || 0) >= selectedCustomer.creditLimit * 0.9 && (
@@ -2061,7 +2061,7 @@ export const Sales = ({ tabId, editData }) => {
                               : 'text-green-600'
                         ) : 'text-gray-600'
                           }`}>
-                          ${(selectedCustomer.creditLimit - (selectedCustomer.currentBalance || 0)).toFixed(2)}
+                          {(selectedCustomer.creditLimit - (selectedCustomer.currentBalance || 0)).toFixed(2)}
                         </span>
                       </div>
                     </div>

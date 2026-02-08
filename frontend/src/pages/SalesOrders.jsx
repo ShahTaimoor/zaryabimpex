@@ -494,7 +494,7 @@ const SalesOrders = () => {
         <div className="font-medium">{customer.displayName || customer.businessName || customer.name || 'Unknown'}</div>
         {hasBalance && (
           <div className={`text-sm ${isPayable ? 'text-red-600' : 'text-green-600'}`}>
-            {isPayable ? 'Payables:' : 'Receivables:'} ${Math.abs(netBalance).toFixed(2)}
+            {isPayable ? 'Payables:' : 'Receivables:'} {Math.abs(netBalance).toFixed(2)}
           </div>
         )}
       </div>
@@ -691,7 +691,7 @@ const SalesOrders = () => {
           <div className={`text-sm ${isOutOfStock ? 'text-red-600' : isLowStock ? 'text-orange-600' : 'text-gray-600'}`}>
             Stock: {inventory.currentStock || 0}
           </div>
-          <div className="text-sm text-gray-600">Price: ${Math.round(unitPrice)}</div>
+          <div className="text-sm text-gray-600">Price: {Math.round(unitPrice)}</div>
         </div>
       </div>
     );
@@ -734,9 +734,9 @@ const SalesOrders = () => {
         const loss = lastPurchasePrice - unitPrice;
         const lossPercent = ((loss / lastPurchasePrice) * 100).toFixed(1);
         const shouldProceed = window.confirm(
-          `⚠️ WARNING: Sale price ($${unitPrice}) is below cost price ($${Math.round(lastPurchasePrice)}).\n\n` +
-          `Loss per unit: $${Math.round(loss)} (${lossPercent}%)\n` +
-          `Total loss: $${Math.round(loss * quantity)}\n\n` +
+          `⚠️ WARNING: Sale price (${unitPrice}) is below cost price (${Math.round(lastPurchasePrice)}).\n\n` +
+          `Loss per unit: ${Math.round(loss)} (${lossPercent}%)\n` +
+          `Total loss: ${Math.round(loss * quantity)}\n\n` +
           `Do you want to proceed?`
         );
         if (!shouldProceed) {
@@ -1598,7 +1598,7 @@ const SalesOrders = () => {
                   ` : ''}
                   <div class="flex text-sm">
                     <span class="text-gray-600">SO Total:</span>
-                    <span class="font-medium">${Math.round(order.total || 0)}</span>
+                    <span class="font-medium">{Math.round(order.total || 0)}</span>
                   </div>
                   <div class="flex text-sm">
                     <span class="text-gray-600">${(() => {
@@ -1607,7 +1607,7 @@ const SalesOrders = () => {
         const netBalance = receivables - advance;
         return netBalance < 0 ? 'Payables:' : 'Receivables:';
       })()}</span>
-                    <span class="font-medium" style="color: #059669;">${Math.round((() => {
+                    <span class="font-medium" style="color: #059669;">{Math.round((() => {
         const receivables = order.customer?.pendingBalance || 0;
         const advance = order.customer?.advanceBalance || 0;
         return Math.abs(receivables - advance);
@@ -1620,7 +1620,7 @@ const SalesOrders = () => {
         const netBalance = receivables - advance;
         return netBalance < 0 ? 'Payables' : 'Receivables';
       })()}:</span>
-                    <span style="color: #dc2626;">${Math.round((order.total || 0) + (() => {
+                    <span style="color: #dc2626;">{Math.round((order.total || 0) + (() => {
         const receivables = order.customer?.pendingBalance || 0;
         const advance = order.customer?.advanceBalance || 0;
         return Math.abs(receivables - advance);
@@ -1931,7 +1931,7 @@ const SalesOrders = () => {
                           <span className="text-xs text-gray-500">{isPayable ? 'Payables:' : 'Receivables:'}</span>
                           <span className={`text-sm font-medium ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'
                             }`}>
-                            ${Math.abs(netBalance).toFixed(2)}
+                            {Math.abs(netBalance).toFixed(2)}
                           </span>
                         </div>
                       ) : null;
@@ -1946,7 +1946,7 @@ const SalesOrders = () => {
                             : 'text-blue-600'
                       ) : 'text-gray-600'
                         }`}>
-                        ${(selectedCustomer.creditLimit || 0).toFixed(2)}
+                        {(selectedCustomer.creditLimit || 0).toFixed(2)}
                       </span>
                       {selectedCustomer.creditLimit > 0 &&
                         (selectedCustomer.currentBalance || 0) >= selectedCustomer.creditLimit * 0.9 && (
@@ -1963,7 +1963,7 @@ const SalesOrders = () => {
                             : 'text-green-600'
                       ) : 'text-gray-600'
                         }`}>
-                        ${(selectedCustomer.creditLimit - (selectedCustomer.currentBalance || 0)).toFixed(2)}
+                        {(selectedCustomer.creditLimit - (selectedCustomer.currentBalance || 0)).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -2231,7 +2231,7 @@ const SalesOrders = () => {
                             {isLowStock && <span className="text-yellow-600 text-xs ml-2">⚠️ Low Stock</span>}
                             {lastPurchasePrices[item.product?.toString()] !== undefined &&
                               item.unitPrice < lastPurchasePrices[item.product?.toString()] && (
-                                <span className="text-xs ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold" title={`Sale price below cost! Loss: $${Math.round(lastPurchasePrices[item.product?.toString()] - item.unitPrice)} per unit`}>
+                                <span className="text-xs ml-2 px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold" title={`Sale price below cost! Loss: ${Math.round(lastPurchasePrices[item.product?.toString()] - item.unitPrice)} per unit`}>
                                   ⚠️ Below Cost
                                 </span>
                               )}
@@ -2293,7 +2293,7 @@ const SalesOrders = () => {
                         <div className="col-span-1">
                           <span className="text-sm font-semibold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200 block text-center h-8 flex items-center justify-center" title="Last Purchase Price">
                             {lastPurchasePrices[item.product?.toString()] !== undefined
-                              ? `$${Math.round(lastPurchasePrices[item.product?.toString()])}`
+                              ? `${Math.round(lastPurchasePrices[item.product?.toString()])}`
                               : 'N/A'}
                           </span>
                         </div>
@@ -2314,9 +2314,9 @@ const SalesOrders = () => {
                               const loss = costPrice - newPrice;
                               const lossPercent = ((loss / costPrice) * 100).toFixed(1);
                               const shouldProceed = window.confirm(
-                                `⚠️ WARNING: Sale price ($${newPrice}) is below cost price ($${Math.round(costPrice)}).\n\n` +
-                                `Loss per unit: $${Math.round(loss)} (${lossPercent}%)\n` +
-                                `Total loss: $${Math.round(loss * item.quantity)}\n\n` +
+                                `⚠️ WARNING: Sale price (${newPrice}) is below cost price (${Math.round(costPrice)}).\n\n` +
+                                `Loss per unit: ${Math.round(loss)} (${lossPercent}%)\n` +
+                                `Total loss: ${Math.round(loss * item.quantity)}\n\n` +
                                 `Do you want to proceed?`
                               );
                               if (!shouldProceed) {
@@ -2339,7 +2339,7 @@ const SalesOrders = () => {
                           title={
                             lastPurchasePrices[item.product?.toString()] !== undefined &&
                               item.unitPrice < lastPurchasePrices[item.product?.toString()]
-                              ? `⚠️ WARNING: Sale price ($${Math.round(item.unitPrice)}) is below cost price ($${Math.round(lastPurchasePrices[item.product?.toString()])})`
+                              ? `⚠️ WARNING: Sale price (${Math.round(item.unitPrice)}) is below cost price (${Math.round(lastPurchasePrices[item.product?.toString()])})`
                               : ''
                           }
                           min="0"
@@ -2435,9 +2435,9 @@ const SalesOrders = () => {
                                 const loss = costPrice - newPrice;
                                 const lossPercent = ((loss / costPrice) * 100).toFixed(1);
                                 const shouldProceed = window.confirm(
-                                  `⚠️ WARNING: Sale price ($${newPrice}) is below cost price ($${Math.round(costPrice)}).\n\n` +
-                                  `Loss per unit: $${Math.round(loss)} (${lossPercent}%)\n` +
-                                  `Total loss: $${Math.round(loss * item.quantity)}\n\n` +
+                                  `⚠️ WARNING: Sale price (${newPrice}) is below cost price (${Math.round(costPrice)}).\n\n` +
+                                  `Loss per unit: ${Math.round(loss)} (${lossPercent}%)\n` +
+                                  `Total loss: ${Math.round(loss * item.quantity)}\n\n` +
                                   `Do you want to proceed?`
                                 );
                                 if (!shouldProceed) {
@@ -2474,7 +2474,7 @@ const SalesOrders = () => {
                           <p className="text-xs text-gray-500 mb-1">Last Purchase Price</p>
                           <p className="text-sm font-semibold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200">
                             {lastPurchasePrices[item.product?.toString()] !== undefined
-                              ? `$${Math.round(lastPurchasePrices[item.product?.toString()])}`
+                              ? `${Math.round(lastPurchasePrices[item.product?.toString()])}`
                               : 'N/A'}
                           </p>
                         </div>
@@ -2786,7 +2786,7 @@ const SalesOrders = () => {
                         // Get city from addresses
                         const defaultAddress = customer.addresses?.find(addr => addr.isDefault) || customer.addresses?.[0];
                         const city = defaultAddress?.city || '';
-                        
+
                         return (
                           <div
                             key={customer._id}
