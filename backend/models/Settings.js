@@ -76,11 +76,24 @@ const settingsSchema = new mongoose.Schema({
     showCompanyDetails: { type: Boolean, default: true },
     showTax: { type: Boolean, default: true },
     showDiscount: { type: Boolean, default: true },
-    showDate: { type: Boolean, default: true }, // Keeping existing one
-    showFooter: { type: Boolean, default: true }, // Added matching PrintModal
-    showEmail: { type: Boolean, default: true }, // Added for email visibility
-    showCameraTime: { type: Boolean, default: false }, // Added matching PrintModal
-    showDescription: { type: Boolean, default: true }, // Added for item description visibility
+    showDate: { type: Boolean, default: true },
+    showFooter: { type: Boolean, default: true },
+    showEmail: { type: Boolean, default: true },
+    showCameraTime: { type: Boolean, default: false },
+    showDescription: { type: Boolean, default: true },
+    showPrintBusinessName: { type: Boolean, default: true },
+    showPrintContactName: { type: Boolean, default: true },
+    showPrintAddress: { type: Boolean, default: true },
+    showPrintCity: { type: Boolean, default: true },
+    showPrintState: { type: Boolean, default: true },
+    showPrintPostalCode: { type: Boolean, default: true },
+    showPrintInvoiceNumber: { type: Boolean, default: true },
+    showPrintInvoiceDate: { type: Boolean, default: true },
+    showPrintInvoiceStatus: { type: Boolean, default: true },
+    showPrintInvoiceType: { type: Boolean, default: true },
+    showPrintPaymentStatus: { type: Boolean, default: true },
+    showPrintPaymentMethod: { type: Boolean, default: true },
+    showPrintPaymentAmount: { type: Boolean, default: true },
     headerText: { type: String, trim: true, default: '' },
     footerText: { type: String, trim: true, default: '' },
     invoiceLayout: { type: String, enum: ['standard', 'compact', 'detailed'], default: 'standard' }

@@ -407,10 +407,10 @@ const PrintDocument = ({
                     {items.map((item, index) => {
                         const qty = toNumber(item.quantity ?? item.qty, 0);
                         const price = toNumber(
-                            item.unitPrice ?? item.price ?? item.unitCost ?? item.rate,
+                            item.unitPrice ?? item.price ?? item.unitCost ?? item.costPerUnit ?? item.rate,
                             0
                         );
-                        const lineTotal = toNumber(item.total ?? item.lineTotal, qty * price);
+                        const lineTotal = toNumber(item.total ?? item.lineTotal ?? item.totalPrice ?? item.totalCost, qty * price);
                         return (
                             <tr key={index}>
                                 <td>{item.product?.name || item.name || `Item ${index + 1}`}</td>

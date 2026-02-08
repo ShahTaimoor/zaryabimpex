@@ -580,6 +580,26 @@ class AccountLedgerService {
                 return sum + (payment.amount || 0);
               }, 0);
 
+              // Cash receipts before startDate (decreases payables - for refunds/advances from supplier)
+              const openingCashReceipts = await cashReceiptRepository.findAll({
+                supplier: supplierId,
+                date: { $lt: start }
+              }, { lean: true });
+
+              const openingCashReceiptsTotal = openingCashReceipts.reduce((sum, receipt) => {
+                return sum + (receipt.amount || 0);
+              }, 0);
+
+              // Bank receipts before startDate (decreases payables - for refunds/advances from supplier)
+              const openingBankReceipts = await bankReceiptRepository.findAll({
+                supplier: supplierId,
+                date: { $lt: start }
+              }, { lean: true });
+
+              const openingBankReceiptsTotal = openingBankReceipts.reduce((sum, receipt) => {
+                return sum + (receipt.amount || 0);
+              }, 0);
+
               // Returns before startDate (decreases payables - DEBIT)
               // Use returnDate field for filtering
               const openingReturns = await returnRepository.findAll({
@@ -594,7 +614,7 @@ class AccountLedgerService {
               }, 0);
 
               // Adjusted opening balance
-              openingBalance = openingBalance + openingPurchasesTotal - openingCashPaymentsTotal - openingBankPaymentsTotal - openingReturnsTotal;
+              openingBalance = openingBalance + openingPurchasesTotal - openingCashPaymentsTotal - openingBankPaymentsTotal - openingCashReceiptsTotal - openingBankReceiptsTotal - openingReturnsTotal;
             }
 
             // Get period transactions (within date range)
@@ -634,6 +654,18 @@ class AccountLedgerService {
               ...paymentDateFilter
             }, { lean: true });
 
+            // Cash receipts (DEBITS - decreases payables for refunds/advances from supplier)
+            const cashReceipts = await cashReceiptRepository.findAll({
+              supplier: supplierId,
+              ...paymentDateFilter
+            }, { lean: true });
+
+            // Bank receipts (DEBITS - decreases payables for refunds/advances from supplier)
+            const bankReceipts = await bankReceiptRepository.findAll({
+              supplier: supplierId,
+              ...paymentDateFilter
+            }, { lean: true });
+
             // Returns (DEBITS - decreases payables)
             // Use returnDate field for filtering
             const returnDateFilter = {};
@@ -659,9 +691,13 @@ class AccountLedgerService {
             }, { lean: true });
 
             const returnsTotal = returns.reduce((sum, ret) => sum + (ret.netRefundAmount || ret.totalRefundAmount || 0), 0);
+            const cashReceiptsTotal = cashReceipts.reduce((sum, receipt) => sum + (receipt.amount || 0), 0);
+            const bankReceiptsTotal = bankReceipts.reduce((sum, receipt) => sum + (receipt.amount || 0), 0);
 
             const totalDebits = cashPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0) +
               bankPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0) +
+              cashReceiptsTotal +
+              bankReceiptsTotal +
               returnsTotal;
 
             // Calculate closing balance
@@ -684,6 +720,16 @@ class AccountLedgerService {
                 particulars.push(`Bank Payment: ${payment.voucherCode}`);
               }
             });
+            cashReceipts.forEach(receipt => {
+              if (receipt.voucherCode) {
+                particulars.push(`Cash Receipt: ${receipt.voucherCode}`);
+              }
+            });
+            bankReceipts.forEach(receipt => {
+              if (receipt.voucherCode) {
+                particulars.push(`Bank Receipt: ${receipt.voucherCode}`);
+              }
+            });
             returns.forEach(ret => {
               if (ret.returnNumber) {
                 particulars.push(`Return: ${ret.returnNumber}`);
@@ -691,7 +737,7 @@ class AccountLedgerService {
             });
 
             const particular = particulars.join('; ');
-            const transactionCount = purchases.length + cashPayments.length + bankPayments.length;
+            const transactionCount = purchases.length + cashPayments.length + bankPayments.length + cashReceipts.length + bankReceipts.length + returns.length;
 
             return {
               id: supplier._id,

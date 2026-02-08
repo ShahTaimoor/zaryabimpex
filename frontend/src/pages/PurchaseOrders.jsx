@@ -364,7 +364,7 @@ export const PurchaseOrders = ({ tabId }) => {
 
   // Fetch suppliers for dropdown
   const { data: suppliersData, isLoading: suppliersLoading, refetch: refetchSuppliers } = useGetSuppliersQuery(
-    { search: '', limit: 100 },
+    { search: '', limit: 999999 },
     {
       skip: false,
       staleTime: 0, // Always consider data stale to get fresh balance information
@@ -1004,12 +1004,14 @@ export const PurchaseOrders = ({ tabId }) => {
         ? product.displayName || product.variantName || product.name || 'Product'
         : product.name || 'Product';
       const qty = Number(item.quantity) || 0;
-      const unitCost = Number(item.unitCost ?? item.cost ?? 0) || 0;
+      // costPerUnit is the actual field name used in purchase orders
+      const unitCost = Number(item.costPerUnit ?? item.unitCost ?? item.cost ?? 0) || 0;
       const totalCost = Number(item.totalCost) || qty * unitCost;
       return {
         quantity: qty,
         unitPrice: unitCost,
         unitCost,
+        costPerUnit: unitCost,
         total: totalCost,
         product: { name },
         name
@@ -2199,8 +2201,8 @@ export const PurchaseOrders = ({ tabId }) => {
                                     }, 100);
                                   }}
                                   className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${modalSelectedSuggestionIndex === index
-                                      ? 'bg-blue-100 border-blue-200'
-                                      : 'hover:bg-gray-100'
+                                    ? 'bg-blue-100 border-blue-200'
+                                    : 'hover:bg-gray-100'
                                     }`}
                                 >
                                   <div className="flex flex-col">
@@ -2730,11 +2732,11 @@ export const PurchaseOrders = ({ tabId }) => {
                     <p><span className="font-medium">Date:</span> {formatDate(selectedOrder.createdAt)}</p>
                     <p><span className="font-medium">Status:</span>
                       <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${selectedOrder.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                          selectedOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                            selectedOrder.status === 'partially_received' ? 'bg-yellow-100 text-yellow-800' :
-                              selectedOrder.status === 'fully_received' ? 'bg-green-100 text-green-800' :
-                                selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                  'bg-gray-100 text-gray-800'
+                        selectedOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                          selectedOrder.status === 'partially_received' ? 'bg-yellow-100 text-yellow-800' :
+                            selectedOrder.status === 'fully_received' ? 'bg-green-100 text-green-800' :
+                              selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
                         }`}>
                         {selectedOrder.status === 'draft' ? 'Pending' : selectedOrder.status.replace('_', ' ')}
                       </span>

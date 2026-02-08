@@ -15,32 +15,8 @@ const PrintModal = ({
   const { companyInfo: companySettings } = useCompanyInfo();
   const resolvedDocumentTitle = documentTitle || 'Invoice';
 
-  // Print Configuration States
-  const [showLogo, setShowLogo] = React.useState(true);
-  const [showCompanyDetails, setShowCompanyDetails] = React.useState(true);
-  const [showTax, setShowTax] = React.useState(true);
-  const [showDiscount, setShowDiscount] = React.useState(true);
-  const [showFooter, setShowFooter] = React.useState(true);
-  const [showDate, setShowDate] = React.useState(true);
-  const [showCameraTime, setShowCameraTime] = React.useState(false);
-  const [showDescription, setShowDescription] = React.useState(true);
-  const [showEmail, setShowEmail] = React.useState(true);
-
-  // Sync with Company Settings
-  useEffect(() => {
-    if (companySettings?.printSettings) {
-      const ps = companySettings.printSettings;
-      setShowLogo(ps.showLogo ?? true);
-      setShowCompanyDetails(ps.showCompanyDetails ?? true);
-      setShowTax(ps.showTax ?? true);
-      setShowDiscount(ps.showDiscount ?? true);
-      setShowFooter(ps.showFooter ?? true);
-      setShowDate(ps.showDate ?? true);
-      setShowCameraTime(ps.showCameraTime ?? false);
-      setShowDescription(ps.showDescription ?? true);
-      setShowEmail(ps.showEmail ?? true);
-    }
-  }, [companySettings]);
+  // Sync with Company Settings - removed local states in favor of direct prop passing in render
+  // (All print states are now handled via companySettings.printSettings)
 
   useEffect(() => {
     if (isOpen) {
@@ -54,112 +30,6 @@ const PrintModal = ({
     };
   }, [isOpen]);
 
-  const formatDate = (date) =>
-    new Date(date || new Date()).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-
-  const formatDateTime = (date) =>
-    new Date(date || new Date()).toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
-    });
-
-  const formatCurrency = (value) => {
-    if (value === undefined || value === null || isNaN(value)) return '-';
-    return Number(value).toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    });
-  };
-
-  const toNumber = (value, fallback = 0) => {
-    if (value === undefined || value === null) return fallback;
-    const num = typeof value === 'number' ? value : parseFloat(value);
-    return Number.isFinite(num) ? num : fallback;
-  };
-
-  const formatText = (value, fallback = 'N/A') =>
-    value && String(value).trim() !== '' ? value : fallback;
-
-  const partyHeaderLabel =
-    partyLabel?.toLowerCase() === 'supplier' ? 'Supplier' : 'Bill To';
-
-  const resolvedCompanyName =
-    companySettings?.companyName || companyInfo?.name || 'Your Company Name';
-  const resolvedCompanySubtitle = resolvedDocumentTitle;
-  const resolvedCompanyAddress =
-    companySettings?.address || companyInfo?.address || '';
-  const resolvedCompanyPhone =
-    companySettings?.contactNumber || companySettings?.phone || companyInfo?.phone || '';
-
-  const partyInfo = useMemo(() => {
-    if (!orderData) {
-      return {
-        name: 'Walk-in Customer',
-        email: 'N/A',
-        phone: 'N/A',
-        extra: ''
-      };
-    }
-
-    const customer =
-      orderData.customerInfo || orderData.customer || orderData.supplier || {};
-    const composedName =
-      customer.displayName ||
-      customer.businessName ||
-      customer.name ||
-      (customer.firstName || customer.lastName
-        ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
-        : '') ||
-      'Walk-in Customer';
-    return {
-      name: composedName,
-      email: customer.email || 'N/A',
-      phone: customer.phone || 'N/A',
-      extra:
-        customer.companyName ||
-        orderData.customerInfo?.businessName ||
-        orderData.customer?.businessName ||
-        ''
-    };
-  }, [orderData]);
-
-  const items = Array.isArray(orderData?.items) ? orderData.items : [];
-
-  const computedSubtotal =
-    orderData?.pricing?.subtotal ??
-    orderData?.subtotal ??
-    items.reduce((sum, item) => {
-      const qty = toNumber(item.quantity ?? item.qty, 0);
-      const price = toNumber(
-        item.unitPrice ?? item.price ?? item.unitCost ?? item.rate,
-        0
-      );
-      return sum + qty * price;
-    }, 0);
-
-  const discountValue =
-    orderData?.pricing?.discountAmount ??
-    orderData?.discount ??
-    orderData?.pricing?.discount ??
-    0;
-  const taxValue =
-    orderData?.pricing?.taxAmount ??
-    orderData?.tax ??
-    (orderData?.pricing?.isTaxExempt ? 0 : 0);
-  const totalValue =
-    orderData?.pricing?.total ??
-    orderData?.total ??
-    computedSubtotal - toNumber(discountValue) + toNumber(taxValue);
-
   const documentNumber =
     orderData?.invoiceNumber ||
     orderData?.orderNumber ||
@@ -168,70 +38,7 @@ const PrintModal = ({
     orderData?._id ||
     'N/A';
 
-  const documentStatus =
-    orderData?.status ||
-    orderData?.orderStatus ||
-    orderData?.invoiceStatus ||
-    orderData?.payment?.status ||
-    'Pending';
-
-  const documentType =
-    orderData?.orderType ||
-    orderData?.type ||
-    resolvedDocumentTitle ||
-    'Invoice';
-
-  const paymentStatus =
-    orderData?.payment?.status ||
-    (orderData?.payment?.isPartialPayment
-      ? 'Partial'
-      : orderData?.payment?.remainingBalance > 0
-        ? 'Pending'
-        : orderData?.payment?.amountPaid
-          ? 'Paid'
-          : orderData?.payment?.method
-            ? 'Pending'
-            : 'N/A');
-
-  const paymentMethod = orderData?.payment?.method || 'N/A';
-  const paymentAmount =
-    orderData?.payment?.amountPaid ??
-    orderData?.pricing?.total ??
-    orderData?.total ??
-    0;
-
   const generatedAt = new Date();
-
-  const documentNumberLabel =
-    resolvedDocumentTitle && resolvedDocumentTitle.toLowerCase().includes('order')
-      ? `${resolvedDocumentTitle} #:`
-      : resolvedDocumentTitle && resolvedDocumentTitle.toLowerCase().includes('purchase')
-        ? `${resolvedDocumentTitle} #:`
-        : 'Invoice #:';
-
-  const billToLines = [
-    partyInfo.name,
-    partyInfo.extra || null,
-    partyInfo.email !== 'N/A' ? partyInfo.email : null,
-    partyInfo.phone !== 'N/A' ? partyInfo.phone : null,
-    orderData?.customerInfo?.address || null
-  ].filter(Boolean);
-
-  const invoiceDetailLines = [
-    { label: 'Invoice #:', value: formatText(documentNumber) },
-    showDate ? {
-      label: 'Date:',
-      value: formatDate(orderData?.createdAt || orderData?.invoiceDate)
-    } : null,
-    { label: 'Status:', value: formatText(documentStatus) },
-    { label: 'Type:', value: formatText(documentType) }
-  ].filter(Boolean);
-
-  const paymentDetailLines = [
-    { label: 'Status:', value: formatText(paymentStatus) },
-    { label: 'Method:', value: formatText(paymentMethod) },
-    { label: 'Amount:', value: formatCurrency(paymentAmount) }
-  ];
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -459,15 +266,7 @@ const PrintModal = ({
                 companySettings={companySettings || {}}
                 orderData={orderData}
                 printSettings={{
-                  showLogo,
-                  showCompanyDetails,
-                  showTax,
-                  showDiscount,
-                  showFooter,
-                  showDate,
-                  showCameraTime,
-                  showDescription,
-                  showEmail,
+                  ...companySettings?.printSettings,
                   headerText: companySettings?.printSettings?.headerText,
                   footerText: companySettings?.printSettings?.footerText
                 }}

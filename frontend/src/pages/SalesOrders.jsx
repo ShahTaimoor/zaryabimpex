@@ -327,7 +327,7 @@ const SalesOrders = () => {
 
   // Fetch customers for dropdown
   const { data: customersData, isLoading: customersLoading } = useGetCustomersQuery(
-    { limit: 1000 },
+    { limit: 999999 },
     {
       staleTime: 0, // Always consider data stale to get fresh credit information
       refetchOnMountOrArgChange: true // Refetch when component mounts or params change
@@ -339,7 +339,7 @@ const SalesOrders = () => {
 
   // Fetch all active products for client-side fuzzy search
   const { data: allProductsData, isLoading: productsLoading, refetch: refetchProducts } = useGetProductsQuery(
-    { limit: 100, status: 'active' },
+    { limit: 999999, status: 'active' },
     {
       keepPreviousData: true,
       staleTime: 0, // Always consider data stale to get fresh stock levels
@@ -1449,213 +1449,6 @@ const SalesOrders = () => {
     setShowViewModal(true);
   };
 
-  const legacyHandlePrint = (order) => {
-    // Create a print function matching the clean format
-    const printContent = `
-      <html>
-        <head>
-          <title>Sales Order - ${order.soNumber || order.orderNumber || 'N/A'}</title>
-          <style>
-            @media print {
-              @page { size: A4; margin: 0.5in; }
-              body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.2; color: #000; margin: 0; padding: 0; }
-              .container { max-width: 800px; margin: 0 auto; }
-              .header { text-align: center; margin-bottom: 20px; }
-              .header h1 { font-size: 24px; font-weight: bold; margin: 0 0 4px 0; color: #000; }
-              .header p { margin: 2px 0; font-size: 14px; color: #6b7280; }
-              .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-              .details-section h5 { font-size: 16px; font-weight: 600; color: #000; margin: 0 0 8px 0; }
-              .details-section p { margin: 2px 0; font-size: 14px; color: #374151; }
-              .details-section .font-medium { font-weight: 500; }
-              .status-badge { display: inline-block; padding: 4px 8px; border-radius: 9999px; font-size: 12px; font-weight: 500; background-color: #f3f4f6; color: #374151; }
-              .items-section { margin-bottom: 20px; }
-              .items-section h5 { font-size: 16px; font-weight: 600; color: #000; margin: 0 0 8px 0; }
-              .items-table { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
-              .items-table thead { background-color: #f9fafb; }
-              .items-table th { padding: 8px; text-align: left; font-size: 14px; font-weight: 600; color: #000; border-bottom: 1px solid #e5e7eb; }
-              .items-table td { padding: 8px; font-size: 14px; color: #374151; border-bottom: 1px solid #e5e7eb; }
-              .items-table tr:last-child td { border-bottom: none; }
-              .items-table tr:nth-child(even) { background-color: #f9fafb; }
-              .product-info { display: flex; flex-direction: column; }
-              .product-name { font-weight: 500; color: #000; }
-              .product-description { font-size: 12px; color: #6b7280; margin-top: 2px; }
-              .text-right { text-align: right; }
-              .totals-section { display: flex; justify-content: flex-end; margin-bottom: 20px; }
-              .totals-container { width: 320px; }
-              .totals-section .space-y-2 > * + * { margin-top: 4px; }
-              .totals-section .flex { display: flex; justify-content: space-between; }
-              .totals-section .text-sm { font-size: 14px; }
-              .totals-section .text-gray-600 { color: #6b7280; }
-              .totals-section .font-medium { font-weight: 500; }
-              .totals-section .text-lg { font-size: 18px; }
-              .totals-section .font-bold { font-weight: 700; }
-              .totals-section .border-t { border-top: 1px solid #e5e7eb; }
-              .totals-section .pt-2 { padding-top: 8px; }
-              .notes-section { margin-bottom: 20px; }
-              .notes-section h5 { font-size: 16px; font-weight: 600; color: #000; margin: 0 0 8px 0; }
-              .notes-content { font-size: 14px; color: #374151; background-color: #f9fafb; padding: 8px; border-radius: 8px; border: 1px solid #e5e7eb; }
-              .footer { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #e5e7eb; }
-              .footer .text-xs { font-size: 12px; line-height: 1.1; }
-              .footer .text-gray-500 { color: #6b7280; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <!-- Header -->
-            <div class="header">
-              <h1>${resolvedCompanyName}</h1>
-              ${resolvedCompanyAddress ? `<p>${resolvedCompanyAddress}</p>` : ''}
-              ${resolvedCompanyPhone ? `<p>Phone: ${resolvedCompanyPhone}</p>` : ''}
-            </div>
-            
-            <!-- Details Section -->
-            <div class="details-grid">
-              <div class="details-section">
-                <h5>Sales Order Details</h5>
-                <p><span class="font-medium">SO Number:</span> ${order.soNumber || order.orderNumber || 'N/A'}</p>
-                <p><span class="font-medium">Date:</span> ${formatDate(order.createdAt)}</p>
-                <p><span class="font-medium">Order Type:</span> ${order.orderType || 'Standard'}</p>
-                <p><span class="font-medium">Status:</span> 
-                  <span class="status-badge">${order.status === 'draft' ? 'Pending' : (order.status ? order.status.replace('_', ' ') : 'Unknown')}</span>
-                </p>
-                ${order.expectedDelivery ? `<p><span class="font-medium">Expected Delivery:</span> ${formatDate(order.expectedDelivery)}</p>` : ''}
-              </div>
-              <div class="details-section" style="text-align: right;">
-                <h5>Customer Details</h5>
-                <p><span class="font-medium">Customer:</span> ${safeRender(order.customer?.displayName || order.customer?.businessName || order.customer?.name) || 'Walk-in'}</p>
-                ${order.customer?.email ? `<p><span class="font-medium">Email:</span> ${safeRender(order.customer.email)}</p>` : ''}
-                ${order.customer?.phone ? `<p><span class="font-medium">Phone:</span> ${safeRender(order.customer.phone)}</p>` : ''}
-                <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #e5e7eb;">
-                  <p style="font-weight: 600; color: #059669;">
-                    <span class="font-medium">${(() => {
-        const receivables = order.customer?.pendingBalance || 0;
-        const advance = order.customer?.advanceBalance || 0;
-        const netBalance = receivables - advance;
-        const isPayable = netBalance < 0;
-        return isPayable ? 'Current Payables:' : 'Current Receivables:';
-      })()}</span> ${Math.round((() => {
-        const receivables = order.customer?.pendingBalance || 0;
-        const advance = order.customer?.advanceBalance || 0;
-        return Math.abs(receivables - advance);
-      })())}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Items Section -->
-            <div class="items-section">
-              <h5>Items Ordered</h5>
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>PRODUCT</th>
-                    <th class="text-right">QUANTITY</th>
-                    <th class="text-right">UNIT PRICE</th>
-                    <th class="text-right">TOTAL PRICE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${order.items?.map((item, index) => `
-                    <tr>
-                      <td>${index + 1}</td>
-                      <td>
-                        <div class="product-info">
-                          <div class="product-name">${safeRender(item.product?.name) || 'Unknown Product'}</div>
-                          ${item.product?.description ? `<div class="product-description">${item.product.description}</div>` : ''}
-                        </div>
-                      </td>
-                      <td class="text-right">${item.quantity}</td>
-                      <td class="text-right">${Math.round(item.unitPrice || item.price || 0)}</td>
-                      <td class="text-right">${Math.round(item.totalPrice || (item.quantity * (item.unitPrice || item.price || 0)))}</td>
-                    </tr>
-                  `).join('') || ''}
-                </tbody>
-              </table>
-            </div>
-            
-            <!-- Totals Section -->
-            <div class="totals-section">
-              <div class="totals-container">
-                <div class="space-y-2">
-                  <div class="flex text-sm">
-                    <span class="text-gray-600">Subtotal:</span>
-                    <span class="font-medium">${Math.round(order.subtotal || 0)}</span>
-                  </div>
-                  ${order.tax && order.tax > 0 ? `
-                    <div class="flex text-sm">
-                      <span class="text-gray-600">Tax:</span>
-                      <span class="font-medium">${Math.round(order.tax)}</span>
-                    </div>
-                  ` : ''}
-                  ${order.discount && order.discount > 0 ? `
-                    <div class="flex text-sm">
-                      <span class="text-gray-600">Discount:</span>
-                      <span class="font-medium">-${Math.round(order.discount)}</span>
-                    </div>
-                  ` : ''}
-                  <div class="flex text-sm">
-                    <span class="text-gray-600">SO Total:</span>
-                    <span class="font-medium">{Math.round(order.total || 0)}</span>
-                  </div>
-                  <div class="flex text-sm">
-                    <span class="text-gray-600">${(() => {
-        const receivables = order.customer?.pendingBalance || 0;
-        const advance = order.customer?.advanceBalance || 0;
-        const netBalance = receivables - advance;
-        return netBalance < 0 ? 'Payables:' : 'Receivables:';
-      })()}</span>
-                    <span class="font-medium" style="color: #059669;">{Math.round((() => {
-        const receivables = order.customer?.pendingBalance || 0;
-        const advance = order.customer?.advanceBalance || 0;
-        return Math.abs(receivables - advance);
-      })())}</span>
-                  </div>
-                  <div class="flex text-lg font-bold border-t pt-2">
-                    <span>Total ${(() => {
-        const receivables = order.customer?.pendingBalance || 0;
-        const advance = order.customer?.advanceBalance || 0;
-        const netBalance = receivables - advance;
-        return netBalance < 0 ? 'Payables' : 'Receivables';
-      })()}:</span>
-                    <span style="color: #dc2626;">{Math.round((order.total || 0) + (() => {
-        const receivables = order.customer?.pendingBalance || 0;
-        const advance = order.customer?.advanceBalance || 0;
-        return Math.abs(receivables - advance);
-      })())}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            ${order.notes ? `
-              <div class="notes-section">
-                <h5>Notes</h5>
-                <div class="notes-content">${safeRender(order.notes)}</div>
-              </div>
-            ` : ''}
-            
-            <!-- Footer -->
-            <div class="footer">
-              <div class="text-xs text-gray-500">
-                Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}
-              </div>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-  };
-
   const formatOrderForPrint = useCallback(
     (order) => {
       if (!order) return null;
@@ -1717,7 +1510,9 @@ const SalesOrders = () => {
                 : item.rate !== undefined
                   ? item.rate
                   : 0
-            ) || 0
+            ) || 0,
+          total: Number(item.totalPrice ?? item.total ?? 0) || 0,
+          totalPrice: Number(item.totalPrice ?? item.total ?? 0) || 0
         };
       });
 

@@ -60,7 +60,7 @@ router.get('/', [
       limit,
       page
     };
-    
+
     if (req.dateRange) {
       queryParams.startDate = req.dateRange.startDate || undefined;
       queryParams.endDate = req.dateRange.endDate || undefined;
@@ -73,7 +73,7 @@ router.get('/', [
     if (exportFormat) {
       const { account: accountInfo, entries: ledgerEntries, summary: ledgerSummary } = result.data;
       const { start, end } = accountLedgerService.clampDateRange(
-        queryParams.startDate, 
+        queryParams.startDate,
         queryParams.endDate
       );
 
@@ -93,18 +93,18 @@ router.get('/', [
         ]);
 
         const accountLabel = accountInfo ? `${accountInfo.accountCode}-${accountInfo.accountName}` : 'all-accounts';
-        const dateRange = start && end 
+        const dateRange = start && end
           ? `${exportService.formatDate(start)}_to_${exportService.formatDate(end)}`
           : 'all-time';
 
         if (exportFormat === 'csv') {
           const filename = exportService.generateFilename(`account-ledger-${accountLabel}`, 'csv');
           const filepath = await exportService.exportToCSV(rows, headers, filename);
-          
+
           res.setHeader('Content-Type', 'text/csv');
           res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
           res.sendFile(path.resolve(filepath));
-          
+
           // Clean up file after sending (optional, or use cron job)
           setTimeout(() => {
             if (fs.existsSync(filepath)) {
@@ -117,7 +117,7 @@ router.get('/', [
         if (exportFormat === 'excel' || exportFormat === 'xlsx') {
           const filename = exportService.generateFilename(`account-ledger-${accountLabel}`, 'xlsx');
           const title = `Account Ledger - ${accountInfo ? `${accountInfo.accountCode} ${accountInfo.accountName}` : 'All Accounts'}`;
-          const subtitle = start && end 
+          const subtitle = start && end
             ? `Period: ${exportService.formatDate(start)} to ${exportService.formatDate(end)}`
             : null;
 
@@ -145,7 +145,7 @@ router.get('/', [
         if (exportFormat === 'pdf') {
           const filename = exportService.generateFilename(`account-ledger-${accountLabel}`, 'pdf');
           const title = `Account Ledger - ${accountInfo ? `${accountInfo.accountCode} ${accountInfo.accountName}` : 'All Accounts'}`;
-          const subtitle = start && end 
+          const subtitle = start && end
             ? `Period: ${exportService.formatDate(start)} to ${exportService.formatDate(end)}`
             : null;
 
@@ -246,7 +246,7 @@ router.get('/accounts', [
 ], async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     // Build date filter for transactions
     const dateFilter = {};
     if (startDate || endDate) {
@@ -357,7 +357,7 @@ router.get('/all-entries', [
 ], async (req, res) => {
   try {
     const { startDate, endDate, accountCode, accountName, export: exportFormat } = req.query;
-    
+
 
     const { start, end } = accountLedgerService.clampDateRange(startDate, endDate);
     const dateFilter = {};
@@ -495,7 +495,7 @@ router.get('/all-entries', [
     if (accountCode) {
       transactionFilter.accountCode = accountCode;
     }
-    
+
     const transactions = await transactionRepository.findAll(transactionFilter, {
       populate: [
         { path: 'customer.id', select: 'firstName lastName businessName' },
@@ -570,15 +570,15 @@ router.get('/all-entries', [
 
     // Filter entries by account name if provided
     let filteredEntries = allEntries;
-    
-    
+
+
     if (accountName) {
       filteredEntries = filteredEntries.filter(entry => {
         const accountMatch = entry.accountName && entry.accountName.toLowerCase().includes(accountName.toLowerCase());
         const customerMatch = entry.customer && entry.customer.toLowerCase().includes(accountName.toLowerCase());
         const supplierMatch = entry.supplier && entry.supplier.toLowerCase().includes(accountName.toLowerCase());
         const descriptionMatch = entry.description && entry.description.toLowerCase().includes(accountName.toLowerCase());
-        
+
         const matches = accountMatch || customerMatch || supplierMatch || descriptionMatch;
         return matches;
       });
@@ -587,19 +587,19 @@ router.get('/all-entries', [
     // Get account info and calculate opening balance if specific account
     let accountInfo = null;
     let openingBalance = 0;
-    
+
     if (accountCode) {
       accountInfo = await chartOfAccountsRepository.findByAccountCode(accountCode);
       if (accountInfo) {
         openingBalance = accountInfo.openingBalance || 0;
-        
+
         // Calculate opening balance up to start date if date range is provided
         if (start) {
           const openingTransactions = await transactionRepository.getSummary({
             accountCode: accountCode,
             createdAt: { $lt: start }
           }, null);
-          
+
           if (openingTransactions.length > 0) {
             const opening = openingTransactions[0];
             if (accountInfo.normalBalance === 'debit') {
@@ -647,18 +647,18 @@ router.get('/all-entries', [
         ]);
 
         const accountLabel = accountInfo ? `${accountInfo.accountCode}-${accountInfo.accountName}` : 'all-accounts';
-        const dateLabel = start && end 
+        const dateLabel = start && end
           ? `${exportService.formatDate(start)}_to_${exportService.formatDate(end)}`
           : 'all-time';
 
         if (exportFormat === 'csv') {
           const filename = exportService.generateFilename(`account-ledger-${accountLabel}-${dateLabel}`, 'csv');
           const filepath = await exportService.exportToCSV(rows, headers, filename);
-          
+
           res.setHeader('Content-Type', 'text/csv');
           res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
           res.sendFile(path.resolve(filepath));
-          
+
           setTimeout(() => {
             if (fs.existsSync(filepath)) {
               fs.unlinkSync(filepath);
@@ -670,7 +670,7 @@ router.get('/all-entries', [
         if (exportFormat === 'excel' || exportFormat === 'xlsx') {
           const filename = exportService.generateFilename(`account-ledger-${accountLabel}-${dateLabel}`, 'xlsx');
           const title = `Account Ledger - ${accountInfo ? `${accountInfo.accountCode} ${accountInfo.accountName}` : 'All Accounts'}`;
-          const subtitle = start && end 
+          const subtitle = start && end
             ? `Period: ${exportService.formatDate(start)} to ${exportService.formatDate(end)}`
             : null;
 
@@ -698,7 +698,7 @@ router.get('/all-entries', [
         if (exportFormat === 'pdf') {
           const filename = exportService.generateFilename(`account-ledger-${accountLabel}-${dateLabel}`, 'pdf');
           const title = `Account Ledger - ${accountInfo ? `${accountInfo.accountCode} ${accountInfo.accountName}` : 'All Accounts'}`;
-          const subtitle = start && end 
+          const subtitle = start && end
             ? `Period: ${exportService.formatDate(start)} to ${exportService.formatDate(end)}`
             : null;
 
@@ -819,14 +819,14 @@ router.get('/summary', [
 ], async (req, res) => {
   try {
     const { startDate, endDate, customerId, supplierId, search } = req.query;
-    
+
     // Set headers to prevent caching - ensure fresh data on every request
     res.set({
       'Cache-Control': 'no-store, no-cache, must-revalidate, private',
       'Pragma': 'no-cache',
       'Expires': '0'
     });
-    
+
     // Call service method to get ledger summary
     const result = await accountLedgerService.getLedgerSummary({
       startDate,
@@ -835,12 +835,12 @@ router.get('/summary', [
       supplierId,
       search
     });
-    
+
     res.json(result);
   } catch (error) {
     console.error('Get ledger summary error:', error);
     console.error('Error stack:', error.stack);
-    
+
     // Provide more detailed error information in production logs
     const errorDetails = {
       message: error.message,
@@ -848,7 +848,7 @@ router.get('/summary', [
       ...(error.code && { code: error.code }),
       ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
     };
-    
+
     res.status(500).json({
       success: false,
       message: 'Error loading ledger summary. Please try again or contact support if the issue persists.',
@@ -872,14 +872,14 @@ router.get('/customer/:customerId/transactions', [
   try {
     const { customerId } = req.params;
     const { startDate, endDate } = req.query;
-    
+
     const { start, end } = accountLedgerService.clampDateRange(startDate, endDate);
-    
+
     // Get customer
     const customer = await customerRepository.findById(customerId, {
       populate: [{ path: 'ledgerAccount', select: 'accountCode accountName normalBalance' }]
     });
-    
+
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer not found' });
     }
@@ -903,7 +903,7 @@ router.get('/customer/:customerId/transactions', [
 
     // Get opening balance
     let openingBalance = customer.openingBalance || 0;
-    
+
     // Calculate adjusted opening balance (transactions before startDate)
     if (start) {
       // Sales before startDate (increases receivables)
@@ -912,51 +912,51 @@ router.get('/customer/:customerId/transactions', [
         createdAt: { $lt: start },
         isDeleted: { $ne: true }
       }, { lean: true });
-      
+
       const openingSalesTotal = openingSales.reduce((sum, sale) => {
         return sum + (sale.pricing?.total || 0);
       }, 0);
-      
+
       // Cash receipts before startDate (decreases receivables)
       const openingCashReceipts = await cashReceiptRepository.findAll({
         customer: customerId,
         date: { $lt: start }
       }, { lean: true });
-      
+
       const openingCashReceiptsTotal = openingCashReceipts.reduce((sum, receipt) => {
         return sum + (receipt.amount || 0);
       }, 0);
-      
+
       // Bank receipts before startDate (decreases receivables)
       const openingBankReceipts = await bankReceiptRepository.findAll({
         customer: customerId,
         date: { $lt: start }
       }, { lean: true });
-      
+
       const openingBankReceiptsTotal = openingBankReceipts.reduce((sum, receipt) => {
         return sum + (receipt.amount || 0);
       }, 0);
-      
+
       // Cash payments before startDate (increases receivables/advance - DEBIT)
       const openingCashPayments = await cashPaymentRepository.findAll({
         customer: customerId,
         date: { $lt: start }
       }, { lean: true });
-      
+
       const openingCashPaymentsTotal = openingCashPayments.reduce((sum, payment) => {
         return sum + (payment.amount || 0);
       }, 0);
-      
+
       // Bank payments before startDate (increases receivables/advance - DEBIT)
       const openingBankPayments = await bankPaymentRepository.findAll({
         customer: customerId,
         date: { $lt: start }
       }, { lean: true });
-      
+
       const openingBankPaymentsTotal = openingBankPayments.reduce((sum, payment) => {
         return sum + (payment.amount || 0);
       }, 0);
-      
+
       // Returns before startDate (decreases receivables - CREDIT)
       const Return = require('../models/Return');
       const openingReturns = await Return.find({
@@ -965,21 +965,21 @@ router.get('/customer/:customerId/transactions', [
         returnDate: { $lt: start },
         status: { $in: ['pending', 'completed', 'received', 'approved', 'refunded', 'processing'] }
       }).lean();
-      
+
       const openingReturnsTotal = openingReturns.reduce((sum, ret) => {
         return sum + (ret.netRefundAmount || ret.totalRefundAmount || 0);
       }, 0);
-      
+
       // Adjusted opening balance
       openingBalance = openingBalance + openingSalesTotal + openingCashPaymentsTotal + openingBankPaymentsTotal - openingCashReceiptsTotal - openingBankReceiptsTotal - openingReturnsTotal;
     }
-    
+
     // Build date filters
     const salesDateFilter = {};
     const receiptDateFilter = {};
     const paymentDateFilter = {};
     const returnDateFilter = {};
-    
+
     if (start || end) {
       if (start) {
         // Set start to beginning of day
@@ -1017,7 +1017,7 @@ router.get('/customer/:customerId/transactions', [
         }
       }
     }
-    
+
     // Fetch all transactions in parallel
     const Return = require('../models/Return');
     const [sales, cashReceipts, bankReceipts, cashPayments, bankPayments, returns] = await Promise.all([
@@ -1049,10 +1049,10 @@ router.get('/customer/:customerId/transactions', [
         ...returnDateFilter
       }).lean().sort({ returnDate: 1 })
     ]);
-    
+
     // Combine all transactions into a single array
     const allEntries = [];
-    
+
     // Add sales (DEBITS - increases receivables)
     sales.forEach(sale => {
       const saleTotal = sale.pricing?.total || sale.total || 0;
@@ -1071,7 +1071,7 @@ router.get('/customer/:customerId/transactions', [
         });
       }
     });
-    
+
     // Add cash receipts (CREDITS - decreases receivables)
     cashReceipts.forEach(receipt => {
       // Prefer createdAt for time precision, fallback to date
@@ -1087,7 +1087,7 @@ router.get('/customer/:customerId/transactions', [
         referenceId: receipt._id?.toString?.() || receipt._id
       });
     });
-    
+
     // Add bank receipts (CREDITS - decreases receivables)
     bankReceipts.forEach(receipt => {
       // Prefer createdAt for time precision, fallback to date
@@ -1103,7 +1103,7 @@ router.get('/customer/:customerId/transactions', [
         referenceId: receipt._id?.toString?.() || receipt._id
       });
     });
-    
+
     // Add cash payments (DEBITS - increases receivables/advance)
     cashPayments.forEach(payment => {
       // Prefer createdAt for time precision, fallback to date
@@ -1119,7 +1119,7 @@ router.get('/customer/:customerId/transactions', [
         referenceId: payment._id?.toString?.() || payment._id
       });
     });
-    
+
     // Add bank payments (DEBITS - increases receivables/advance)
     bankPayments.forEach(payment => {
       // Prefer createdAt for time precision, fallback to date
@@ -1135,7 +1135,7 @@ router.get('/customer/:customerId/transactions', [
         referenceId: payment._id?.toString?.() || payment._id
       });
     });
-    
+
     // Add returns (CREDITS - decreases receivables)
     returns.forEach(returnItem => {
       const returnAmount = returnItem.netRefundAmount || returnItem.totalRefundAmount || 0;
@@ -1153,7 +1153,7 @@ router.get('/customer/:customerId/transactions', [
         referenceId: returnItem._id?.toString?.() || returnItem._id
       });
     });
-    
+
     // Sort all entries by datetime (chronological order - step by step)
     allEntries.sort((a, b) => {
       // First sort by datetime (includes time)
@@ -1163,13 +1163,13 @@ router.get('/customer/:customerId/transactions', [
       const sourceOrder = { 'Cash Receipt': 1, 'Bank Receipt': 2, 'Sale Return': 3, 'Cash Payment': 4, 'Bank Payment': 5, 'Sale': 6 };
       return (sourceOrder[a.source] || 99) - (sourceOrder[b.source] || 99);
     });
-    
+
     // Calculate running balance
     let runningBalance = openingBalance;
     const entries = allEntries.map(entry => {
       // For customers (receivables), debit increases balance, credit decreases
       runningBalance = runningBalance + entry.debitAmount - entry.creditAmount;
-      
+
       return {
         date: entry.date,
         voucherNo: entry.voucherNo,
@@ -1220,14 +1220,14 @@ router.get('/supplier/:supplierId/transactions', [
   try {
     const { supplierId } = req.params;
     const { startDate, endDate } = req.query;
-    
+
     const { start, end } = accountLedgerService.clampDateRange(startDate, endDate);
-    
+
     // Get supplier
     const supplier = await supplierRepository.findById(supplierId, {
       populate: [{ path: 'ledgerAccount', select: 'accountCode accountName normalBalance' }]
     });
-    
+
     if (!supplier) {
       return res.status(404).json({ success: false, message: 'Supplier not found' });
     }
@@ -1251,7 +1251,7 @@ router.get('/supplier/:supplierId/transactions', [
 
     // Get opening balance
     let openingBalance = supplier.openingBalance || 0;
-    
+
     // Calculate adjusted opening balance (transactions before startDate)
     if (start) {
       // Purchases before startDate (increases payables)
@@ -1260,52 +1260,115 @@ router.get('/supplier/:supplierId/transactions', [
         createdAt: { $lt: start },
         isDeleted: { $ne: true }
       }, { lean: true });
-      
+
       const openingPurchasesTotal = openingPurchases.reduce((sum, purchase) => {
         return sum + (purchase.total || 0);
       }, 0);
-      
+
       // Cash payments before startDate (decreases payables)
       const openingCashPayments = await cashPaymentRepository.findAll({
         supplier: supplierId,
         date: { $lt: start }
       }, { lean: true });
-      
+
       const openingCashPaymentsTotal = openingCashPayments.reduce((sum, payment) => {
         return sum + (payment.amount || 0);
       }, 0);
-      
+
       // Bank payments before startDate (decreases payables)
       const openingBankPayments = await bankPaymentRepository.findAll({
         supplier: supplierId,
         date: { $lt: start }
       }, { lean: true });
-      
+
       const openingBankPaymentsTotal = openingBankPayments.reduce((sum, payment) => {
         return sum + (payment.amount || 0);
       }, 0);
-      
+
+      // Cash receipts before startDate (decreases payables - for refunds/advances from supplier)
+      const openingCashReceipts = await cashReceiptRepository.findAll({
+        supplier: supplierId,
+        date: { $lt: start }
+      }, { lean: true });
+
+      const openingCashReceiptsTotal = openingCashReceipts.reduce((sum, receipt) => {
+        return sum + (receipt.amount || 0);
+      }, 0);
+
+      // Bank receipts before startDate (decreases payables - for refunds/advances from supplier)
+      const openingBankReceipts = await bankReceiptRepository.findAll({
+        supplier: supplierId,
+        date: { $lt: start }
+      }, { lean: true });
+
+      const openingBankReceiptsTotal = openingBankReceipts.reduce((sum, receipt) => {
+        return sum + (receipt.amount || 0);
+      }, 0);
+
+      // Purchase returns before startDate (decreases payables)
+      const Return = require('../models/Return');
+      const openingReturns = await Return.find({
+        supplier: supplierId,
+        origin: 'purchase',
+        returnDate: { $lt: start },
+        status: { $in: ['pending', 'completed', 'received', 'approved', 'refunded', 'processing'] }
+      }).lean();
+
+      const openingReturnsTotal = openingReturns.reduce((sum, ret) => {
+        return sum + (ret.netRefundAmount || ret.totalRefundAmount || 0);
+      }, 0);
+
       // Adjusted opening balance
-      openingBalance = openingBalance + openingPurchasesTotal - openingCashPaymentsTotal - openingBankPaymentsTotal;
+      openingBalance = openingBalance + openingPurchasesTotal - openingCashPaymentsTotal - openingBankPaymentsTotal - openingCashReceiptsTotal - openingBankReceiptsTotal - openingReturnsTotal;
     }
-    
+
     // Build date filters
     const purchaseDateFilter = {};
     const paymentDateFilter = {};
-    
+    const receiptDateFilter = {};
+    const returnDateFilter = {};
+
     if (start || end) {
       if (start) {
-        purchaseDateFilter.createdAt = { $gte: start };
-        paymentDateFilter.date = { $gte: start };
+        // Set start to beginning of day
+        const startOfDay = new Date(start);
+        startOfDay.setHours(0, 0, 0, 0);
+        purchaseDateFilter.createdAt = { $gte: startOfDay };
+        paymentDateFilter.date = { $gte: startOfDay };
+        receiptDateFilter.date = { $gte: startOfDay };
+        returnDateFilter.returnDate = { $gte: startOfDay };
       }
       if (end) {
-        purchaseDateFilter.createdAt = { ...purchaseDateFilter.createdAt, $lte: end };
-        paymentDateFilter.date = { ...paymentDateFilter.date, $lte: end };
+        // Set end to end of day (add 1 day and set to start, then use $lt)
+        const endOfDay = new Date(end);
+        endOfDay.setDate(endOfDay.getDate() + 1);
+        endOfDay.setHours(0, 0, 0, 0);
+        if (purchaseDateFilter.createdAt) {
+          purchaseDateFilter.createdAt.$lt = endOfDay;
+        } else {
+          purchaseDateFilter.createdAt = { $lt: endOfDay };
+        }
+        if (paymentDateFilter.date) {
+          paymentDateFilter.date.$lt = endOfDay;
+        } else {
+          paymentDateFilter.date = { $lt: endOfDay };
+        }
+        if (receiptDateFilter.date) {
+          receiptDateFilter.date.$lt = endOfDay;
+        } else {
+          receiptDateFilter.date = { $lt: endOfDay };
+        }
+        if (returnDateFilter.returnDate) {
+          returnDateFilter.returnDate.$lt = endOfDay;
+        } else {
+          returnDateFilter.returnDate = { $lt: endOfDay };
+        }
       }
     }
-    
+
     // Fetch all transactions in parallel
-    const [purchases, cashPayments, bankPayments] = await Promise.all([
+    const Return = require('../models/Return');
+    const [purchases, cashPayments, bankPayments, cashReceipts, bankReceipts, returns] = await Promise.all([
       purchaseOrderRepository.findAll({
         supplier: supplierId,
         ...purchaseDateFilter,
@@ -1318,12 +1381,26 @@ router.get('/supplier/:supplierId/transactions', [
       bankPaymentRepository.findAll({
         supplier: supplierId,
         ...paymentDateFilter
-      }, { lean: true, sort: { date: 1 } })
+      }, { lean: true, sort: { date: 1 } }),
+      cashReceiptRepository.findAll({
+        supplier: supplierId,
+        ...receiptDateFilter
+      }, { lean: true, sort: { date: 1 } }),
+      bankReceiptRepository.findAll({
+        supplier: supplierId,
+        ...receiptDateFilter
+      }, { lean: true, sort: { date: 1 } }),
+      Return.find({
+        supplier: supplierId,
+        origin: 'purchase',
+        status: { $in: ['pending', 'completed', 'received', 'approved', 'refunded', 'processing'] },
+        ...returnDateFilter
+      }).lean().sort({ returnDate: 1 })
     ]);
-    
+
     // Combine all transactions into a single array
     const allEntries = [];
-    
+
     // Add purchases (CREDITS - increases payables)
     purchases.forEach(purchase => {
       // Use createdAt for precise datetime (includes time)
@@ -1339,7 +1416,7 @@ router.get('/supplier/:supplierId/transactions', [
         referenceId: purchase._id?.toString?.() || purchase._id
       });
     });
-    
+
     // Add cash payments (DEBITS - decreases payables)
     cashPayments.forEach(payment => {
       // Prefer createdAt for time precision, fallback to date
@@ -1355,7 +1432,7 @@ router.get('/supplier/:supplierId/transactions', [
         referenceId: payment._id?.toString?.() || payment._id
       });
     });
-    
+
     // Add bank payments (DEBITS - decreases payables)
     bankPayments.forEach(payment => {
       // Prefer createdAt for time precision, fallback to date
@@ -1371,23 +1448,72 @@ router.get('/supplier/:supplierId/transactions', [
         referenceId: payment._id?.toString?.() || payment._id
       });
     });
-    
+
+    // Add cash receipts (DEBITS - decreases payables for refunds/advances from supplier)
+    cashReceipts.forEach(receipt => {
+      // Prefer createdAt for time precision, fallback to date
+      const entryDate = receipt.createdAt || receipt.date || new Date();
+      allEntries.push({
+        date: entryDate,
+        datetime: new Date(entryDate).getTime(), // For precise sorting
+        voucherNo: receipt.voucherCode || '',
+        particular: receipt.particular || `Cash Receipt: ${receipt.voucherCode || receipt._id}`,
+        debitAmount: receipt.amount || 0,
+        creditAmount: 0,
+        source: 'Cash Receipt',
+        referenceId: receipt._id?.toString?.() || receipt._id
+      });
+    });
+
+    // Add bank receipts (DEBITS - decreases payables for refunds/advances from supplier)
+    bankReceipts.forEach(receipt => {
+      // Prefer createdAt for time precision, fallback to date
+      const entryDate = receipt.createdAt || receipt.date || new Date();
+      allEntries.push({
+        date: entryDate,
+        datetime: new Date(entryDate).getTime(), // For precise sorting
+        voucherNo: receipt.voucherCode || receipt.transactionReference || '',
+        particular: receipt.particular || `Bank Receipt: ${receipt.voucherCode || receipt._id}`,
+        debitAmount: receipt.amount || 0,
+        creditAmount: 0,
+        source: 'Bank Receipt',
+        referenceId: receipt._id?.toString?.() || receipt._id
+      });
+    });
+
+    // Add purchase returns (DEBITS - decreases payables)
+    returns.forEach(returnItem => {
+      const returnAmount = returnItem.netRefundAmount || returnItem.totalRefundAmount || 0;
+      // Use returnDate for the entry date
+      const entryDate = returnItem.returnDate || returnItem.createdAt || new Date();
+      allEntries.push({
+        date: entryDate,
+        datetime: new Date(entryDate).getTime(), // For precise sorting
+        voucherNo: returnItem.returnNumber || '',
+        particular: `Purchase Return: ${returnItem.returnNumber || returnItem._id}${returnItem.status === 'pending' ? ' (Pending)' : ''}`,
+        debitAmount: returnAmount,
+        creditAmount: 0,
+        source: 'Purchase Return',
+        referenceId: returnItem._id?.toString?.() || returnItem._id
+      });
+    });
+
     // Sort all entries by datetime (chronological order - step by step)
     allEntries.sort((a, b) => {
       // First sort by datetime (includes time)
       const dateDiff = (a.datetime || new Date(a.date).getTime()) - (b.datetime || new Date(b.date).getTime());
       if (dateDiff !== 0) return dateDiff;
       // If same datetime, sort by source type for consistency
-      const sourceOrder = { 'Cash Payment': 1, 'Bank Payment': 2, 'Purchase': 3 };
+      const sourceOrder = { 'Cash Payment': 1, 'Bank Payment': 2, 'Cash Receipt': 3, 'Bank Receipt': 4, 'Purchase Return': 5, 'Purchase': 6 };
       return (sourceOrder[a.source] || 99) - (sourceOrder[b.source] || 99);
     });
-    
+
     // Calculate running balance
     let runningBalance = openingBalance;
     const entries = allEntries.map(entry => {
       // For suppliers (payables), credit increases balance, debit decreases
       runningBalance = runningBalance + entry.creditAmount - entry.debitAmount;
-      
+
       return {
         date: entry.date,
         voucherNo: entry.voucherNo,

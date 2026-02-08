@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Search,
+  Filter,
+  Plus,
+  Edit,
+  Trash2,
   Eye,
   Download,
   RefreshCw,
@@ -48,7 +48,7 @@ const BankPayments = () => {
     amount: '',
     particular: ''
   });
-  
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 50
@@ -101,7 +101,7 @@ const BankPayments = () => {
     { refetchOnMountOrArgChange: true }
   );
   const suppliers = React.useMemo(() => {
-    return suppliersData?.data?.suppliers || suppliersData?.suppliers || suppliersData || [];
+    return suppliersData?.data?.suppliers || suppliersData?.suppliers || (Array.isArray(suppliersData) ? suppliersData : []);
   }, [suppliersData]);
 
   // Fetch customers for dropdown
@@ -110,7 +110,7 @@ const BankPayments = () => {
     { refetchOnMountOrArgChange: true }
   );
   const customers = React.useMemo(() => {
-    return customersData?.data?.customers || customersData?.customers || customersData || [];
+    return customersData?.data?.customers || customersData?.customers || (Array.isArray(customersData) ? customersData : []);
   }, [customersData]);
 
   // Fetch banks for dropdown
@@ -127,6 +127,10 @@ const BankPayments = () => {
     { accountType: 'expense', isActive: 'true' },
     { refetchOnMountOrArgChange: true }
   );
+
+  const expenseAccounts = React.useMemo(() => {
+    return expenseAccountsData?.data || expenseAccountsData?.accounts || (Array.isArray(expenseAccountsData) ? expenseAccountsData : []);
+  }, [expenseAccountsData]);
 
   // Update selected supplier when suppliers data changes
   useEffect(() => {
@@ -198,7 +202,7 @@ const BankPayments = () => {
   };
 
   const handleCustomerSelect = (customerId) => {
-    const customer = customersData?.find(c => c._id === customerId);
+    const customer = customers.find(c => c._id === customerId);
     setSelectedCustomer(customer);
     setFormData(prev => ({ ...prev, customer: customerId, supplier: '' }));
     setSelectedSupplier(null);
@@ -224,7 +228,7 @@ const BankPayments = () => {
   };
 
   const handleExpenseAccountSelect = (accountId) => {
-    const account = expenseAccountsData?.find(a => a._id === accountId);
+    const account = expenseAccounts.find(a => a._id === accountId);
     setSelectedExpenseAccount(account);
     setFormData(prev => ({ ...prev, particular: account?.accountName || '' }));
   };
@@ -239,7 +243,7 @@ const BankPayments = () => {
   };
 
   const handleExpenseKeyDown = (e) => {
-    const filteredAccounts = expenseAccountsData?.filter(account => 
+    const filteredAccounts = expenseAccounts.filter(account =>
       (account.accountName || '').toLowerCase().includes(expenseSearchTerm.toLowerCase()) ||
       (account.accountCode || '').includes(expenseSearchTerm)
     ) || [];
@@ -251,18 +255,18 @@ const BankPayments = () => {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setExpenseDropdownIndex(prev => 
+        setExpenseDropdownIndex(prev =>
           prev < filteredAccounts.length - 1 ? prev + 1 : 0
         );
         break;
-      
+
       case 'ArrowUp':
         e.preventDefault();
-        setExpenseDropdownIndex(prev => 
+        setExpenseDropdownIndex(prev =>
           prev > 0 ? prev - 1 : filteredAccounts.length - 1
         );
         break;
-      
+
       case 'Enter':
         e.preventDefault();
         if (expenseDropdownIndex >= 0 && expenseDropdownIndex < filteredAccounts.length) {
@@ -272,7 +276,7 @@ const BankPayments = () => {
           setExpenseDropdownIndex(-1);
         }
         break;
-      
+
       case 'Escape':
         e.preventDefault();
         setExpenseSearchTerm('');
@@ -282,7 +286,7 @@ const BankPayments = () => {
   };
 
   const handleSupplierKeyDown = (e) => {
-    const filteredSuppliers = suppliers.filter(supplier => 
+    const filteredSuppliers = suppliers.filter(supplier =>
       (supplier.companyName || supplier.name || supplier.displayName || '').toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
       (supplier.phone || '').includes(supplierSearchTerm) ||
       (supplier.email || '').toLowerCase().includes(supplierSearchTerm.toLowerCase())
@@ -295,18 +299,18 @@ const BankPayments = () => {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSupplierDropdownIndex(prev => 
+        setSupplierDropdownIndex(prev =>
           prev < filteredSuppliers.length - 1 ? prev + 1 : 0
         );
         break;
-      
+
       case 'ArrowUp':
         e.preventDefault();
-        setSupplierDropdownIndex(prev => 
+        setSupplierDropdownIndex(prev =>
           prev > 0 ? prev - 1 : filteredSuppliers.length - 1
         );
         break;
-      
+
       case 'Enter':
         e.preventDefault();
         if (supplierDropdownIndex >= 0 && supplierDropdownIndex < filteredSuppliers.length) {
@@ -316,7 +320,7 @@ const BankPayments = () => {
           setSupplierDropdownIndex(-1);
         }
         break;
-      
+
       case 'Escape':
         e.preventDefault();
         setSupplierSearchTerm('');
@@ -327,7 +331,7 @@ const BankPayments = () => {
 
   const handleCustomerKeyDown = (e) => {
     const filteredCustomers = (customers || []).filter(customer => {
-      const displayName = customer.displayName || customer.businessName || customer.name || 
+      const displayName = customer.displayName || customer.businessName || customer.name ||
         `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.email || '';
       return (
         displayName.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
@@ -343,30 +347,30 @@ const BankPayments = () => {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setCustomerDropdownIndex(prev => 
+        setCustomerDropdownIndex(prev =>
           prev < filteredCustomers.length - 1 ? prev + 1 : 0
         );
         break;
-      
+
       case 'ArrowUp':
         e.preventDefault();
-        setCustomerDropdownIndex(prev => 
+        setCustomerDropdownIndex(prev =>
           prev > 0 ? prev - 1 : filteredCustomers.length - 1
         );
         break;
-      
+
       case 'Enter':
         e.preventDefault();
         if (customerDropdownIndex >= 0 && customerDropdownIndex < filteredCustomers.length) {
           const customer = filteredCustomers[customerDropdownIndex];
-          const displayName = customer.displayName || customer.businessName || customer.name || 
+          const displayName = customer.displayName || customer.businessName || customer.name ||
             `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.email || '';
           handleCustomerSelect(customer._id);
           setCustomerSearchTerm(displayName);
           setCustomerDropdownIndex(-1);
         }
         break;
-      
+
       case 'Escape':
         e.preventDefault();
         setCustomerSearchTerm('');
@@ -423,14 +427,14 @@ const BankPayments = () => {
       transactionReference: formData.transactionReference || undefined,
       notes: formData.notes || undefined
     };
-    
+
     // Only include supplier or customer if they have values (not empty strings)
     if (paymentType === 'supplier' && formData.supplier) {
       submissionData.supplier = formData.supplier;
     } else if (paymentType === 'customer' && formData.customer) {
       submissionData.customer = formData.customer;
     }
-    
+
     // Include expense account if it's an expense payment
     if (paymentType === 'expense' && selectedExpenseAccount?._id) {
       submissionData.expenseAccount = selectedExpenseAccount._id;
@@ -473,25 +477,25 @@ const BankPayments = () => {
         (format === 'excel'
           ? 'bank_payments.xlsx'
           : format === 'pdf'
-          ? 'bank_payments.pdf'
-          : format === 'json'
-          ? 'bank_payments.json'
-          : 'bank_payments.csv');
+            ? 'bank_payments.pdf'
+            : format === 'json'
+              ? 'bank_payments.json'
+              : 'bank_payments.csv');
 
       const downloadResponse = await downloadFileMutation(filename).unwrap();
       const blob =
         downloadResponse instanceof Blob
           ? downloadResponse
           : new Blob([downloadResponse], {
-              type:
-                format === 'excel'
-                  ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                  : format === 'pdf'
+            type:
+              format === 'excel'
+                ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                : format === 'pdf'
                   ? 'application/pdf'
                   : format === 'json'
-                  ? 'application/json'
-                  : 'text/csv',
-            });
+                    ? 'application/json'
+                    : 'text/csv',
+          });
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -616,7 +620,7 @@ const BankPayments = () => {
                   </div>
                   {supplierSearchTerm && (
                     <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                      {suppliers.filter(supplier => 
+                      {suppliers.filter(supplier =>
                         (supplier.companyName || supplier.name || supplier.displayName || '').toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
                         (supplier.phone || '').includes(supplierSearchTerm) ||
                         (supplier.email || '').toLowerCase().includes(supplierSearchTerm.toLowerCase())
@@ -628,15 +632,14 @@ const BankPayments = () => {
                             setSupplierSearchTerm(supplier.displayName || supplier.companyName || supplier.name || '');
                             setSupplierDropdownIndex(-1);
                           }}
-                          className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                            supplierDropdownIndex === index ? 'bg-blue-50' : ''
-                          }`}
+                          className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 ${supplierDropdownIndex === index ? 'bg-blue-50' : ''
+                            }`}
                         >
                           <div className="font-medium text-gray-900">
                             {supplier.displayName || supplier.companyName || supplier.name || 'Unknown'}
                           </div>
                           <div className="text-sm text-gray-600 capitalize mt-0.5">
-                            {supplier.businessType && supplier.reliability 
+                            {supplier.businessType && supplier.reliability
                               ? `${supplier.businessType} • ${supplier.reliability}`
                               : supplier.businessType || supplier.reliability || ''
                             }
@@ -665,7 +668,7 @@ const BankPayments = () => {
                       ))}
                     </div>
                   )}
-                  
+
                   {/* Supplier Information Card */}
                   {selectedSupplier && (
                     <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
@@ -676,7 +679,7 @@ const BankPayments = () => {
                             {selectedSupplier.displayName || selectedSupplier.companyName || selectedSupplier.name || 'Unknown Supplier'}
                           </p>
                           <p className="text-sm text-gray-600 capitalize">
-                            {selectedSupplier.businessType && selectedSupplier.reliability 
+                            {selectedSupplier.businessType && selectedSupplier.reliability
                               ? `${selectedSupplier.businessType} • ${selectedSupplier.reliability}`
                               : selectedSupplier.businessType || selectedSupplier.reliability || 'Supplier Information'
                             }
@@ -728,7 +731,7 @@ const BankPayments = () => {
                   {customerSearchTerm && (
                     <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
                       {(customers || []).filter(customer => {
-                        const displayName = customer.displayName || customer.businessName || customer.name || 
+                        const displayName = customer.displayName || customer.businessName || customer.name ||
                           `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.email || '';
                         return (
                           displayName.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
@@ -742,9 +745,9 @@ const BankPayments = () => {
                         const isPayable = netBalance < 0;
                         const isReceivable = netBalance > 0;
                         const hasBalance = receivables > 0 || advance > 0;
-                        const displayName = customer.displayName || customer.businessName || customer.name || 
+                        const displayName = customer.displayName || customer.businessName || customer.name ||
                           `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.email || 'Unknown';
-                        
+
                         return (
                           <div
                             key={customer._id}
@@ -753,9 +756,8 @@ const BankPayments = () => {
                               setCustomerSearchTerm(displayName);
                               setCustomerDropdownIndex(-1);
                             }}
-                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                              customerDropdownIndex === index ? 'bg-blue-50' : ''
-                            }`}
+                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 ${customerDropdownIndex === index ? 'bg-blue-50' : ''
+                              }`}
                           >
                             <div className="font-medium text-gray-900">{displayName}</div>
                             <div className="text-sm text-gray-600 capitalize mt-0.5">
@@ -782,7 +784,7 @@ const BankPayments = () => {
                       })}
                     </div>
                   )}
-                  
+
                   {/* Customer Information Card */}
                   {selectedCustomer && (
                     <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
@@ -790,9 +792,9 @@ const BankPayments = () => {
                         <User className="h-5 w-5 text-gray-400" />
                         <div className="flex-1">
                           <p className="font-medium">
-                            {selectedCustomer.displayName || selectedCustomer.businessName || selectedCustomer.name || 
-                             `${selectedCustomer.firstName || ''} ${selectedCustomer.lastName || ''}`.trim() || 
-                             selectedCustomer.email || 'Unknown Customer'}
+                            {selectedCustomer.displayName || selectedCustomer.businessName || selectedCustomer.name ||
+                              `${selectedCustomer.firstName || ''} ${selectedCustomer.lastName || ''}`.trim() ||
+                              selectedCustomer.email || 'Unknown Customer'}
                           </p>
                           <p className="text-sm text-gray-600 capitalize">
                             {selectedCustomer.businessType ? `${selectedCustomer.businessType} • ` : ''}
@@ -806,13 +808,12 @@ const BankPayments = () => {
                               const isPayable = netBalance < 0;
                               const isReceivable = netBalance > 0;
                               const hasBalance = receivables > 0 || advance > 0;
-                              
+
                               return hasBalance ? (
                                 <div className="flex items-center space-x-1">
                                   <span className="text-xs text-gray-500">{isPayable ? 'Payables:' : 'Receivables:'}</span>
-                                  <span className={`text-sm font-medium ${
-                                    isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'
-                                  }`}>
+                                  <span className={`text-sm font-medium ${isPayable ? 'text-red-600' : isReceivable ? 'text-green-600' : 'text-gray-600'
+                                    }`}>
                                     ${Math.abs(netBalance).toFixed(2)}
                                   </span>
                                 </div>
@@ -846,7 +847,7 @@ const BankPayments = () => {
                   </div>
                   {expenseSearchTerm && (
                     <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                      {expenseAccountsData?.filter(account => 
+                      {expenseAccounts.filter(account =>
                         (account.accountName || '').toLowerCase().includes(expenseSearchTerm.toLowerCase()) ||
                         (account.accountCode || '').includes(expenseSearchTerm)
                       ).map((account, index) => (
@@ -857,9 +858,8 @@ const BankPayments = () => {
                             setExpenseSearchTerm(account.accountName || '');
                             setExpenseDropdownIndex(-1);
                           }}
-                          className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                            expenseDropdownIndex === index ? 'bg-blue-50' : ''
-                          }`}
+                          className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 ${expenseDropdownIndex === index ? 'bg-blue-50' : ''
+                            }`}
                         >
                           <div className="font-medium text-gray-900">{account.accountName || 'Unknown'}</div>
                           {account.accountCode && (
@@ -910,14 +910,14 @@ const BankPayments = () => {
                     )}
                     {paymentType === 'customer' && selectedCustomer && (
                       <>
-{(() => {
+                        {(() => {
                           const receivables = selectedCustomer.pendingBalance || 0;
                           const advance = selectedCustomer.advanceBalance || 0;
                           const netBalance = receivables - advance;
                           const isPayable = netBalance < 0;
                           const isReceivable = netBalance > 0;
                           const hasBalance = receivables > 0 || advance > 0;
-                          
+
                           return hasBalance ? (
                             <div className={`flex items-center justify-between px-3 py-2 rounded ${isPayable ? 'bg-red-50 border border-red-200' : isReceivable ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'}`}>
                               <span className={`text-sm font-medium ${isPayable ? 'text-red-700' : isReceivable ? 'text-green-700' : 'text-gray-700'}`}>
@@ -1190,7 +1190,7 @@ const BankPayments = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('date')}
                       >
@@ -1199,7 +1199,7 @@ const BankPayments = () => {
                           <ArrowUpDown className="h-3 w-3" />
                         </div>
                       </th>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('voucherCode')}
                       >
@@ -1208,7 +1208,7 @@ const BankPayments = () => {
                           <ArrowUpDown className="h-3 w-3" />
                         </div>
                       </th>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('amount')}
                       >
@@ -1233,8 +1233,8 @@ const BankPayments = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {bankPayments.map((payment, index) => (
-                      <tr 
-                        key={payment._id} 
+                      <tr
+                        key={payment._id}
                         className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -1270,9 +1270,9 @@ const BankPayments = () => {
                           ) : payment.customer ? (
                             <div>
                               <div className="font-medium">
-                                {((payment.customer.displayName || payment.customer.businessName || payment.customer.name || 
-                                 `${payment.customer.firstName || ''} ${payment.customer.lastName || ''}`.trim() || 
-                                 payment.customer.email || 'Unknown Customer') || '').toUpperCase()}
+                                {((payment.customer.displayName || payment.customer.businessName || payment.customer.name ||
+                                  `${payment.customer.firstName || ''} ${payment.customer.lastName || ''}`.trim() ||
+                                  payment.customer.email || 'Unknown Customer') || '').toUpperCase()}
                               </div>
                               <div className="text-gray-500 text-xs">Customer</div>
                             </div>
@@ -1352,7 +1352,7 @@ const BankPayments = () => {
                 </svg>
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Left Column */}
               <div className="space-y-4">
@@ -1413,7 +1413,7 @@ const BankPayments = () => {
                     </div>
                     {supplierSearchTerm && (
                       <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                        {suppliers.filter(supplier => 
+                        {suppliers.filter(supplier =>
                           (supplier.companyName || supplier.name || '').toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
                           (supplier.phone || '').includes(supplierSearchTerm)
                         ).map((supplier) => (
@@ -1454,7 +1454,7 @@ const BankPayments = () => {
                     </div>
                     {customerSearchTerm && (
                       <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                        {(customers || []).filter(customer => 
+                        {(customers || []).filter(customer =>
                           (customer.businessName || customer.name || '').toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
                           (customer.phone || '').includes(customerSearchTerm)
                         ).map((customer) => (
@@ -1497,7 +1497,7 @@ const BankPayments = () => {
                     </div>
                     {expenseSearchTerm && (
                       <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                        {expenseAccountsData?.filter(account => 
+                        {expenseAccounts.filter(account =>
                           (account.accountName || '').toLowerCase().includes(expenseSearchTerm.toLowerCase()) ||
                           (account.accountCode || '').includes(expenseSearchTerm)
                         ).map((account, index) => (
@@ -1508,9 +1508,8 @@ const BankPayments = () => {
                               setExpenseSearchTerm(account.accountName || '');
                               setExpenseDropdownIndex(-1);
                             }}
-                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                              expenseDropdownIndex === index ? 'bg-blue-50' : ''
-                            }`}
+                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 ${expenseDropdownIndex === index ? 'bg-blue-50' : ''
+                              }`}
                           >
                             <div className="font-medium text-gray-900">{account.accountName || 'Unknown'}</div>
                             {account.accountCode && (
@@ -1561,14 +1560,14 @@ const BankPayments = () => {
                       )}
                       {paymentType === 'customer' && selectedCustomer && (
                         <>
-{(() => {
+                          {(() => {
                             const receivables = selectedCustomer.pendingBalance || 0;
                             const advance = selectedCustomer.advanceBalance || 0;
                             const netBalance = receivables - advance;
                             const isPayable = netBalance < 0;
                             const isReceivable = netBalance > 0;
                             const hasBalance = receivables > 0 || advance > 0;
-                            
+
                             return hasBalance ? (
                               <div className={`flex items-center justify-between px-3 py-2 rounded ${isPayable ? 'bg-red-50 border border-red-200' : isReceivable ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'}`}>
                                 <span className={`text-sm font-medium ${isPayable ? 'text-red-700' : isReceivable ? 'text-green-700' : 'text-gray-700'}`}>
@@ -1700,7 +1699,7 @@ const BankPayments = () => {
                 <RotateCcw className="h-4 w-4" />
                 <span>Reset</span>
               </button>
-              
+
               <div className="flex space-x-3">
                 <button
                   className="flex items-center space-x-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"

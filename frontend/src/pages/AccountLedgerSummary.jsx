@@ -292,7 +292,7 @@ const AccountLedgerSummary = () => {
         toast('Print this payment from Cash Payments or Bank Payments page.');
       } else if (entry.source === 'Purchase' && selectedSupplierId) {
         const result = await getPurchaseOrder(entry.referenceId).unwrap();
-        const po = result?.data || result;
+        const po = result?.purchaseOrder || result?.data || result;
         if (po) {
           const supplier = po.supplier || po.supplierInfo || {};
           const orderData = {
@@ -302,9 +302,14 @@ const AccountLedgerSummary = () => {
             customer: supplier,
             customerInfo: supplier,
             items: (po.items || []).map((item) => ({
-              product: item.product || { name: item.productName || 'N/A' },
-              quantity: item.quantity || 0,
-              unitPrice: item.unitCost || item.unitPrice || 0
+              product: (item.product && typeof item.product === 'object') ? item.product : { name: item.productName || 'N/A' },
+              quantity: Number(item.quantity) || 0,
+              unitPrice: Number(item.costPerUnit ?? item.unitCost ?? item.unitPrice ?? 0) || 0,
+              costPerUnit: Number(item.costPerUnit ?? item.unitCost ?? 0) || 0,
+              price: Number(item.costPerUnit ?? item.unitCost ?? 0) || 0,
+              total: Number(item.totalCost ?? item.total ?? 0) || 0,
+              totalCost: Number(item.totalCost ?? item.total ?? 0) || 0,
+              totalPrice: Number(item.totalCost ?? item.total ?? 0) || 0
             })),
             pricing: po.pricing || { total: po.total || 0, subtotal: po.total || 0 },
             total: po.total || 0,
