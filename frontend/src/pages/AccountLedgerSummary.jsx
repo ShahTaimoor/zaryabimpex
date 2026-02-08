@@ -353,100 +353,76 @@ const AccountLedgerSummary = () => {
         <head>
           <title>Account Ledger Summary - ${customerName}</title>
           <style>
+            @page {
+              size: A4 landscape;
+              margin: 8mm;
+            }
             @media print {
-              @page {
-                size: A4 landscape;
-                margin: 0.5in;
-              }
-              body {
-                font-family: 'Inter', Arial, sans-serif;
-                font-size: 11px;
-                color: #111827;
-                margin: 0;
+              body { 
+                margin: 0; 
                 padding: 0;
+                font-family: 'Inter', Arial, sans-serif;
+                font-size: 10px;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
               }
+              .no-print { display: none !important; }
+              table { width: 100% !important; border: 1px solid #000 !important; }
+              th, td { border: 1px solid #000 !important; }
             }
             body {
               font-family: 'Inter', Arial, sans-serif;
-              font-size: 12px;
-              color: #111827;
-              margin: 20px;
+              font-size: 10px;
+              color: #000;
+              margin: 0;
+              padding: 0;
             }
             .print-header {
               text-align: center;
-              margin-bottom: 20px;
-              border-bottom: 2px solid #e5e7eb;
-              padding-bottom: 15px;
+              margin-bottom: 10px;
+              border-bottom: 1px solid #000;
+              padding: 5px 0;
             }
             .print-header h1 {
-              font-size: 24px;
+              font-size: 16px;
               font-weight: 700;
-              margin: 0 0 5px 0;
-              color: #111827;
+              margin: 0;
+              text-transform: uppercase;
             }
             .print-header p {
-              font-size: 14px;
-              color: #6b7280;
-              margin: 5px 0;
-            }
-            .print-info {
-              margin-bottom: 20px;
-              display: grid;
-              grid-template-columns: repeat(2, 1fr);
-              gap: 15px;
-            }
-            .print-info-item {
-              font-size: 12px;
-            }
-            .print-info-label {
-              font-weight: 600;
-              color: #374151;
-            }
-            .print-info-value {
-              color: #111827;
+              font-size: 10px;
+              margin: 2px 0;
             }
             table {
               width: 100%;
               border-collapse: collapse;
-              margin-top: 15px;
             }
             th {
-              background: #f3f4f6;
-              border: 1px solid #e5e7eb;
-              text-align: left;
-              padding: 8px;
-              font-size: 11px;
-              font-weight: 600;
-              color: #111827;
+              background-color: #eee !important;
+              text-align: center;
+              padding: 3px;
+              font-size: 9px;
+              font-weight: 700;
+              text-transform: uppercase;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
             td {
-              border: 1px solid #e5e7eb;
-              padding: 8px;
-              font-size: 11px;
-              color: #374151;
+              padding: 2px 4px;
+              font-size: 9.5px;
+              vertical-align: middle;
             }
-            .text-right {
-              text-align: right;
-            }
-            .text-center {
-              text-align: center;
-            }
-            .font-bold {
-              font-weight: 700;
-            }
-            .bg-gray-50 {
-              background-color: #f9fafb;
-            }
-            .bg-gray-100 {
-              background-color: #f3f4f6;
-            }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .font-bold { font-weight: 700; }
+            .bg-gray-50 { background-color: #fafafa !important; -webkit-print-color-adjust: exact !important; }
+            .bg-gray-100 { background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact !important; }
             .print-footer {
-              margin-top: 30px;
-              text-align: center;
-              color: #6b7280;
-              font-size: 11px;
-              border-top: 1px solid #e5e7eb;
-              padding-top: 15px;
+              margin-top: 10px;
+              text-align: right;
+              font-size: 8px;
+              border-top: 1px solid #000;
+              padding-top: 4px;
             }
           </style>
         </head>
@@ -730,7 +706,7 @@ const AccountLedgerSummary = () => {
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">
                           Balance
                         </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider w-20">
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider w-20 no-print">
                           Print
                         </th>
                       </tr>
@@ -747,7 +723,7 @@ const AccountLedgerSummary = () => {
                           }`}>
                           {formatCurrency(detailedTransactionsData?.data?.openingBalance || 0)}
                         </td>
-                        <td className="px-4 py-3 text-sm text-center"></td>
+                        <td className="px-4 py-3 text-sm text-center no-print"></td>
                       </tr>
 
                       {/* Transaction Rows */}
@@ -780,8 +756,8 @@ const AccountLedgerSummary = () => {
                               }`}>
                               {formatCurrency(entry.balance || 0)}
                             </td>
-                            <td className="px-4 py-3 text-center">
-                              {entry.referenceId && entry.source ? (
+                            <td className="px-4 py-3 text-center no-print">
+                              {entry.referenceId && entry.source && entry.source === 'Sale' ? (
                                 <button
                                   type="button"
                                   onClick={() => handlePrintEntry(entry)}
@@ -817,7 +793,7 @@ const AccountLedgerSummary = () => {
                             }`}>
                             {formatCurrency(detailedTransactionsData?.data?.closingBalance || 0)}
                           </td>
-                          <td className="px-4 py-3 text-sm text-center"></td>
+                          <td className="px-4 py-3 text-sm text-center no-print"></td>
                         </tr>
                       )}
                     </tbody>
@@ -867,7 +843,7 @@ const AccountLedgerSummary = () => {
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">Debits</th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">Credits</th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider">Balance</th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider w-20">Print</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider w-20 no-print">Print</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -880,7 +856,7 @@ const AccountLedgerSummary = () => {
                           }`}>
                           {formatCurrency(detailedSupplierTransactionsData?.data?.openingBalance || 0)}
                         </td>
-                        <td className="px-4 py-3 text-center"></td>
+                        <td className="px-4 py-3 text-center no-print"></td>
                       </tr>
 
                       {/* Transaction Entries */}
@@ -913,8 +889,8 @@ const AccountLedgerSummary = () => {
                               }`}>
                               {formatCurrency(entry.balance || 0)}
                             </td>
-                            <td className="px-4 py-3 text-center">
-                              {entry.referenceId && entry.source ? (
+                            <td className="px-4 py-3 text-center no-print">
+                              {entry.referenceId && entry.source && entry.source === 'Purchase' ? (
                                 <button
                                   type="button"
                                   onClick={() => handlePrintEntry(entry)}
@@ -950,7 +926,7 @@ const AccountLedgerSummary = () => {
                             }`}>
                             {formatCurrency(detailedSupplierTransactionsData?.data?.closingBalance || 0)}
                           </td>
-                          <td className="px-4 py-3 text-center"></td>
+                          <td className="px-4 py-3 text-center no-print"></td>
                         </tr>
                       )}
                     </tbody>
