@@ -98,7 +98,7 @@ router.get('/', [
     });
   } catch (error) {
     console.error('Get bank receipts error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -148,9 +148,9 @@ router.post('/', [
     if (order) {
       const orderExists = await Sales.findById(order);
       if (!orderExists) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          message: 'Order not found' 
+          message: 'Order not found'
         });
       }
     }
@@ -159,9 +159,9 @@ router.post('/', [
     if (customer) {
       const customerExists = await Customer.findById(customer);
       if (!customerExists) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          message: 'Customer not found' 
+          message: 'Customer not found'
         });
       }
     }
@@ -170,9 +170,9 @@ router.post('/', [
     if (supplier) {
       const supplierExists = await bankReceiptService.supplierExists(supplier);
       if (!supplierExists) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          message: 'Supplier not found' 
+          message: 'Supplier not found'
         });
       }
     }
@@ -180,16 +180,16 @@ router.post('/', [
     // Validate bank exists
     const bankExists = await Bank.findById(bank);
     if (!bankExists) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'Bank account not found' 
+        message: 'Bank account not found'
       });
     }
 
     if (!bankExists.isActive) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'Bank account is inactive' 
+        message: 'Bank account is inactive'
       });
     }
 
@@ -258,7 +258,7 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Create bank receipt error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -297,7 +297,116 @@ router.get('/summary/date-range', [
     });
   } catch (error) {
     console.error('Get bank receipts summary error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @route   PUT /api/bank-receipts/:id
+// @desc    Update bank receipt
+// @access  Private
+router.put('/:id', [
+  auth,
+  requirePermission('edit_orders'),
+  body('date').optional().isISO8601().withMessage('Date must be a valid date'),
+  body('amount').optional().isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
+  body('particular').optional().isString().trim().isLength({ min: 1, max: 500 }).withMessage('Particular must be between 1 and 500 characters'),
+  body('bank').optional().isMongoId().withMessage('Valid bank account is required'),
+  body('transactionReference').optional().isString().trim().withMessage('Transaction reference must be a string'),
+  body('order').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid order ID'),
+  body('customer').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid customer ID'),
+  body('supplier').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid supplier ID'),
+  body('notes').optional().isString().trim().isLength({ max: 1000 }).withMessage('Notes must be less than 1000 characters'),
+  handleValidationErrors
+], async (req, res) => {
+  try {
+    const bankReceipt = await BankReceipt.findById(req.params.id);
+    if (!bankReceipt) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bank receipt not found'
+      });
+    }
+
+    const {
+      date,
+      amount,
+      particular,
+      bank,
+      transactionReference,
+      order,
+      customer,
+      supplier,
+      notes
+    } = req.body;
+
+    // Update fields
+    if (date !== undefined) bankReceipt.date = new Date(date);
+    if (amount !== undefined) bankReceipt.amount = parseFloat(amount);
+    if (particular !== undefined) bankReceipt.particular = particular.trim();
+    if (bank !== undefined) bankReceipt.bank = bank;
+    if (transactionReference !== undefined) bankReceipt.transactionReference = transactionReference ? transactionReference.trim() : null;
+    if (order !== undefined) bankReceipt.order = order || null;
+    if (customer !== undefined) bankReceipt.customer = customer || null;
+    if (supplier !== undefined) bankReceipt.supplier = supplier || null;
+    if (notes !== undefined) bankReceipt.notes = notes ? notes.trim() : null;
+
+    bankReceipt.updatedBy = req.user._id;
+
+    await bankReceipt.save();
+
+    // Populate the updated receipt
+    await bankReceipt.populate([
+      { path: 'bank', select: 'accountName accountNumber bankName' },
+      { path: 'order', select: 'orderNumber' },
+      { path: 'customer', select: 'name businessName' },
+      { path: 'supplier', select: 'name businessName' },
+      { path: 'createdBy', select: 'firstName lastName' }
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Bank receipt updated successfully',
+      data: bankReceipt
+    });
+  } catch (error) {
+    console.error('Update bank receipt error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @route   DELETE /api/bank-receipts/:id
+// @desc    Delete bank receipt
+// @access  Private
+router.delete('/:id', [
+  auth,
+  requirePermission('delete_orders')
+], async (req, res) => {
+  try {
+    const bankReceipt = await BankReceipt.findById(req.params.id);
+    if (!bankReceipt) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bank receipt not found'
+      });
+    }
+
+    await BankReceipt.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'Bank receipt deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete bank receipt error:', error);
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined

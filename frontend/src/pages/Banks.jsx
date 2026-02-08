@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
   Building2,
   CreditCard,
   X,
@@ -209,7 +209,7 @@ const BankFormModal = ({ bank, onSave, onCancel, isSubmitting }) => {
                   <input
                     type="number"
                     step="0.01"
-                    {...register('openingBalance', { 
+                    {...register('openingBalance', {
                       valueAsNumber: true,
                       min: { value: 0, message: 'Balance must be positive' }
                     })}
@@ -394,7 +394,8 @@ const Banks = () => {
       setEditingBank(null);
       refetch();
     } catch (error) {
-      toast.error(error?.data?.message || 'Failed to save bank account');
+      const errorMessage = error?.data?.errors?.[0]?.msg || error?.data?.message || 'Failed to save bank account';
+      toast.error(errorMessage);
     }
   };
 

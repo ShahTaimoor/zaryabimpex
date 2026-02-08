@@ -15,12 +15,14 @@ class BankRepository extends BaseRepository {
   async findWithFilters(filter = {}, options = {}) {
     const { sort = { bankName: 1, accountNumber: 1 }, populate = [] } = options;
 
-    let queryBuilder = this.Model.find(filter);
-    
+    // Exclude soft-deleted records
+    const finalFilter = { ...filter, isDeleted: { $ne: true } };
+    let queryBuilder = this.Model.find(finalFilter);
+
     if (populate && populate.length > 0) {
       populate.forEach(pop => queryBuilder = queryBuilder.populate(pop));
     }
-    
+
     if (sort) {
       queryBuilder = queryBuilder.sort(sort);
     }

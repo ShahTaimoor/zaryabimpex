@@ -25,6 +25,8 @@ import ReceiptPaymentPrintModal from '../components/ReceiptPaymentPrintModal';
 import {
   useGetBankPaymentsQuery,
   useCreateBankPaymentMutation,
+  useUpdateBankPaymentMutation,
+  useDeleteBankPaymentMutation,
   useExportExcelMutation,
   useExportCSVMutation,
   useExportPDFMutation,
@@ -36,7 +38,7 @@ import { useGetCustomersQuery } from '../store/services/customersApi';
 import { useGetAccountsQuery } from '../store/services/chartOfAccountsApi';
 import { useGetBanksQuery } from '../store/services/banksApi';
 import DateFilter from '../components/DateFilter';
-import { getCurrentDatePakistan } from '../utils/dateUtils';
+import { getCurrentDatePakistan, formatDateForInput } from '../utils/dateUtils';
 
 const BankPayments = () => {
   const today = getCurrentDatePakistan();
@@ -60,7 +62,10 @@ const BankPayments = () => {
   });
 
   // State for modals
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
   const [printData, setPrintData] = useState(null);
 
   // Form state
@@ -168,6 +173,8 @@ const BankPayments = () => {
 
   // Mutations
   const [createBankPayment, { isLoading: creating }] = useCreateBankPaymentMutation();
+  const [updateBankPayment, { isLoading: updating }] = useUpdateBankPaymentMutation();
+  const [deleteBankPayment, { isLoading: deleting }] = useDeleteBankPaymentMutation();
 
   // Helper functions
   const resetForm = () => {
@@ -456,6 +463,103 @@ const BankPayments = () => {
       .catch((error) => {
         showErrorToast(handleApiError(error));
       });
+  };
+
+  const handleUpdate = () => {
+    // Prepare data for update
+    const submissionData = {
+      date: formData.date,
+      amount: parseFloat(formData.amount),
+      particular: formData.particular,
+      bank: formData.bank,
+      transactionReference: formData.transactionReference,
+      supplier: paymentType === 'supplier' ? formData.supplier : undefined,
+      customer: paymentType === 'customer' ? formData.customer : undefined,
+      expenseAccount: paymentType === 'expense' ? selectedExpenseAccount?._id : undefined,
+      notes: formData.notes
+    };
+
+    updateBankPayment({ id: selectedPayment._id, ...submissionData })
+      .unwrap()
+      .then(() => {
+        setShowEditModal(false);
+        setSelectedPayment(null);
+        resetForm();
+        showSuccessToast('Bank payment updated successfully');
+        refetch();
+        // Refetch customer/supplier data to update balances immediately
+        if (paymentType === 'customer' && formData.customer) {
+          refetchCustomers();
+        } else if (paymentType === 'supplier' && formData.supplier) {
+          refetchSuppliers();
+        }
+      })
+      .catch((error) => {
+        showErrorToast(handleApiError(error));
+      });
+  };
+
+  const handleDelete = (payment) => {
+    if (window.confirm('Are you sure you want to delete this bank payment?')) {
+      deleteBankPayment(payment._id)
+        .unwrap()
+        .then(() => {
+          showSuccessToast('Bank payment deleted successfully');
+          refetch();
+          // Refetch customer/supplier data to update balances immediately
+          if (payment.customer) {
+            refetchCustomers();
+          } else if (payment.supplier) {
+            refetchSuppliers();
+          }
+        })
+        .catch((error) => {
+          showErrorToast(handleApiError(error));
+        });
+    }
+  };
+
+  const handleEdit = (payment) => {
+    setSelectedPayment(payment);
+    setFormData({
+      date: payment.date ? payment.date.split('T')[0] : today,
+      amount: payment.amount || '',
+      particular: payment.particular || '',
+      bank: payment.bank?._id || '',
+      transactionReference: payment.transactionReference || '',
+      supplier: payment.supplier?._id || '',
+      customer: payment.customer?._id || '',
+      notes: payment.notes || ''
+    });
+
+    if (payment.supplier) {
+      setPaymentType('supplier');
+      setSelectedSupplier(payment.supplier);
+      setSupplierSearchTerm(payment.supplier.displayName || payment.supplier.companyName || payment.supplier.name || '');
+      setSelectedCustomer(null);
+      setCustomerSearchTerm('');
+    } else if (payment.customer) {
+      setPaymentType('customer');
+      setSelectedCustomer(payment.customer);
+      setCustomerSearchTerm(payment.customer.displayName || payment.customer.businessName || payment.customer.name || '');
+      setSelectedSupplier(null);
+      setSupplierSearchTerm('');
+    } else if (payment.expenseAccount) {
+      setPaymentType('expense');
+      setSelectedExpenseAccount(payment.expenseAccount);
+      setExpenseSearchTerm(payment.expenseAccount.accountName || '');
+      setSelectedSupplier(null);
+      setSelectedCustomer(null);
+      setSupplierSearchTerm('');
+      setCustomerSearchTerm('');
+    }
+
+    setShowEditModal(true);
+  };
+
+  const handleView = (payment) => {
+    setSelectedPayment(payment);
+    setShowViewModal(true);
   };
 
   const handleExport = async (format = 'csv') => {
@@ -1263,14 +1367,14 @@ const BankPayments = () => {
                           {payment.supplier ? (
                             <div>
                               <div className="font-medium">
-                                {payment.supplier.displayName || payment.supplier.companyName || payment.supplier.name || 'Unknown Supplier'}
+                                {payment.supplier.companyName || payment.supplier.displayName || payment.supplier.name || 'Unknown Supplier'}
                               </div>
                               <div className="text-gray-500 text-xs">Supplier</div>
                             </div>
                           ) : payment.customer ? (
                             <div>
                               <div className="font-medium">
-                                {((payment.customer.displayName || payment.customer.businessName || payment.customer.name ||
+                                {((payment.customer.businessName || payment.customer.displayName || payment.customer.name ||
                                   `${payment.customer.firstName || ''} ${payment.customer.lastName || ''}`.trim() ||
                                   payment.customer.email || 'Unknown Customer') || '').toUpperCase()}
                               </div>
@@ -1295,23 +1399,30 @@ const BankPayments = () => {
                               <Printer className="h-4 w-4" />
                             </button>
                             <button
+                              onClick={() => handleView(payment)}
                               className="text-blue-600 hover:text-blue-900"
                               title="View"
                             >
                               <Eye className="h-4 w-4" />
                             </button>
-                            <button
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="Edit"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              className="text-red-600 hover:text-red-900"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {formatDateForInput(payment.date) === today && (
+                              <>
+                                <button
+                                  onClick={() => handleEdit(payment)}
+                                  className="text-indigo-600 hover:text-indigo-900"
+                                  title="Edit"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(payment)}
+                                  className="text-red-600 hover:text-red-900"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1714,6 +1825,223 @@ const BankPayments = () => {
                 >
                   <Save className="h-4 w-4" />
                   <span>{creating ? 'Saving...' : 'Save Payment'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Edit Bank Payment</h3>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedPayment(null);
+                    resetForm();
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                    className="input w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bank Account
+                  </label>
+                  <select
+                    value={formData.bank}
+                    onChange={(e) => setFormData(prev => ({ ...prev, bank: e.target.value }))}
+                    className="input w-full"
+                  >
+                    <option value="">Select bank account...</option>
+                    {banks?.map((bank) => (
+                      <option key={bank._id} value={bank._id}>
+                        {bank.bankName} - {bank.accountNumber}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amount
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.amount}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : parseFloat(e.target.value) || '';
+                      setFormData(prev => ({ ...prev, amount: value }));
+                    }}
+                    className="input w-full"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Transaction Reference
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.transactionReference}
+                    onChange={(e) => setFormData(prev => ({ ...prev, transactionReference: e.target.value }))}
+                    className="input w-full"
+                    placeholder="Enter reference..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Particular
+                  </label>
+                  <textarea
+                    value={formData.particular}
+                    onChange={(e) => setFormData(prev => ({ ...prev, particular: e.target.value }))}
+                    className="input w-full"
+                    rows="3"
+                    placeholder="Enter transaction details..."
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    className="input w-full"
+                    rows="2"
+                    placeholder="Additional notes..."
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedPayment(null);
+                    resetForm();
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  disabled={updating}
+                  className="btn btn-primary"
+                >
+                  {updating ? 'Updating...' : 'Update'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {showViewModal && selectedPayment && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Bank Payment Details</h3>
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedPayment(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="font-medium text-gray-500">Voucher Code:</span>
+                  <span className="text-gray-900">{selectedPayment.voucherCode}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="font-medium text-gray-500">Date:</span>
+                  <span className="text-gray-900">{formatDate(selectedPayment.date)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="font-medium text-gray-500">Amount:</span>
+                  <span className="text-gray-900 font-bold">${Math.round(selectedPayment.amount)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="font-medium text-gray-500">Bank:</span>
+                  <span className="text-gray-900">{selectedPayment.bank?.bankName || 'N/A'}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="font-medium text-gray-500">Reference:</span>
+                  <span className="text-gray-900">{selectedPayment.transactionReference || 'N/A'}</span>
+                </div>
+                <div className="border-t pt-2 mt-2">
+                  <span className="block font-medium text-gray-500 mb-1">Particular:</span>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{selectedPayment.particular}</p>
+                </div>
+                {selectedPayment.supplier && (
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="font-medium text-gray-500">Supplier:</span>
+                    <span className="text-gray-900">{selectedPayment.supplier.companyName || selectedPayment.supplier.displayName || selectedPayment.supplier.name}</span>
+                  </div>
+                )}
+                {selectedPayment.customer && (
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="font-medium text-gray-500">Customer:</span>
+                    <span className="text-gray-900">{selectedPayment.customer.businessName || selectedPayment.customer.displayName || selectedPayment.customer.name}</span>
+                  </div>
+                )}
+                {selectedPayment.expenseAccount && (
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="font-medium text-gray-500">Expense Account:</span>
+                    <span className="text-gray-900">{selectedPayment.expenseAccount.accountName}</span>
+                  </div>
+                )}
+                {selectedPayment.notes && (
+                  <div className="border-t pt-2 mt-2">
+                    <span className="block font-medium text-gray-500 mb-1">Notes:</span>
+                    <p className="text-sm text-gray-900 italic">{selectedPayment.notes}</p>
+                  </div>
+                )}
+                <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-2 text-xs text-gray-400">
+                  <span>Created By:</span>
+                  <span>{selectedPayment.createdBy?.prefix} {selectedPayment.createdBy?.firstName}</span>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedPayment(null);
+                  }}
+                  className="btn btn-secondary w-full"
+                >
+                  Close
                 </button>
               </div>
             </div>

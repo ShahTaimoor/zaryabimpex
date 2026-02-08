@@ -28,7 +28,7 @@ router.get('/', [
     });
   } catch (error) {
     console.error('Get banks error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -52,13 +52,13 @@ router.get('/:id', [
     });
   } catch (error) {
     if (error.message === 'Bank not found') {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Bank not found' 
+        message: 'Bank not found'
       });
     }
     console.error('Get bank error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -75,14 +75,14 @@ router.post('/', [
   body('accountName').isString().trim().isLength({ min: 1, max: 200 }).withMessage('Account name is required'),
   body('accountNumber').isString().trim().isLength({ min: 1, max: 100 }).withMessage('Account number is required'),
   body('bankName').isString().trim().isLength({ min: 1, max: 200 }).withMessage('Bank name is required'),
-  body('branchName').optional().isString().trim().isLength({ max: 200 }),
-  body('accountType').optional().isIn(['checking', 'savings', 'current', 'other']),
-  body('routingNumber').optional().isString().trim().isLength({ max: 50 }),
-  body('swiftCode').optional().isString().trim().isLength({ max: 50 }),
-  body('iban').optional().isString().trim().isLength({ max: 50 }),
-  body('openingBalance').optional().isFloat(),
-  body('isActive').optional().isBoolean(),
-  body('notes').optional().isString().trim().isLength({ max: 1000 })
+  body('branchName').optional().isString().trim().isLength({ max: 200 }).withMessage('Branch name must be at most 200 characters'),
+  body('accountType').optional().isIn(['checking', 'savings', 'current', 'other']).withMessage('Invalid account type'),
+  body('routingNumber').optional().isString().trim().isLength({ max: 50 }).withMessage('Routing number must be at most 50 characters'),
+  body('swiftCode').optional().isString().trim().isLength({ max: 50 }).withMessage('SWIFT code must be at most 50 characters'),
+  body('iban').optional().isString().trim().isLength({ max: 50 }).withMessage('IBAN must be at most 50 characters'),
+  body('openingBalance').optional().isFloat().withMessage('Opening balance must be a number'),
+  body('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),
+  body('notes').optional().isString().trim().isLength({ max: 1000 }).withMessage('Notes must be at most 1000 characters')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -127,7 +127,7 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Create bank error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -144,14 +144,14 @@ router.put('/:id', [
   body('accountName').optional().isString().trim().isLength({ min: 1, max: 200 }),
   body('accountNumber').optional().isString().trim().isLength({ min: 1, max: 100 }),
   body('bankName').optional().isString().trim().isLength({ min: 1, max: 200 }),
-  body('branchName').optional().isString().trim().isLength({ max: 200 }),
-  body('accountType').optional().isIn(['checking', 'savings', 'current', 'other']),
-  body('routingNumber').optional().isString().trim().isLength({ max: 50 }),
-  body('swiftCode').optional().isString().trim().isLength({ max: 50 }),
-  body('iban').optional().isString().trim().isLength({ max: 50 }),
-  body('openingBalance').optional().isFloat(),
-  body('isActive').optional().isBoolean(),
-  body('notes').optional().isString().trim().isLength({ max: 1000 })
+  body('branchName').optional().isString().trim().isLength({ max: 200 }).withMessage('Branch name must be at most 200 characters'),
+  body('accountType').optional().isIn(['checking', 'savings', 'current', 'other']).withMessage('Invalid account type'),
+  body('routingNumber').optional().isString().trim().isLength({ max: 50 }).withMessage('Routing number must be at most 50 characters'),
+  body('swiftCode').optional().isString().trim().isLength({ max: 50 }).withMessage('SWIFT code must be at most 50 characters'),
+  body('iban').optional().isString().trim().isLength({ max: 50 }).withMessage('IBAN must be at most 50 characters'),
+  body('openingBalance').optional().isFloat().withMessage('Opening balance must be a number'),
+  body('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),
+  body('notes').optional().isString().trim().isLength({ max: 1000 }).withMessage('Notes must be at most 1000 characters')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -168,13 +168,13 @@ router.put('/:id', [
     });
   } catch (error) {
     if (error.message === 'Bank not found') {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Bank not found' 
+        message: 'Bank not found'
       });
     }
     console.error('Update bank error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -198,13 +198,13 @@ router.delete('/:id', [
     });
   } catch (error) {
     if (error.message === 'Bank not found') {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: 'Bank not found' 
+        message: 'Bank not found'
       });
     }
     console.error('Delete bank error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined

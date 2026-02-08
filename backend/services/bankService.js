@@ -91,7 +91,7 @@ class BankService {
     if (updateData.notes !== undefined) processedData.notes = updateData.notes ? updateData.notes.trim() : null;
     processedData.updatedBy = userId;
 
-    return await BankRepository.update(id, processedData);
+    return await BankRepository.updateById(id, processedData);
   }
 
   /**
@@ -102,7 +102,7 @@ class BankService {
   async checkBankUsage(bankId) {
     const BankPayment = require('../models/BankPayment');
     const BankReceipt = require('../models/BankReceipt');
-    
+
     const [paymentCount, receiptCount] = await Promise.all([
       BankPayment.countDocuments({ bank: bankId }),
       BankReceipt.countDocuments({ bank: bankId })

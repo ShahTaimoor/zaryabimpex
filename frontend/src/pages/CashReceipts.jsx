@@ -34,7 +34,7 @@ import { useAppDispatch } from '../store/hooks';
 import { api } from '../store/api';
 import ReceiptPaymentPrintModal from '../components/ReceiptPaymentPrintModal';
 import DateFilter from '../components/DateFilter';
-import { getCurrentDatePakistan } from '../utils/dateUtils';
+import { getCurrentDatePakistan, formatDateForInput } from '../utils/dateUtils';
 
 const CashReceipts = () => {
   const today = getCurrentDatePakistan();
@@ -1337,20 +1337,24 @@ const CashReceipts = () => {
                             >
                               <Eye className="h-4 w-4" />
                             </button>
-                            <button
-                              onClick={() => handleEdit(receipt)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="Edit"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(receipt)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {formatDateForInput(receipt.date) === today && (
+                              <>
+                                <button
+                                  onClick={() => handleEdit(receipt)}
+                                  className="text-indigo-600 hover:text-indigo-900"
+                                  title="Edit"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(receipt)}
+                                  className="text-red-600 hover:text-red-900"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1410,8 +1414,8 @@ const CashReceipts = () => {
                               key={pageNum}
                               onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
                               className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${pagination.page === pageNum
-                                  ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-                                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                                 }`}
                             >
                               {pageNum}

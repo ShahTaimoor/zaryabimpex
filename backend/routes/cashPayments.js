@@ -83,13 +83,13 @@ router.get('/', [
       sort: { date: -1, createdAt: -1 },
       populate: [
         { path: 'order', model: 'Sales', select: 'orderNumber' },
-        { path: 'supplier', select: 'name businessName' },
-        { path: 'customer', select: 'name email' },
+        { path: 'supplier', select: 'companyName contactPerson' },
+        { path: 'customer', select: 'name businessName email' },
         { path: 'createdBy', select: 'firstName lastName' },
         { path: 'expenseAccount', select: 'accountName accountCode' }
       ]
     });
-    
+
     const cashPayments = result.cashPayments;
     const total = result.total;
 
@@ -107,7 +107,7 @@ router.get('/', [
     });
   } catch (error) {
     console.error('Get cash payments error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -153,9 +153,9 @@ router.post('/', [
     if (order) {
       const orderExists = await salesRepository.findById(order);
       if (!orderExists) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          message: 'Order not found' 
+          message: 'Order not found'
         });
       }
     }
@@ -164,9 +164,9 @@ router.post('/', [
     if (supplier) {
       const supplierExists = await supplierRepository.findById(supplier);
       if (!supplierExists) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          message: 'Supplier not found' 
+          message: 'Supplier not found'
         });
       }
     }
@@ -175,9 +175,9 @@ router.post('/', [
     if (customer) {
       const customerExists = await customerRepository.findById(customer);
       if (!customerExists) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          message: 'Customer not found' 
+          message: 'Customer not found'
         });
       }
     }
@@ -253,8 +253,8 @@ router.post('/', [
     // Populate the created payment
     await cashPayment.populate([
       { path: 'order', select: 'orderNumber' },
-      { path: 'supplier', select: 'name businessName' },
-      { path: 'customer', select: 'name email' },
+      { path: 'supplier', select: 'companyName contactPerson' },
+      { path: 'customer', select: 'name businessName email' },
       { path: 'createdBy', select: 'firstName lastName' },
       { path: 'expenseAccount', select: 'accountName accountCode' }
     ]);
@@ -267,7 +267,7 @@ router.post('/', [
   } catch (error) {
     console.error('Create cash payment error:', error);
     console.error('Error stack:', error.stack);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -320,7 +320,116 @@ router.get('/summary/date-range', [
     });
   } catch (error) {
     console.error('Get cash payments summary error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @route   PUT /api/cash-payments/:id
+// @desc    Update cash payment
+// @access  Private
+router.put('/:id', [
+  auth,
+  requirePermission('edit_orders'),
+  body('date').optional().isISO8601().withMessage('Date must be a valid date'),
+  body('amount').optional().isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
+  body('particular').optional().isString().trim().isLength({ min: 1, max: 500 }).withMessage('Particular must be between 1 and 500 characters'),
+  body('order').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid order ID'),
+  body('supplier').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid supplier ID'),
+  body('customer').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid customer ID'),
+  body('paymentMethod').optional().isIn(['cash', 'check', 'other']).withMessage('Invalid payment method'),
+  body('expenseAccount').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid expense account ID'),
+  body('notes').optional().isString().trim().isLength({ max: 1000 }).withMessage('Notes must be less than 1000 characters'),
+  handleValidationErrors
+], async (req, res) => {
+  try {
+    const cashPayment = await CashPayment.findById(req.params.id);
+    if (!cashPayment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cash payment not found'
+      });
+    }
+
+    const {
+      date,
+      amount,
+      particular,
+      order,
+      supplier,
+      customer,
+      paymentMethod,
+      notes,
+      expenseAccount
+    } = req.body;
+
+    // Update fields
+    if (date !== undefined) cashPayment.date = new Date(date);
+    if (amount !== undefined) cashPayment.amount = parseFloat(amount);
+    if (particular !== undefined) cashPayment.particular = particular.trim();
+    if (order !== undefined) cashPayment.order = order || null;
+    if (supplier !== undefined) cashPayment.supplier = supplier || null;
+    if (customer !== undefined) cashPayment.customer = customer || null;
+    if (paymentMethod !== undefined) cashPayment.paymentMethod = paymentMethod;
+    if (notes !== undefined) cashPayment.notes = notes ? notes.trim() : null;
+    if (expenseAccount !== undefined) cashPayment.expenseAccount = expenseAccount || null;
+
+    cashPayment.updatedBy = req.user._id;
+
+    await cashPayment.save();
+
+    // Populate the updated payment
+    await cashPayment.populate([
+      { path: 'order', select: 'orderNumber' },
+      { path: 'supplier', select: 'companyName contactPerson' },
+      { path: 'customer', select: 'name businessName email' },
+      { path: 'createdBy', select: 'firstName lastName' },
+      { path: 'expenseAccount', select: 'accountName accountCode' }
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Cash payment updated successfully',
+      data: cashPayment
+    });
+  } catch (error) {
+    console.error('Update cash payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @route   DELETE /api/cash-payments/:id
+// @desc    Delete cash payment
+// @access  Private
+router.delete('/:id', [
+  auth,
+  requirePermission('delete_orders')
+], async (req, res) => {
+  try {
+    const cashPayment = await CashPayment.findById(req.params.id);
+    if (!cashPayment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cash payment not found'
+      });
+    }
+
+    await CashPayment.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'Cash payment deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete cash payment error:', error);
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined

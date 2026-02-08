@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  Search,
+  Filter,
+  Plus,
+  Edit,
+  Trash2,
   Eye,
   Download,
   RefreshCw,
@@ -22,6 +22,8 @@ import { useGetBanksQuery } from '../store/services/banksApi';
 import {
   useGetBankReceiptsQuery,
   useCreateBankReceiptMutation,
+  useUpdateBankReceiptMutation,
+  useDeleteBankReceiptMutation,
   useExportExcelMutation,
   useExportCSVMutation,
   useExportPDFMutation,
@@ -30,7 +32,7 @@ import {
 } from '../store/services/bankReceiptsApi';
 import ReceiptPaymentPrintModal from '../components/ReceiptPaymentPrintModal';
 import DateFilter from '../components/DateFilter';
-import { getCurrentDatePakistan } from '../utils/dateUtils';
+import { getCurrentDatePakistan, formatDateForInput } from '../utils/dateUtils';
 
 const BankReceipts = () => {
   const today = getCurrentDatePakistan();
@@ -42,7 +44,7 @@ const BankReceipts = () => {
     amount: '',
     particular: ''
   });
-  
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 50
@@ -54,7 +56,10 @@ const BankReceipts = () => {
   });
 
   // State for modals
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [printData, setPrintData] = useState(null);
 
   // Form state
@@ -117,6 +122,8 @@ const BankReceipts = () => {
 
   // Mutations
   const [createBankReceipt, { isLoading: creating }] = useCreateBankReceiptMutation();
+  const [updateBankReceipt, { isLoading: updating }] = useUpdateBankReceiptMutation();
+  const [deleteBankReceipt, { isLoading: deleting }] = useDeleteBankReceiptMutation();
 
   // Helper functions
   const resetForm = () => {
@@ -210,14 +217,14 @@ const BankReceipts = () => {
       transactionReference: formData.transactionReference || undefined,
       notes: formData.notes || undefined
     };
-    
+
     // Only include customer or supplier if they have values (not empty strings)
     if (paymentType === 'customer' && formData.customer) {
       cleanedData.customer = formData.customer;
     } else if (paymentType === 'supplier' && formData.supplier) {
       cleanedData.supplier = formData.supplier;
     }
-    
+
     createBankReceipt(cleanedData)
       .unwrap()
       .then(() => {
@@ -234,6 +241,94 @@ const BankReceipts = () => {
       .catch((error) => {
         showErrorToast(handleApiError(error));
       });
+  };
+
+  const handleUpdate = () => {
+    // Prepare data for update
+    const submissionData = {
+      date: formData.date,
+      amount: parseFloat(formData.amount),
+      particular: formData.particular,
+      bank: formData.bank,
+      transactionReference: formData.transactionReference,
+      customer: paymentType === 'customer' ? formData.customer : undefined,
+      supplier: paymentType === 'supplier' ? formData.supplier : undefined,
+      notes: formData.notes
+    };
+
+    updateBankReceipt({ id: selectedReceipt._id, ...submissionData })
+      .unwrap()
+      .then(() => {
+        setShowEditModal(false);
+        setSelectedReceipt(null);
+        resetForm();
+        showSuccessToast('Bank receipt updated successfully');
+        refetch();
+        // Refetch customer/supplier data to update balances immediately
+        if (paymentType === 'customer' && formData.customer) {
+          refetchCustomers();
+        } else if (paymentType === 'supplier' && formData.supplier) {
+          refetchSuppliers();
+        }
+      })
+      .catch((error) => {
+        showErrorToast(handleApiError(error));
+      });
+  };
+
+  const handleDelete = (receipt) => {
+    if (window.confirm('Are you sure you want to delete this bank receipt?')) {
+      deleteBankReceipt(receipt._id)
+        .unwrap()
+        .then(() => {
+          showSuccessToast('Bank receipt deleted successfully');
+          refetch();
+          // Refetch customer/supplier data to update balances immediately
+          if (receipt.customer) {
+            refetchCustomers();
+          } else if (receipt.supplier) {
+            refetchSuppliers();
+          }
+        })
+        .catch((error) => {
+          showErrorToast(handleApiError(error));
+        });
+    }
+  };
+
+  const handleEdit = (receipt) => {
+    setSelectedReceipt(receipt);
+    setFormData({
+      date: receipt.date ? receipt.date.split('T')[0] : today,
+      amount: receipt.amount || '',
+      particular: receipt.particular || '',
+      bank: receipt.bank?._id || '',
+      transactionReference: receipt.transactionReference || '',
+      customer: receipt.customer?._id || '',
+      supplier: receipt.supplier?._id || '',
+      notes: receipt.notes || ''
+    });
+
+    if (receipt.customer) {
+      setPaymentType('customer');
+      setSelectedCustomer(receipt.customer);
+      setCustomerSearchTerm(receipt.customer.displayName || receipt.customer.businessName || receipt.customer.name || '');
+      setSelectedSupplier(null);
+      setSupplierSearchTerm('');
+    } else if (receipt.supplier) {
+      setPaymentType('supplier');
+      setSelectedSupplier(receipt.supplier);
+      setSupplierSearchTerm(receipt.supplier.displayName || receipt.supplier.companyName || receipt.supplier.name || '');
+      setSelectedCustomer(null);
+      setCustomerSearchTerm('');
+    }
+
+    setShowEditModal(true);
+  };
+
+  const handleView = (receipt) => {
+    setSelectedReceipt(receipt);
+    setShowViewModal(true);
   };
 
   const handleExport = async (format = 'csv') => {
@@ -255,25 +350,25 @@ const BankReceipts = () => {
         (format === 'excel'
           ? 'bank_receipts.xlsx'
           : format === 'pdf'
-          ? 'bank_receipts.pdf'
-          : format === 'json'
-          ? 'bank_receipts.json'
-          : 'bank_receipts.csv');
+            ? 'bank_receipts.pdf'
+            : format === 'json'
+              ? 'bank_receipts.json'
+              : 'bank_receipts.csv');
 
       const downloadResponse = await downloadFileMutation(filename).unwrap();
       const blob =
         downloadResponse instanceof Blob
           ? downloadResponse
           : new Blob([downloadResponse], {
-              type:
-                format === 'excel'
-                  ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                  : format === 'pdf'
+            type:
+              format === 'excel'
+                ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                : format === 'pdf'
                   ? 'application/pdf'
                   : format === 'json'
-                  ? 'application/json'
-                  : 'text/csv',
-            });
+                    ? 'application/json'
+                    : 'text/csv',
+          });
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -385,49 +480,49 @@ const BankReceipts = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Customer
                   </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={customerSearchTerm}
-                    onChange={(e) => handleCustomerSearch(e.target.value)}
-                    className="input w-full pr-10"
-                    placeholder="Search or select customer..."
-                  />
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                </div>
-                {customerSearchTerm && (
-                  <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                    {customers?.filter(customer => 
-                      (customer.businessName || customer.name || '').toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
-                      (customer.phone || '').includes(customerSearchTerm)
-                    ).map((customer) => {
-                      const receivables = customer.pendingBalance || 0;
-                      const advance = customer.advanceBalance || 0;
-                      const netBalance = receivables - advance;
-                      const isPayable = netBalance < 0;
-                      const isReceivable = netBalance > 0;
-                      const hasBalance = receivables > 0 || advance > 0;
-                      
-                      return (
-                        <div
-                          key={customer._id}
-                          onClick={() => {
-                            handleCustomerSelect(customer._id);
-                            setCustomerSearchTerm(customer.businessName || customer.name || '');
-                          }}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                        >
-                          <div className="font-medium text-gray-900">{customer.businessName || customer.name || 'Unknown'}</div>
-                          {hasBalance && (
-                            <div className={`text-sm ${isPayable ? 'text-red-600' : 'text-green-600'}`}>
-                              {isPayable ? 'Payables:' : 'Receivables:'} ${Math.abs(netBalance).toFixed(2)}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={customerSearchTerm}
+                      onChange={(e) => handleCustomerSearch(e.target.value)}
+                      className="input w-full pr-10"
+                      placeholder="Search or select customer..."
+                    />
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   </div>
-                )}
+                  {customerSearchTerm && (
+                    <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
+                      {customers?.filter(customer =>
+                        (customer.businessName || customer.name || '').toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+                        (customer.phone || '').includes(customerSearchTerm)
+                      ).map((customer) => {
+                        const receivables = customer.pendingBalance || 0;
+                        const advance = customer.advanceBalance || 0;
+                        const netBalance = receivables - advance;
+                        const isPayable = netBalance < 0;
+                        const isReceivable = netBalance > 0;
+                        const hasBalance = receivables > 0 || advance > 0;
+
+                        return (
+                          <div
+                            key={customer._id}
+                            onClick={() => {
+                              handleCustomerSelect(customer._id);
+                              setCustomerSearchTerm(customer.businessName || customer.name || '');
+                            }}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="font-medium text-gray-900">{customer.businessName || customer.name || 'Unknown'}</div>
+                            {hasBalance && (
+                              <div className={`text-sm ${isPayable ? 'text-red-600' : 'text-green-600'}`}>
+                                {isPayable ? 'Payables:' : 'Receivables:'} ${Math.abs(netBalance).toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -438,14 +533,14 @@ const BankReceipts = () => {
                     Balance
                   </label>
                   <div className="space-y-1">
-{(() => {
+                    {(() => {
                       const receivables = selectedCustomer.pendingBalance || 0;
                       const advance = selectedCustomer.advanceBalance || 0;
                       const netBalance = receivables - advance;
                       const isPayable = netBalance < 0;
                       const isReceivable = netBalance > 0;
                       const hasBalance = receivables > 0 || advance > 0;
-                      
+
                       return hasBalance ? (
                         <div className={`flex items-center justify-between px-3 py-2 rounded ${isPayable ? 'bg-red-50 border border-red-200' : isReceivable ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'}`}>
                           <span className={`text-sm font-medium ${isPayable ? 'text-red-700' : isReceivable ? 'text-green-700' : 'text-gray-700'}`}>
@@ -483,7 +578,7 @@ const BankReceipts = () => {
                   </div>
                   {supplierSearchTerm && (
                     <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                      {suppliers?.filter(supplier => 
+                      {suppliers?.filter(supplier =>
                         (supplier.companyName || supplier.name || '').toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
                         (supplier.phone || '').includes(supplierSearchTerm)
                       ).map((supplier) => (
@@ -793,7 +888,7 @@ const BankReceipts = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('date')}
                       >
@@ -802,7 +897,7 @@ const BankReceipts = () => {
                           <ArrowUpDown className="h-3 w-3" />
                         </div>
                       </th>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('voucherCode')}
                       >
@@ -811,7 +906,7 @@ const BankReceipts = () => {
                           <ArrowUpDown className="h-3 w-3" />
                         </div>
                       </th>
-                      <th 
+                      <th
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => handleSort('amount')}
                       >
@@ -836,8 +931,8 @@ const BankReceipts = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {bankReceipts.map((receipt, index) => (
-                      <tr 
-                        key={receipt._id} 
+                      <tr
+                        key={receipt._id}
                         className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -882,23 +977,30 @@ const BankReceipts = () => {
                               <Printer className="h-4 w-4" />
                             </button>
                             <button
+                              onClick={() => handleView(receipt)}
                               className="text-blue-600 hover:text-blue-900"
                               title="View"
                             >
                               <Eye className="h-4 w-4" />
                             </button>
-                            <button
-                              className="text-indigo-600 hover:text-indigo-900"
-                              title="Edit"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              className="text-red-600 hover:text-red-900"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {formatDateForInput(receipt.date) === today && (
+                              <>
+                                <button
+                                  onClick={() => handleEdit(receipt)}
+                                  className="text-indigo-600 hover:text-indigo-900"
+                                  title="Edit"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(receipt)}
+                                  className="text-red-600 hover:text-red-900"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -939,7 +1041,7 @@ const BankReceipts = () => {
                 </svg>
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column */}
               <div className="space-y-4">
@@ -959,7 +1061,7 @@ const BankReceipts = () => {
                   </div>
                   {customerSearchTerm && (
                     <div className="mt-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white shadow-lg">
-                      {customers?.filter(customer => 
+                      {customers?.filter(customer =>
                         (customer.businessName || customer.name || '').toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
                         (customer.phone || '').includes(customerSearchTerm)
                       ).map((customer) => {
@@ -969,7 +1071,7 @@ const BankReceipts = () => {
                         const isPayable = netBalance < 0;
                         const isReceivable = netBalance > 0;
                         const hasBalance = receivables > 0 || advance > 0;
-                        
+
                         return (
                           <div
                             key={customer._id}
@@ -1114,7 +1216,7 @@ const BankReceipts = () => {
                 <RotateCcw className="h-4 w-4" />
                 <span>Reset</span>
               </button>
-              
+
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                 <button
                   className="btn btn-outline btn-md flex items-center justify-center gap-2 w-full sm:w-auto"
@@ -1129,6 +1231,217 @@ const BankReceipts = () => {
                 >
                   <Save className="h-4 w-4" />
                   <span>{creating ? 'Saving...' : 'Save Receipt'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Edit Bank Receipt</h3>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedReceipt(null);
+                    resetForm();
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                    className="input w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bank Account
+                  </label>
+                  <select
+                    value={formData.bank}
+                    onChange={(e) => setFormData(prev => ({ ...prev, bank: e.target.value }))}
+                    className="input w-full"
+                  >
+                    <option value="">Select bank account...</option>
+                    {banks?.map((bank) => (
+                      <option key={bank._id} value={bank._id}>
+                        {bank.bankName} - {bank.accountNumber}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Amount
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.amount}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : parseFloat(e.target.value) || '';
+                      setFormData(prev => ({ ...prev, amount: value }));
+                    }}
+                    className="input w-full"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Transaction Reference
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.transactionReference}
+                    onChange={(e) => setFormData(prev => ({ ...prev, transactionReference: e.target.value }))}
+                    className="input w-full"
+                    placeholder="Enter reference..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Particular
+                  </label>
+                  <textarea
+                    value={formData.particular}
+                    onChange={(e) => setFormData(prev => ({ ...prev, particular: e.target.value }))}
+                    className="input w-full"
+                    rows="3"
+                    placeholder="Enter transaction details..."
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    className="input w-full"
+                    rows="2"
+                    placeholder="Additional notes..."
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setSelectedReceipt(null);
+                    resetForm();
+                  }}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  disabled={updating}
+                  className="btn btn-primary"
+                >
+                  {updating ? 'Updating...' : 'Update'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {showViewModal && selectedReceipt && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Bank Receipt Details</h3>
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedReceipt(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="font-medium text-gray-500">Voucher Code:</span>
+                  <span className="text-gray-900">{selectedReceipt.voucherCode}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="font-medium text-gray-500">Date:</span>
+                  <span className="text-gray-900">{formatDate(selectedReceipt.date)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="font-medium text-gray-500">Amount:</span>
+                  <span className="text-gray-900 font-bold">${Math.round(selectedReceipt.amount)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="font-medium text-gray-500">Bank:</span>
+                  <span className="text-gray-900">{selectedReceipt.bank?.bankName || 'N/A'}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="font-medium text-gray-500">Reference:</span>
+                  <span className="text-gray-900">{selectedReceipt.transactionReference || 'N/A'}</span>
+                </div>
+                <div className="border-t pt-2 mt-2">
+                  <span className="block font-medium text-gray-500 mb-1">Particular:</span>
+                  <p className="text-sm text-gray-900 bg-gray-50 p-2 rounded">{selectedReceipt.particular}</p>
+                </div>
+                {selectedReceipt.customer && (
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="font-medium text-gray-500">Customer:</span>
+                    <span className="text-gray-900">{selectedReceipt.customer.displayName || selectedReceipt.customer.businessName || selectedReceipt.customer.name}</span>
+                  </div>
+                )}
+                {selectedReceipt.supplier && (
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="font-medium text-gray-500">Supplier:</span>
+                    <span className="text-gray-900">{selectedReceipt.supplier.displayName || selectedReceipt.supplier.companyName || selectedReceipt.supplier.name}</span>
+                  </div>
+                )}
+                {selectedReceipt.notes && (
+                  <div className="border-t pt-2 mt-2">
+                    <span className="block font-medium text-gray-500 mb-1">Notes:</span>
+                    <p className="text-sm text-gray-900 italic">{selectedReceipt.notes}</p>
+                  </div>
+                )}
+                <div className="border-t pt-2 mt-2 grid grid-cols-2 gap-2 text-xs text-gray-400">
+                  <span>Created By:</span>
+                  <span>{selectedReceipt.createdBy?.prefix} {selectedReceipt.createdBy?.firstName}</span>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedReceipt(null);
+                  }}
+                  className="btn btn-secondary w-full"
+                >
+                  Close
                 </button>
               </div>
             </div>

@@ -86,13 +86,13 @@ router.get('/', [
       populate: [
         { path: 'bank', select: 'accountName accountNumber bankName' },
         { path: 'order', model: 'Sales', select: 'orderNumber' },
-        { path: 'supplier', select: 'name businessName' },
-        { path: 'customer', select: 'name email' },
+        { path: 'supplier', select: 'companyName contactPerson' },
+        { path: 'customer', select: 'name businessName email' },
         { path: 'createdBy', select: 'firstName lastName' },
         { path: 'expenseAccount', select: 'accountName accountCode' }
       ]
     });
-    
+
     const bankPayments = result.bankPayments;
     const total = result.total;
 
@@ -110,7 +110,7 @@ router.get('/', [
     });
   } catch (error) {
     console.error('Get bank payments error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -162,9 +162,9 @@ router.post('/', [
     if (order) {
       const orderExists = await salesRepository.findById(order);
       if (!orderExists) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          message: 'Order not found' 
+          message: 'Order not found'
         });
       }
     }
@@ -173,9 +173,9 @@ router.post('/', [
     if (supplier) {
       const supplierExists = await supplierRepository.findById(supplier);
       if (!supplierExists) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          message: 'Supplier not found' 
+          message: 'Supplier not found'
         });
       }
     }
@@ -184,9 +184,9 @@ router.post('/', [
     if (customer) {
       const customerExists = await customerRepository.findById(customer);
       if (!customerExists) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           success: false,
-          message: 'Customer not found' 
+          message: 'Customer not found'
         });
       }
     }
@@ -194,16 +194,16 @@ router.post('/', [
     // Validate bank exists
     const bankExists = await bankRepository.findById(bank);
     if (!bankExists) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'Bank account not found' 
+        message: 'Bank account not found'
       });
     }
 
     if (!bankExists.isActive) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'Bank account is inactive' 
+        message: 'Bank account is inactive'
       });
     }
 
@@ -280,8 +280,8 @@ router.post('/', [
     await bankPayment.populate([
       { path: 'bank', select: 'accountName accountNumber bankName' },
       { path: 'order', select: 'orderNumber' },
-      { path: 'supplier', select: 'name businessName' },
-      { path: 'customer', select: 'name email' },
+      { path: 'supplier', select: 'companyName contactPerson' },
+      { path: 'customer', select: 'name businessName email' },
       { path: 'createdBy', select: 'firstName lastName' },
       { path: 'expenseAccount', select: 'accountName accountCode' }
     ]);
@@ -293,7 +293,7 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Create bank payment error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -346,7 +346,120 @@ router.get('/summary/date-range', [
     });
   } catch (error) {
     console.error('Get bank payments summary error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @route   PUT /api/bank-payments/:id
+// @desc    Update bank payment
+// @access  Private
+router.put('/:id', [
+  auth,
+  requirePermission('edit_orders'),
+  body('date').optional().isISO8601().withMessage('Date must be a valid date'),
+  body('amount').optional().isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
+  body('particular').optional().isString().trim().isLength({ min: 1, max: 500 }).withMessage('Particular must be between 1 and 500 characters'),
+  body('bank').optional().isMongoId().withMessage('Valid bank account is required'),
+  body('transactionReference').optional().isString().trim().withMessage('Transaction reference must be a string'),
+  body('order').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid order ID'),
+  body('supplier').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid supplier ID'),
+  body('customer').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid customer ID'),
+  body('expenseAccount').optional({ checkFalsy: true }).isMongoId().withMessage('Invalid expense account ID'),
+  body('notes').optional().isString().trim().isLength({ max: 1000 }).withMessage('Notes must be less than 1000 characters'),
+  handleValidationErrors
+], async (req, res) => {
+  try {
+    const bankPayment = await BankPayment.findById(req.params.id);
+    if (!bankPayment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bank payment not found'
+      });
+    }
+
+    const {
+      date,
+      amount,
+      particular,
+      bank,
+      transactionReference,
+      order,
+      supplier,
+      customer,
+      notes,
+      expenseAccount
+    } = req.body;
+
+    // Update fields
+    if (date !== undefined) bankPayment.date = new Date(date);
+    if (amount !== undefined) bankPayment.amount = parseFloat(amount);
+    if (particular !== undefined) bankPayment.particular = particular.trim();
+    if (bank !== undefined) bankPayment.bank = bank;
+    if (transactionReference !== undefined) bankPayment.transactionReference = transactionReference ? transactionReference.trim() : null;
+    if (order !== undefined) bankPayment.order = order || null;
+    if (supplier !== undefined) bankPayment.supplier = supplier || null;
+    if (customer !== undefined) bankPayment.customer = customer || null;
+    if (notes !== undefined) bankPayment.notes = notes ? notes.trim() : null;
+    if (expenseAccount !== undefined) bankPayment.expenseAccount = expenseAccount || null;
+
+    bankPayment.updatedBy = req.user._id;
+
+    await bankPayment.save();
+
+    // Populate the updated payment
+    await bankPayment.populate([
+      { path: 'bank', select: 'accountName accountNumber bankName' },
+      { path: 'order', select: 'orderNumber' },
+      { path: 'supplier', select: 'companyName contactPerson' },
+      { path: 'customer', select: 'name businessName email' },
+      { path: 'createdBy', select: 'firstName lastName' },
+      { path: 'expenseAccount', select: 'accountName accountCode' }
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Bank payment updated successfully',
+      data: bankPayment
+    });
+  } catch (error) {
+    console.error('Update bank payment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @route   DELETE /api/bank-payments/:id
+// @desc    Delete bank payment
+// @access  Private
+router.delete('/:id', [
+  auth,
+  requirePermission('delete_orders')
+], async (req, res) => {
+  try {
+    const bankPayment = await BankPayment.findById(req.params.id);
+    if (!bankPayment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bank payment not found'
+      });
+    }
+
+    await BankPayment.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'Bank payment deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete bank payment error:', error);
+    res.status(500).json({
       success: false,
       message: 'Server error',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
