@@ -549,16 +549,8 @@ class AccountLedgerService {
 
             // Calculate adjusted opening balance (transactions before startDate)
             if (start) {
-              // Purchases before startDate (increases payables)
-              const openingPurchases = await purchaseOrderRepository.findAll({
-                supplier: supplierId,
-                createdAt: { $lt: start },
-                isDeleted: { $ne: true }
-              }, { lean: true });
-
-              const openingPurchasesTotal = openingPurchases.reduce((sum, purchase) => {
-                return sum + (purchase.total || 0);
-              }, 0);
+              // Purchases before startDate (removed as per request)
+              const openingPurchasesTotal = 0;
 
               // Cash payments before startDate (decreases payables)
               const openingCashPayments = await cashPaymentRepository.findAll({
@@ -625,16 +617,10 @@ class AccountLedgerService {
               if (end) periodFilter.createdAt.$lte = end;
             }
 
-            // Purchases (CREDITS - increases payables)
-            const purchases = await purchaseOrderRepository.findAll({
-              supplier: supplierId,
-              ...periodFilter,
-              isDeleted: { $ne: true }
-            }, { lean: true });
+            // Purchases (CREDITS - increases payables) - Removed as per request
+            const purchases = [];
 
-            const totalCredits = purchases.reduce((sum, purchase) => {
-              return sum + (purchase.total || 0);
-            }, 0);
+            const totalCredits = 0;
 
             // Cash payments (DEBITS - decreases payables)
             const paymentDateFilter = {};
@@ -705,11 +691,8 @@ class AccountLedgerService {
 
             // Build particular/description
             const particulars = [];
-            purchases.forEach(purchase => {
-              if (purchase.poNumber) {
-                particulars.push(`Purchase: ${purchase.poNumber}`);
-              }
-            });
+            // Purchases removed from particulars
+
             cashPayments.forEach(payment => {
               if (payment.voucherCode) {
                 particulars.push(`Cash Payment: ${payment.voucherCode}`);
@@ -737,7 +720,7 @@ class AccountLedgerService {
             });
 
             const particular = particulars.join('; ');
-            const transactionCount = purchases.length + cashPayments.length + bankPayments.length + cashReceipts.length + bankReceipts.length + returns.length;
+            const transactionCount = cashPayments.length + bankPayments.length + cashReceipts.length + bankReceipts.length + returns.length;
 
             return {
               id: supplier._id,

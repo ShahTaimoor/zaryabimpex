@@ -68,7 +68,7 @@ const orderSchema = new mongoose.Schema({
     enum: ['retail', 'wholesale', 'return', 'exchange'],
     default: 'retail'
   },
-  
+
   // Customer Information
   customer: {
     type: mongoose.Schema.Types.ObjectId,
@@ -79,12 +79,15 @@ const orderSchema = new mongoose.Schema({
     email: String,
     phone: String,
     businessName: String,
-    address: String
+    address: String,
+    currentBalance: Number,
+    pendingBalance: Number,
+    advanceBalance: Number
   },
-  
+
   // Order Items
   items: [orderItemSchema],
-  
+
   // Pricing Summary
   pricing: {
     subtotal: {
@@ -117,7 +120,7 @@ const orderSchema = new mongoose.Schema({
       min: 0
     }
   },
-  
+
   // Payment Information
   payment: {
     method: {
@@ -163,14 +166,14 @@ const orderSchema = new mongoose.Schema({
       }
     }]
   },
-  
+
   // Order Status
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'],
     default: 'pending'
   },
-  
+
   // Shipping Information
   shipping: {
     method: String,
@@ -185,7 +188,7 @@ const orderSchema = new mongoose.Schema({
     estimatedDelivery: Date,
     actualDelivery: Date
   },
-  
+
   // Notes
   notes: {
     type: String,
@@ -195,7 +198,7 @@ const orderSchema = new mongoose.Schema({
     type: String,
     maxlength: 1000
   },
-  
+
   // Metadata
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -206,7 +209,7 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  
+
   // Soft Delete Fields
   isDeleted: {
     type: Boolean,
@@ -217,7 +220,7 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
-  
+
   // CCTV Timestamp Fields
   billStartTime: {
     type: Date,
@@ -229,7 +232,7 @@ const orderSchema = new mongoose.Schema({
     default: null,
     index: true
   },
-  
+
   // Editable Bill Date (for backdating/postdating)
   billDate: {
     type: Date,
@@ -252,28 +255,28 @@ orderSchema.index({ 'pricing.total': -1 }); // For sorting by total
 orderSchema.index({ status: 1, 'payment.status': 1 }); // For payment status filtering
 
 // Pre-save middleware to generate order number using atomic Counter
-orderSchema.pre('save', async function(next) {
+orderSchema.pre('save', async function (next) {
   if (this.isNew && !this.orderNumber) {
     try {
       const Counter = mongoose.model('Counter');
-      
+
       // Use billDate if provided (for backdating), otherwise use current date
       const dateToUse = this.billDate ? new Date(this.billDate) : new Date();
       const year = dateToUse.getFullYear();
       const month = String(dateToUse.getMonth() + 1).padStart(2, '0');
       const day = String(dateToUse.getDate()).padStart(2, '0');
-      
+
       // Use atomic counter for date-based order numbers
       // Counter key format: orderNumber_YYYYMMDD
       const counterKey = `orderNumber_${year}${month}${day}`;
-      
+
       // Atomically increment counter using findOneAndUpdate
       const counter = await Counter.findOneAndUpdate(
         { _id: counterKey },
         { $inc: { seq: 1 } },
         { upsert: true, new: true }
       );
-      
+
       this.orderNumber = `SI-${year}${month}${day}-${String(counter.seq).padStart(4, '0')}`;
     } catch (err) {
       console.error('Error generating order number:', err);
@@ -284,44 +287,44 @@ orderSchema.pre('save', async function(next) {
 });
 
 // Method to calculate totals
-orderSchema.methods.calculateTotals = function() {
+orderSchema.methods.calculateTotals = function () {
   let subtotal = 0;
   let totalDiscount = 0;
   let totalTax = 0;
-  
+
   this.items.forEach(item => {
     const itemSubtotal = item.quantity * item.unitPrice;
     const itemDiscount = itemSubtotal * (item.discountPercent / 100);
     const itemTaxable = itemSubtotal - itemDiscount;
     const itemTax = itemTaxable * item.taxRate;
-    
+
     item.subtotal = itemSubtotal;
     item.discountAmount = itemDiscount;
     item.taxAmount = itemTax;
     item.total = itemSubtotal - itemDiscount + itemTax;
-    
+
     subtotal += itemSubtotal;
     totalDiscount += itemDiscount;
     totalTax += itemTax;
   });
-  
+
   this.pricing.subtotal = subtotal;
   this.pricing.discountAmount = totalDiscount;
   this.pricing.taxAmount = totalTax;
   this.pricing.total = subtotal - totalDiscount + totalTax + this.pricing.shippingAmount;
-  
+
   return this.pricing;
 };
 
 // Method to check if order can be cancelled
-orderSchema.methods.canBeCancelled = function() {
+orderSchema.methods.canBeCancelled = function () {
   return ['pending', 'confirmed'].includes(this.status);
 };
 
 // Method to check if order can be returned
-orderSchema.methods.canBeReturned = function() {
-  return ['delivered', 'shipped'].includes(this.status) && 
-         this.payment.status === 'paid';
+orderSchema.methods.canBeReturned = function () {
+  return ['delivered', 'shipped'].includes(this.status) &&
+    this.payment.status === 'paid';
 };
 
 // Export as 'Sales' model but keep collection name as 'orders' for database compatibility

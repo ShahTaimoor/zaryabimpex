@@ -129,6 +129,7 @@ export const Settings2 = () => {
       phone: '555-0123',
       email: 'jane@example.com',
       address: '123 Main Street',
+      currentBalance: 15450.75,
       addresses: [{ street: '123 Main Street', city: 'New York', state: 'NY', country: 'US', zipCode: '10001', isDefault: true }]
     },
     customerInfo: {
@@ -1866,7 +1867,7 @@ export const Settings2 = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-4">
                     Invoice/Sale Receipt Layout
                   </label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <label className="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                       <input
                         type="radio"
@@ -1909,45 +1910,61 @@ export const Settings2 = () => {
                         <div className="text-xs text-gray-500">Full layout with all information</div>
                       </div>
                     </label>
+                    <label className="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="invoiceLayout"
+                        value="layout2"
+                        checked={printSettings.invoiceLayout === 'layout2'}
+                        onChange={handlePrintSettingsChange}
+                        className="mr-3"
+                      />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Layout 2 (Professional)</div>
+                        <div className="text-xs text-gray-500">Boxed layout with totals summary</div>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
-                {/* Header and Footer Customization */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Header Text (Optional)
-                    </label>
-                    <textarea
-                      name="headerText"
-                      value={printSettings.headerText}
-                      onChange={handlePrintSettingsChange}
-                      className="input"
-                      placeholder="Enter custom header text"
-                      rows="3"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      This text will appear at the top of printed documents
-                    </p>
-                  </div>
+                {/* Header and Footer Customization - Hidden for Layout 2 */}
+                {printSettings.invoiceLayout !== 'layout2' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Header Text (Optional)
+                      </label>
+                      <textarea
+                        name="headerText"
+                        value={printSettings.headerText}
+                        onChange={handlePrintSettingsChange}
+                        className="input"
+                        placeholder="Enter custom header text"
+                        rows="3"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        This text will appear at the top of printed documents
+                      </p>
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Footer Text (Optional)
-                    </label>
-                    <textarea
-                      name="footerText"
-                      value={printSettings.footerText}
-                      onChange={handlePrintSettingsChange}
-                      className="input"
-                      placeholder="Enter custom footer text"
-                      rows="3"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      This text will appear at the bottom of printed documents
-                    </p>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Footer Text (Optional)
+                      </label>
+                      <textarea
+                        name="footerText"
+                        value={printSettings.footerText}
+                        onChange={handlePrintSettingsChange}
+                        className="input"
+                        placeholder="Enter custom footer text"
+                        rows="3"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        This text will appear at the bottom of printed documents
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Display Options - these apply to all print previews and printed documents (Sales/Purchase Invoice, Sales/Purchase Order) */}
                 <div>
@@ -1972,299 +1989,303 @@ export const Settings2 = () => {
                       </div>
                     </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showCompanyDetails"
-                        checked={printSettings.showCompanyDetails}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Company Details</div>
-                        <div className="text-xs text-gray-500">Display address and phone number</div>
-                      </div>
-                    </label>
+                    {printSettings.invoiceLayout !== 'layout2' && (
+                      <>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showCompanyDetails"
+                            checked={printSettings.showCompanyDetails}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Company Details</div>
+                            <div className="text-xs text-gray-500">Display address and phone number</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showDiscount"
-                        checked={printSettings.showDiscount}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Discount</div>
-                        <div className="text-xs text-gray-500">Display discount information on receipts</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showDiscount"
+                            checked={printSettings.showDiscount}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Discount</div>
+                            <div className="text-xs text-gray-500">Display discount information on receipts</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showTax"
-                        checked={printSettings.showTax}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Tax</div>
-                        <div className="text-xs text-gray-500">Display tax calculations on receipts</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showTax"
+                            checked={printSettings.showTax}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Tax</div>
+                            <div className="text-xs text-gray-500">Display tax calculations on receipts</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showDate"
-                        checked={printSettings.showDate}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Date</div>
-                        <div className="text-xs text-gray-500">Display transaction date on receipts</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showDate"
+                            checked={printSettings.showDate}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Date</div>
+                            <div className="text-xs text-gray-500">Display transaction date on receipts</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showFooter"
-                        checked={printSettings.showFooter}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Footer</div>
-                        <div className="text-xs text-gray-500">Display footer text and generation info</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showFooter"
+                            checked={printSettings.showFooter}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Footer</div>
+                            <div className="text-xs text-gray-500">Display footer text and generation info</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showCameraTime"
-                        checked={printSettings.showCameraTime}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Camera Time</div>
-                        <div className="text-xs text-gray-500">Display camera interval information</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showCameraTime"
+                            checked={printSettings.showCameraTime}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Camera Time</div>
+                            <div className="text-xs text-gray-500">Display camera interval information</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showEmail"
-                        checked={printSettings.showEmail}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Email</div>
-                        <div className="text-xs text-gray-500">Display customer email address on receipts</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showEmail"
+                            checked={printSettings.showEmail}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Email</div>
+                            <div className="text-xs text-gray-500">Display customer email address on receipts</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showDescription"
-                        checked={printSettings.showDescription}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Description</div>
-                        <div className="text-xs text-gray-500">Display item descriptions in table</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showDescription"
+                            checked={printSettings.showDescription}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Description</div>
+                            <div className="text-xs text-gray-500">Display item descriptions in table</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintBusinessName"
-                        checked={printSettings.showPrintBusinessName}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Business Name (Bill To)</div>
-                        <div className="text-xs text-gray-500">Display customer/supplier business name on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintBusinessName"
+                            checked={printSettings.showPrintBusinessName}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Business Name (Bill To)</div>
+                            <div className="text-xs text-gray-500">Display customer/supplier business name on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintContactName"
-                        checked={printSettings.showPrintContactName}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Contact Person Name (Bill To)</div>
-                        <div className="text-xs text-gray-500">Display contact person name on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintContactName"
+                            checked={printSettings.showPrintContactName}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Contact Person Name (Bill To)</div>
+                            <div className="text-xs text-gray-500">Display contact person name on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintAddress"
-                        checked={printSettings.showPrintAddress}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Address (Bill To)</div>
-                        <div className="text-xs text-gray-500">Display street address on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintAddress"
+                            checked={printSettings.showPrintAddress}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Address (Bill To)</div>
+                            <div className="text-xs text-gray-500">Display street address on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintCity"
-                        checked={printSettings.showPrintCity}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show City (Bill To)</div>
-                        <div className="text-xs text-gray-500">Display city on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintCity"
+                            checked={printSettings.showPrintCity}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show City (Bill To)</div>
+                            <div className="text-xs text-gray-500">Display city on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintState"
-                        checked={printSettings.showPrintState}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show State (Bill To)</div>
-                        <div className="text-xs text-gray-500">Display state/region on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintState"
+                            checked={printSettings.showPrintState}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show State (Bill To)</div>
+                            <div className="text-xs text-gray-500">Display state/region on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintPostalCode"
-                        checked={printSettings.showPrintPostalCode}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Postal Code (Bill To)</div>
-                        <div className="text-xs text-gray-500">Display postal/zip code on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintPostalCode"
+                            checked={printSettings.showPrintPostalCode}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Postal Code (Bill To)</div>
+                            <div className="text-xs text-gray-500">Display postal/zip code on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintInvoiceNumber"
-                        checked={printSettings.showPrintInvoiceNumber}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Invoice # (Invoice Details)</div>
-                        <div className="text-xs text-gray-500">Display invoice/order number on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintInvoiceNumber"
+                            checked={printSettings.showPrintInvoiceNumber}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Invoice # (Invoice Details)</div>
+                            <div className="text-xs text-gray-500">Display invoice/order number on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintInvoiceDate"
-                        checked={printSettings.showPrintInvoiceDate}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Date (Invoice Details)</div>
-                        <div className="text-xs text-gray-500">Display invoice date on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintInvoiceDate"
+                            checked={printSettings.showPrintInvoiceDate}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Date (Invoice Details)</div>
+                            <div className="text-xs text-gray-500">Display invoice date on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintInvoiceStatus"
-                        checked={printSettings.showPrintInvoiceStatus}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Status (Invoice Details)</div>
-                        <div className="text-xs text-gray-500">Display invoice status on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintInvoiceStatus"
+                            checked={printSettings.showPrintInvoiceStatus}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Status (Invoice Details)</div>
+                            <div className="text-xs text-gray-500">Display invoice status on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintInvoiceType"
-                        checked={printSettings.showPrintInvoiceType}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Type (Invoice Details)</div>
-                        <div className="text-xs text-gray-500">Display order/invoice type on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintInvoiceType"
+                            checked={printSettings.showPrintInvoiceType}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Type (Invoice Details)</div>
+                            <div className="text-xs text-gray-500">Display order/invoice type on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintPaymentStatus"
-                        checked={printSettings.showPrintPaymentStatus}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Status (Payment)</div>
-                        <div className="text-xs text-gray-500">Display payment status on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintPaymentStatus"
+                            checked={printSettings.showPrintPaymentStatus}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Status (Payment)</div>
+                            <div className="text-xs text-gray-500">Display payment status on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintPaymentMethod"
-                        checked={printSettings.showPrintPaymentMethod}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Method (Payment)</div>
-                        <div className="text-xs text-gray-500">Display payment method on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintPaymentMethod"
+                            checked={printSettings.showPrintPaymentMethod}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Method (Payment)</div>
+                            <div className="text-xs text-gray-500">Display payment method on print</div>
+                          </div>
+                        </label>
 
-                    <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
-                        name="showPrintPaymentAmount"
-                        checked={printSettings.showPrintPaymentAmount}
-                        onChange={handlePrintSettingsChange}
-                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">Show Amount (Payment)</div>
-                        <div className="text-xs text-gray-500">Display payment amount on print</div>
-                      </div>
-                    </label>
+                        <label className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            name="showPrintPaymentAmount"
+                            checked={printSettings.showPrintPaymentAmount}
+                            onChange={handlePrintSettingsChange}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">Show Amount (Payment)</div>
+                            <div className="text-xs text-gray-500">Display payment amount on print</div>
+                          </div>
+                        </label>
+                      </>
+                    )}
                   </div>
                 </div>
 

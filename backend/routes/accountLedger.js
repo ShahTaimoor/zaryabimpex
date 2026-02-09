@@ -1254,16 +1254,8 @@ router.get('/supplier/:supplierId/transactions', [
 
     // Calculate adjusted opening balance (transactions before startDate)
     if (start) {
-      // Purchases before startDate (increases payables)
-      const openingPurchases = await purchaseOrderRepository.findAll({
-        supplier: supplierId,
-        createdAt: { $lt: start },
-        isDeleted: { $ne: true }
-      }, { lean: true });
-
-      const openingPurchasesTotal = openingPurchases.reduce((sum, purchase) => {
-        return sum + (purchase.total || 0);
-      }, 0);
+      // Purchases before startDate (removed as per request)
+      const openingPurchasesTotal = 0;
 
       // Cash payments before startDate (decreases payables)
       const openingCashPayments = await cashPaymentRepository.findAll({
@@ -1368,12 +1360,7 @@ router.get('/supplier/:supplierId/transactions', [
 
     // Fetch all transactions in parallel
     const Return = require('../models/Return');
-    const [purchases, cashPayments, bankPayments, cashReceipts, bankReceipts, returns] = await Promise.all([
-      purchaseOrderRepository.findAll({
-        supplier: supplierId,
-        ...purchaseDateFilter,
-        isDeleted: { $ne: true }
-      }, { lean: true, sort: { createdAt: 1 } }),
+    const [cashPayments, bankPayments, cashReceipts, bankReceipts, returns] = await Promise.all([
       cashPaymentRepository.findAll({
         supplier: supplierId,
         ...paymentDateFilter
@@ -1401,21 +1388,8 @@ router.get('/supplier/:supplierId/transactions', [
     // Combine all transactions into a single array
     const allEntries = [];
 
-    // Add purchases (CREDITS - increases payables)
-    purchases.forEach(purchase => {
-      // Use createdAt for precise datetime (includes time)
-      const entryDate = purchase.createdAt || purchase.date || new Date();
-      allEntries.push({
-        date: entryDate,
-        datetime: new Date(entryDate).getTime(), // For precise sorting
-        voucherNo: purchase.poNumber || '',
-        particular: `Purchase: ${purchase.poNumber || purchase._id}`,
-        debitAmount: 0,
-        creditAmount: purchase.total || 0,
-        source: 'Purchase',
-        referenceId: purchase._id?.toString?.() || purchase._id
-      });
-    });
+    // Add purchases (Removed as per request)
+    const purchases = [];
 
     // Add cash payments (DEBITS - decreases payables)
     cashPayments.forEach(payment => {

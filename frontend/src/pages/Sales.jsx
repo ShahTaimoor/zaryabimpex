@@ -3009,7 +3009,10 @@ export const Sales = ({ tabId, editData }) => {
                           email: selectedCustomer.email,
                           phone: selectedCustomer.phone,
                           businessName: selectedCustomer.businessName,
-                          address: customerAddress || undefined
+                          address: customerAddress || undefined,
+                          currentBalance: selectedCustomer.currentBalance,
+                          pendingBalance: selectedCustomer.pendingBalance,
+                          advanceBalance: selectedCustomer.advanceBalance
                         } : null,
                         items: cart.map(item => ({
                           product: {
@@ -3035,7 +3038,11 @@ export const Sales = ({ tabId, editData }) => {
                           advanceAmount: isAdvancePayment ? (amountPaid - total) : 0
                         },
                         createdAt: new Date(),
-                        createdBy: { name: 'Current User' },
+                        createdBy: user ? {
+                          firstName: user.firstName,
+                          lastName: user.lastName,
+                          name: user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin'
+                        } : { name: 'Admin' },
                         invoiceNumber: invoiceNumber
                       };
                       setCurrentOrder(tempOrder);

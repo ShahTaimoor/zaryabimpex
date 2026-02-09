@@ -63,13 +63,13 @@ const PrintModal = ({
           <style>
             @media print {
               @page {
-                size: A4;
-                margin: 0.4in;
+                size: A4 landscape;
+                margin: 10mm;
               }
               body {
                 font-family: 'Inter', Arial, sans-serif;
-                font-size: 12px;
-                color: #111827;
+                font-size: 11px;
+                color: #000;
                 margin: 0;
                 padding: 0;
                 background: #fff;
@@ -86,8 +86,14 @@ const PrintModal = ({
                 padding: 0 !important;
                 margin: 0 !important;
               }
-              .print-document__toolbar, .no-print {
+              .print-document__toolbar, .no-print, button, .btn {
                 display: none !important;
+              }
+              .print-document__table th, 
+              .print-document__table td {
+                padding: 3px 4px !important;
+                font-size: 11px !important;
+                border: 1px solid #000 !important;
               }
             }
             .print-document {
@@ -97,88 +103,64 @@ const PrintModal = ({
             .print-document__title {
               font-size: 18px;
               font-weight: 600;
-              color: #111827;
-              margin-bottom: 12px;
+              margin-bottom: 8px;
             }
             .print-document__company {
-              text-align: center;
-              margin-bottom: 28px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 20px;
+            }
+            .print-document__company-details {
+              text-align: right;
+              flex: 1;
             }
             .print-document__company-name {
-              font-size: 30px;
+              font-size: 24px;
               font-weight: 700;
               margin-bottom: 4px;
             }
             .print-document__company-subtitle {
-              font-size: 16px;
-              color: #6b7280;
+              font-size: 14px;
+              color: #4b5563;
             }
             .print-document__logo-wrap {
-              margin-bottom: 16px;
-              text-align: center;
+              text-align: left;
             }
             .print-document__logo-img {
-              max-height: 80px;
-              max-width: 250px;
-              width: auto;
-              height: auto;
+              max-height: 60px;
+              max-width: 200px;
               object-fit: contain;
-              display: inline-block;
-            }
-            @media print {
-              .print-document__logo-img {
-                max-height: 72px;
-                max-width: 220px;
-              }
-            }
-            .print-document__logo-placeholder {
-              display: inline-flex;
-              align-items: center;
-              justify-content: center;
-              width: 72px;
-              height: 72px;
-              max-width: 220px;
-              max-height: 80px;
-              background: #e5e7eb;
-              color: #6b7280;
-              font-size: 28px;
-              font-weight: 700;
-              border-radius: 8px;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
             }
             .print-document__info-grid {
               display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-              gap: 24px;
-              margin-bottom: 28px;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 15px;
+              margin-bottom: 20px;
             }
             .print-document__info-section {
-              border-top: 2px solid #e5e7eb;
-              padding-top: 12px;
+              border-top: 1px solid #e5e7eb;
+              padding-top: 8px;
             }
             .print-document__info-title {
-              font-size: 12px;
+              font-size: 11px;
               font-weight: 600;
-              color: #6b7280;
-              letter-spacing: 0.08em;
+              color: #4b5563;
               text-transform: uppercase;
-              margin-bottom: 10px;
+              margin-bottom: 5px;
             }
-            .print-document__info-row {
-              font-size: 13px;
-              color: #111827;
-              margin-bottom: 6px;
+            .print-document__info-row, .print-document__info-line {
+              font-size: 11px;
+              margin-bottom: 3px;
               display: flex;
               justify-content: space-between;
             }
             .print-document__info-label {
-              font-weight: 500;
+              font-weight: 600;
               color: #374151;
             }
             .print-document__info-value {
               text-align: right;
-              max-width: 65%;
             }
             .print-document__table {
               width: 100%;
@@ -188,45 +170,40 @@ const PrintModal = ({
             .print-document__table th {
               background: #f3f4f6;
               border: 1px solid #e5e7eb;
-              text-align: left;
-              padding: 10px;
-              font-size: 13px;
-              font-weight: 600;
-              color: #111827;
+              padding: 4px 6px;
+              font-size: 11px;
+              font-weight: 700;
             }
             .print-document__table td {
               border: 1px solid #e5e7eb;
-              padding: 10px;
-              font-size: 13px;
-              color: #374151;
+              padding: 4px 6px;
+              font-size: 11px;
             }
             .print-document__summary {
-              margin-top: 24px;
+              margin-top: 20px;
               display: flex;
               justify-content: flex-end;
             }
             .print-document__summary-table {
-              width: 260px;
+              width: 200px;
             }
             .print-document__summary-row {
               display: flex;
               justify-content: space-between;
-              font-size: 14px;
-              margin-bottom: 6px;
-              color: #111827;
+              font-size: 12px;
+              margin-bottom: 4px;
             }
             .print-document__summary-row--total {
-              border-top: 1px solid #e5e7eb;
-              padding-top: 8px;
-              margin-top: 6px;
+              border-top: 1px solid #000;
+              padding-top: 5px;
               font-weight: 700;
-              font-size: 16px;
+              font-size: 14px;
             }
             .print-document__footer {
-              margin-top: 24px;
+              margin-top: 30px;
               text-align: center;
-              color: #6b7280;
-              font-size: 12px;
+              font-size: 10px;
+              color: #4b5563;
             }
             .print-document__footer span {
               display: block;
@@ -235,6 +212,74 @@ const PrintModal = ({
             .hidden {
               display: none !important;
             }
+
+            /* Layout 2 (Professional Boxed Layout) */
+            .print-document--layout2 {
+              font-family: 'Inter', system-ui, -apple-system, sans-serif;
+              color: #000;
+              line-height: 1.4;
+            }
+            .layout2-header {
+              margin-bottom: 20px;
+            }
+            .layout2-company-name {
+              font-size: 28px;
+              color: #000;
+              margin-bottom: 4px;
+            }
+            .layout2-table th {
+              background-color: #f3f4f6 !important;
+              color: #000 !important;
+              font-weight: 700 !important;
+              border: 1px solid #000 !important;
+              text-align: center;
+            }
+            .layout2-table td {
+              border: 1px solid #000 !important;
+              color: #000 !important;
+              padding: 4px;
+            }
+            .urdu-note {
+              font-family: inherit;
+              font-weight: 700;
+              margin-top: 40px;
+            }
+            .grid { display: grid; }
+            .grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+            .col-span-8 { grid-column: span 8 / span 8; }
+            .col-span-4 { grid-column: span 4 / span 4; }
+            .col-span-2 { grid-column: span 2 / span 2; }
+            .items-center { align-items: center; }
+            .gap-4 { gap: 1rem; }
+            .p-2 { padding: 0.5rem; }
+            .p-4 { padding: 1rem; }
+            .border-black { border-color: #000 !important; }
+            .border-t { border-top-width: 1px; }
+            .border-l { border-left-width: 1px; }
+            .border-r { border-right-width: 1px; }
+            .border-b { border-bottom-width: 1px; }
+            .border-b-2 { border-bottom-width: 2px; }
+            .font-bold { font-weight: 700; }
+            .font-medium { font-weight: 500; }
+            .italic { font-style: italic; }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .text-sm { font-size: 0.875rem; }
+            .text-lg { font-size: 1.125rem; }
+            .text-3xl { font-size: 1.875rem; }
+            .text-4xl { font-size: 2.25rem; }
+            .mb-1 { margin-bottom: 0.25rem; }
+            .mb-2 { margin-bottom: 0.5rem; }
+            .mb-4 { margin-bottom: 1rem; }
+            .mb-6 { margin-bottom: 1.5rem; }
+            .mt-0 { margin-top: 0; }
+            .mt-8 { margin-top: 2rem; }
+            .w-full { width: 100%; }
+            .max-h-20 { max-height: 5rem; }
+            .w-auto { width: auto; }
+            .object-contain { object-fit: contain; }
+            .uppercase { text-transform: uppercase; }
+            .underline { text-decoration: underline; }
           </style>
         </head>
         <body>

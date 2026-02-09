@@ -6,7 +6,7 @@ import { useGetSuppliersQuery } from '../store/services/suppliersApi';
 import { useLazyGetOrderByIdQuery } from '../store/services/salesApi';
 import { useLazyGetCashReceiptByIdQuery } from '../store/services/cashReceiptsApi';
 import { useLazyGetBankReceiptByIdQuery } from '../store/services/bankReceiptsApi';
-import { useLazyGetPurchaseOrderQuery } from '../store/services/purchaseOrdersApi';
+
 import PrintModal from '../components/PrintModal';
 import ReceiptPaymentPrintModal from '../components/ReceiptPaymentPrintModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -54,7 +54,7 @@ const AccountLedgerSummary = () => {
   const [getOrderById] = useLazyGetOrderByIdQuery();
   const [getCashReceiptById] = useLazyGetCashReceiptByIdQuery();
   const [getBankReceiptById] = useLazyGetBankReceiptByIdQuery();
-  const [getPurchaseOrder] = useLazyGetPurchaseOrderQuery();
+
 
   const [filters, setFilters] = useState({
     startDate: defaultDates.startDate,
@@ -290,39 +290,6 @@ const AccountLedgerSummary = () => {
         }
       } else if (entry.source === 'Cash Payment' || entry.source === 'Bank Payment') {
         toast('Print this payment from Cash Payments or Bank Payments page.');
-      } else if (entry.source === 'Purchase' && selectedSupplierId) {
-        const result = await getPurchaseOrder(entry.referenceId).unwrap();
-        const po = result?.purchaseOrder || result?.data || result;
-        if (po) {
-          const supplier = po.supplier || po.supplierInfo || {};
-          const orderData = {
-            orderNumber: po.poNumber || po._id,
-            invoiceNumber: po.poNumber || po._id,
-            supplier,
-            customer: supplier,
-            customerInfo: supplier,
-            items: (po.items || []).map((item) => ({
-              product: (item.product && typeof item.product === 'object') ? item.product : { name: item.productName || 'N/A' },
-              quantity: Number(item.quantity) || 0,
-              unitPrice: Number(item.costPerUnit ?? item.unitCost ?? item.unitPrice ?? 0) || 0,
-              costPerUnit: Number(item.costPerUnit ?? item.unitCost ?? 0) || 0,
-              price: Number(item.costPerUnit ?? item.unitCost ?? 0) || 0,
-              total: Number(item.totalCost ?? item.total ?? 0) || 0,
-              totalCost: Number(item.totalCost ?? item.total ?? 0) || 0,
-              totalPrice: Number(item.totalCost ?? item.total ?? 0) || 0
-            })),
-            pricing: po.pricing || { total: po.total || 0, subtotal: po.total || 0 },
-            total: po.total || 0,
-            createdAt: po.createdAt,
-            payment: { method: 'Credit', amountPaid: 0 }
-          };
-          setPrintDocumentTitle('Purchase Invoice');
-          setPrintPartyLabel('Supplier');
-          setPrintData(orderData);
-          setShowPrintModal(true);
-        } else {
-          toast.error('Could not load purchase for printing.');
-        }
       } else {
         toast('Print this document from the relevant module (e.g. Bank Receipts, Cash Payments, Sale Returns).');
       }

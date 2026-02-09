@@ -50,7 +50,7 @@ class SalesService {
     if (queryParams.productSearch) {
       const productSearchTerm = queryParams.productSearch.trim();
       const matchingProducts = await productRepository.search(productSearchTerm, 1000);
-      
+
       if (matchingProducts.length > 0) {
         const productIds = matchingProducts.map(p => p._id);
         filter['items.product'] = { $in: productIds };
@@ -73,7 +73,7 @@ class SalesService {
 
       // Search in Customer collection and match by customer ID
       const customerMatches = await customerRepository.search(searchTerm, { limit: 1000 });
-      
+
       if (customerMatches.length > 0) {
         const customerIds = customerMatches.map(c => c._id);
         searchConditions.push({ customer: { $in: customerIds } });
@@ -125,16 +125,16 @@ class SalesService {
       }
     } else if (queryParams.dateFrom || queryParams.dateTo) {
       const dateConditions = [];
-      
+
       if (queryParams.dateFrom) {
         const dateFrom = new Date(queryParams.dateFrom);
         dateFrom.setHours(0, 0, 0, 0);
-        
+
         if (queryParams.dateTo) {
           const dateTo = new Date(queryParams.dateTo);
           dateTo.setDate(dateTo.getDate() + 1);
           dateTo.setHours(0, 0, 0, 0);
-          
+
           // Match orders where billDate is in range, or if billDate doesn't exist, use createdAt
           dateConditions.push({
             $or: [
@@ -170,7 +170,7 @@ class SalesService {
         const dateTo = new Date(queryParams.dateTo);
         dateTo.setDate(dateTo.getDate() + 1);
         dateTo.setHours(0, 0, 0, 0);
-        
+
         dateConditions.push({
           $or: [
             {
@@ -185,7 +185,7 @@ class SalesService {
           ]
         });
       }
-      
+
       if (dateConditions.length > 0) {
         if (filter.$and) {
           filter.$and.push(...dateConditions);
@@ -205,7 +205,7 @@ class SalesService {
    */
   async getSalesOrders(queryParams) {
     const getAllOrders = queryParams.all === 'true' || queryParams.all === true ||
-                        (queryParams.limit && parseInt(queryParams.limit) >= 999999);
+      (queryParams.limit && parseInt(queryParams.limit) >= 999999);
 
     const page = getAllOrders ? 1 : (parseInt(queryParams.page) || 1);
     const limit = getAllOrders ? 999999 : (parseInt(queryParams.limit) || 20);
@@ -218,7 +218,7 @@ class SalesService {
       getAll: getAllOrders,
       sort: { createdAt: -1 },
       populate: [
-        { path: 'customer', select: 'firstName lastName businessName email phone address pendingBalance' },
+        { path: 'customer', select: 'firstName lastName businessName email phone address currentBalance pendingBalance advanceBalance' },
         { path: 'items.product', select: 'name description pricing' },
         { path: 'createdBy', select: 'firstName lastName' }
       ]
@@ -248,14 +248,14 @@ class SalesService {
    */
   async getSalesOrderById(id) {
     const order = await salesRepository.findById(id);
-    
+
     if (!order) {
       throw new Error('Order not found');
     }
 
     // Populate related fields
     await order.populate([
-      { path: 'customer', select: 'firstName lastName businessName email phone address pendingBalance' },
+      { path: 'customer', select: 'firstName lastName businessName email phone address currentBalance pendingBalance advanceBalance' },
       { path: 'items.product', select: 'name description pricing' },
       { path: 'createdBy', select: 'firstName lastName' }
     ]);

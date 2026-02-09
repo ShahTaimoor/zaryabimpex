@@ -96,7 +96,7 @@ const settingsSchema = new mongoose.Schema({
     showPrintPaymentAmount: { type: Boolean, default: true },
     headerText: { type: String, trim: true, default: '' },
     footerText: { type: String, trim: true, default: '' },
-    invoiceLayout: { type: String, enum: ['standard', 'compact', 'detailed'], default: 'standard' }
+    invoiceLayout: { type: String, enum: ['standard', 'compact', 'detailed', 'layout2'], default: 'standard' }
   },
 
   // Singleton pattern - only one settings document should exist

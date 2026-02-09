@@ -8,12 +8,12 @@
   * {
     @apply border-gray-200;
   }
-  
+
   html {
     overflow-x: hidden;
     max-width: 100vw;
   }
-  
+
   body {
     @apply bg-gray-50 text-gray-900 font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -21,7 +21,7 @@
     max-width: 100vw;
     position: relative;
   }
-  
+
   /* Prevent horizontal scrolling on all containers */
   #root {
     overflow-x: hidden;
@@ -33,71 +33,71 @@
   .btn {
     @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
   }
-  
+
   .btn-primary {
     @apply bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800;
   }
-  
+
   .btn-secondary {
     @apply bg-gray-200 text-gray-900 hover:bg-gray-300 active:bg-gray-400;
   }
-  
+
   .btn-success {
     @apply bg-success-600 text-white hover:bg-success-700 active:bg-success-800;
   }
-  
+
   .btn-danger {
     @apply bg-danger-600 text-white hover:bg-danger-700 active:bg-danger-800;
   }
-  
+
   .btn-sm {
     @apply h-8 px-3 text-xs;
   }
-  
+
   .btn-md {
     @apply h-10 px-4 py-2;
   }
-  
+
   .btn-lg {
     @apply h-12 px-8 text-base;
   }
-  
+
   .input {
     @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
-  
+
   .card {
     @apply rounded-lg border border-gray-200 bg-white shadow-soft;
   }
-  
+
   .card-header {
     @apply flex flex-col space-y-1.5 p-6;
   }
-  
+
   .card-content {
     @apply p-6 pt-0;
   }
-  
+
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
-  
+
   .badge-success {
     @apply bg-success-100 text-success-800;
   }
-  
+
   .badge-warning {
     @apply bg-warning-100 text-warning-800;
   }
-  
+
   .badge-danger {
     @apply bg-danger-100 text-danger-800;
   }
-  
+
   .badge-info {
     @apply bg-primary-100 text-primary-800;
   }
-  
+
   .badge-gray {
     @apply bg-gray-100 text-gray-800;
   }
@@ -124,12 +124,15 @@
 
 /* Hide scrollbar but keep functionality */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+  display: none;
+  /* Chrome, Safari and Opera */
 }
 
 /* Loading animation */
@@ -149,6 +152,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -202,8 +206,15 @@
 }
 
 .print-document__company {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 28px;
+}
+
+.print-document__company-details {
+  text-align: right;
+  flex: 1;
 }
 
 .print-document__company-name {
@@ -219,8 +230,7 @@
 
 /* Logo: responsive and print-friendly */
 .print-document__logo-wrap {
-  margin-bottom: 16px;
-  text-align: center;
+  text-align: left;
 }
 
 .print-document__logo-img {
@@ -281,15 +291,17 @@
 
 .print-document__info-grid {
   display: grid;
-.print-document__info-block::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 1px;
-  background-color: #e5e7eb;
-}
+
+  .print-document__info-block::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: #e5e7eb;
+  }
+
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 24px;
   margin-bottom: 24px;
@@ -307,6 +319,14 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-bottom: 10px;
+}
+
+.print-document__info-line {
+  font-size: 13px;
+  color: #111827;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
 }
 
 .print-document__info-row {
@@ -342,16 +362,16 @@
   background: #f3f4f6;
   border: 1px solid #e5e7eb;
   text-align: left;
-  padding: 10px;
-  font-size: 13px;
+  padding: 4px 6px;
+  font-size: 12px;
   font-weight: 600;
   color: #111827;
 }
 
 .print-document__table td {
   border: 1px solid #e5e7eb;
-  padding: 10px;
-  font-size: 13px;
+  padding: 4px 6px;
+  font-size: 12px;
   color: #374151;
 }
 
@@ -407,64 +427,141 @@
   margin-bottom: 20px;
 }
 
+/* Layout 2 (Professional Boxed Layout) */
+.print-document--layout2 {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #000;
+  line-height: 1.4;
+}
+
+.layout2-header {
+  margin-bottom: 20px;
+}
+
+.layout2-header .grid {
+  display: grid;
+  align-items: center;
+}
+
+.layout2-company-name {
+  font-size: 28px;
+  color: #000;
+  margin-bottom: 4px;
+}
+
+.layout2-table th {
+  background-color: #f3f4f6 !important;
+  color: #000 !important;
+  font-weight: 700 !important;
+  border-color: #000 !important;
+}
+
+.layout2-table td {
+  border-color: #000 !important;
+  color: #000 !important;
+}
+
+.urdu-note {
+  font-family: inherit;
+  font-weight: 700;
+  margin-top: 40px;
+}
+
 @media print {
-  .print-document__toolbar {
-    display: none;
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
   }
-  
-  /* Print-friendly ledger styles */
-  .no-print {
-    display: none !important;
+
+  /* Reset for print */
+  body {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 11px !important;
+    color: #000 !important;
   }
-  
-  .print-only {
-    display: block;
+
+  .print-document {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
   }
-  
-  /* Show only ledger table in print */
-  .account-ledger-print {
-    page-break-inside: avoid;
+
+  /* Compact Table Layout */
+  .print-document__table,
+  .account-ledger-table,
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 11px !important;
+    table-layout: auto !important;
   }
-  
-  .account-ledger-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 11px;
-  }
-  
+
+  .print-document__table th,
+  .print-document__table td,
   .account-ledger-table th,
-  .account-ledger-table td {
-    border: 1px solid #000;
-    padding: 4px 6px;
-    text-align: left;
+  .account-ledger-table td,
+  table th,
+  table td {
+    padding: 3px 4px !important;
+    border: 1px solid #000 !important;
+    height: auto !important;
+    line-height: 1.2 !important;
   }
-  
-  .account-ledger-table th {
-    background-color: #f0f0f0;
-    font-weight: bold;
+
+  .print-document__table th,
+  .account-ledger-table th,
+  table th {
+    background-color: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-weight: 700 !important;
   }
-  
-  /* Hide non-essential elements when printing */
+
+  /* Alignment */
+  .text-right {
+    text-align: right !important;
+  }
+
+  .text-left {
+    text-align: left !important;
+  }
+
+  .text-center {
+    text-align: center !important;
+  }
+
+  /* Hiding UI elements */
+  .no-print,
   button,
   .btn,
-  nav,
-  .sidebar,
   .filters,
-  .search {
+  .search,
+  nav,
+  aside,
+  .sidebar,
+  [role="button"],
+  [type="button"],
+  [type="submit"] {
     display: none !important;
   }
-  
+
+  /* Show print-only elements */
+  .print-only {
+    display: block !important;
+  }
+
   /* Ensure proper page breaks */
-  .ledger-entry-row {
-    page-break-inside: avoid;
+  tr {
+    page-break-inside: avoid !important;
   }
-  
-  /* Print headers on each page */
+
   thead {
-    display: table-header-group;
-  }
-  
-  tfoot {
-    display: table-footer-group;
+    display: table-header-group !important;
   }
 }

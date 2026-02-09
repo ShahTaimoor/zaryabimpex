@@ -174,7 +174,7 @@ router.get('/cctv-orders', [
 
     // Get orders with CCTV timestamps
     const orders = await Sales.find(query)
-      .populate('customer', 'displayName firstName lastName email phone addresses')
+      .populate('customer', 'displayName firstName lastName email phone addresses currentBalance pendingBalance advanceBalance')
       .populate('createdBy', 'firstName lastName')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -772,7 +772,10 @@ router.post('/', [
         email: customerData.email,
         phone: customerData.phone,
         businessName: customerData.businessName,
-        address: formatCustomerAddress(customerData)
+        address: formatCustomerAddress(customerData),
+        currentBalance: customerData.currentBalance,
+        pendingBalance: customerData.pendingBalance,
+        advanceBalance: customerData.advanceBalance
       } : null,
       items: orderItems,
       pricing: {
@@ -916,7 +919,7 @@ router.post('/', [
 
       // Populate order for response (include addresses for print preview)
       await savedOrder.populate([
-        { path: 'customer', select: 'firstName lastName businessName email phone addresses' },
+        { path: 'customer', select: 'firstName lastName businessName email phone addresses currentBalance pendingBalance advanceBalance' },
         { path: 'items.product', select: 'name description' },
         { path: 'createdBy', select: 'firstName lastName' }
       ]);
@@ -1121,7 +1124,10 @@ router.put('/:id', [
         email: customerData.email,
         phone: customerData.phone,
         businessName: customerData.businessName,
-        address: formatCustomerAddress(customerData)
+        address: formatCustomerAddress(customerData),
+        currentBalance: customerData.currentBalance,
+        pendingBalance: customerData.pendingBalance,
+        advanceBalance: customerData.advanceBalance
       } : null;
     }
 
@@ -1437,7 +1443,7 @@ router.put('/:id', [
 
     // Populate order for response (include addresses for print)
     await order.populate([
-      { path: 'customer', select: 'firstName lastName businessName email phone addresses' },
+      { path: 'customer', select: 'firstName lastName businessName email phone addresses currentBalance pendingBalance advanceBalance' },
       { path: 'items.product', select: 'name description pricing' },
       { path: 'createdBy', select: 'firstName lastName' }
     ]);

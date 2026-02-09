@@ -32,7 +32,8 @@ const PrintDocument = ({
         showPrintPaymentMethod = true,
         showPrintPaymentAmount = true,
         headerText = '',
-        footerText = ''
+        footerText = '',
+        invoiceLayout = 'standard'
     } = printSettings || {};
 
     const formatDate = (date) =>
@@ -99,17 +100,20 @@ const PrintDocument = ({
         }
 
         // Party: customer (sales) or supplier (purchase). Prefer explicit customerInfo/supplierInfo for stored snapshot.
-        const customer =
-            orderData.customerInfo || orderData.customer || orderData.supplierInfo || orderData.supplier || {};
+        const info = orderData.customerInfo || orderData.supplierInfo || {};
+        const fullParty = (typeof orderData.customer === 'object' ? orderData.customer : null) ||
+            (typeof orderData.supplier === 'object' ? orderData.supplier : null) || {};
+
+        // Merge them, preferring info for basic details but keeping balance from fullParty if missing in info
+        const customer = { ...fullParty, ...info };
+
         const composedName =
+            customer.name ||
             customer.displayName ||
             customer.businessName ||
-            customer.name ||
             customer.companyName ||
-            (customer.firstName || customer.lastName
-                ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim()
-                : '') ||
-            'Walk-in Customer';
+            customer.fullName ||
+            '—';
         const businessName =
             customer.businessName ||
             customer.companyName ||
@@ -168,7 +172,10 @@ const PrintDocument = ({
             street,
             city,
             state,
-            postalCode
+            postalCode,
+            balance: customer.currentBalance !== undefined
+                ? customer.currentBalance
+                : ((toNumber(customer.pendingBalance || 0)) - (toNumber(customer.advanceBalance || 0)))
         };
     }, [orderData]);
 
@@ -243,14 +250,14 @@ const PrintDocument = ({
     const generatedAt = new Date();
 
     const billToLines = [
-        showPrintContactName ? partyInfo.name : null,
-        showPrintBusinessName && partyInfo.extra ? partyInfo.extra : null,
-        showEmail && partyInfo.email !== 'N/A' ? partyInfo.email : null,
-        partyInfo.phone !== 'N/A' ? partyInfo.phone : null,
-        showPrintAddress && (partyInfo.street || partyInfo.address) ? (partyInfo.street || partyInfo.address) : null,
-        showPrintCity && partyInfo.city ? partyInfo.city : null,
-        showPrintState && partyInfo.state ? partyInfo.state : null,
-        showPrintPostalCode && partyInfo.postalCode ? partyInfo.postalCode : null
+        showPrintContactName ? { label: 'Name:', value: partyInfo.name } : null,
+        showPrintBusinessName && partyInfo.extra ? { label: 'Business:', value: partyInfo.extra } : null,
+        showEmail && partyInfo.email !== 'N/A' ? { label: 'Email:', value: partyInfo.email } : null,
+        partyInfo.phone !== 'N/A' ? { label: 'Phone:', value: partyInfo.phone } : null,
+        showPrintAddress && (partyInfo.street || partyInfo.address) ? { label: 'Address:', value: (partyInfo.street || partyInfo.address) } : null,
+        showPrintCity && partyInfo.city ? { label: 'City:', value: partyInfo.city } : null,
+        showPrintState && partyInfo.state ? { label: 'State:', value: partyInfo.state } : null,
+        showPrintPostalCode && partyInfo.postalCode ? { label: 'Postal:', value: partyInfo.postalCode } : null
     ].filter(Boolean);
 
     const invoiceDetailLines = [
@@ -267,6 +274,148 @@ const PrintDocument = ({
     ].filter(Boolean);
 
     const hasCameraTime = orderData?.billStartTime || orderData?.billEndTime;
+
+    // ==========================================
+    // Layout 2 (Professional Boxed Layout)
+    // ==========================================
+    if (invoiceLayout === 'layout2') {
+        const totalReceivables = toNumber(totalValue) + toNumber(partyInfo.balance || 0);
+
+        return (
+            <div className="print-document print-document--layout2">
+                {children}
+
+                {/* Header Section */}
+                <div className="layout2-header">
+                    <div className="grid grid-cols-12 gap-4 items-center mb-2">
+                        <div className="col-span-2">
+                            {showLogo && safeCompanySettings.logo && (
+                                <img
+                                    src={safeCompanySettings.logo}
+                                    alt="Logo"
+                                    className="max-h-20 w-auto object-contain"
+                                />
+                            )}
+                        </div>
+                        <div className="col-span-8 text-center">
+                            <h1 className="layout2-company-name italic font-bold text-4xl mb-1">
+                                {resolvedCompanyName}
+                            </h1>
+                            <div className="layout2-company-address italic text-sm">
+                                {resolvedCompanyAddress}
+                            </div>
+                            <div className="layout2-company-phone italic text-sm">
+                                Phone # {resolvedCompanyPhone}
+                            </div>
+                        </div>
+                        <div className="col-span-2"></div>
+                    </div>
+                    <div className="border-b-2 border-black w-full mb-6"></div>
+                </div>
+
+                {/* Info Boxes */}
+                <div className="grid grid-cols-12 gap-0 mb-6 border-t border-l border-black">
+                    <div className="col-span-8 p-2 border-r border-b border-black font-medium">
+                        Customer: <span className="uppercase">{partyInfo.name}</span> {partyInfo.phone !== 'N/A' && partyInfo.phone}
+                    </div>
+                    <div className="col-span-4 p-2 border-r border-b border-black font-medium text-right">
+                        Invoice Date: {formatDate(orderData?.createdAt || orderData?.invoiceDate)}
+                    </div>
+                    <div className="col-span-8 p-2 border-r border-b border-black font-medium min-h-[40px]">
+                        Address: {partyInfo.address}
+                    </div>
+                    <div className="col-span-4 p-2 border-r border-b border-black font-medium text-right italic">
+                        Invoice No: {documentNumber}
+                    </div>
+                </div>
+
+                {/* Items Table */}
+                <table className="layout2-table w-full border-collapse mb-0">
+                    <thead>
+                        <tr>
+                            <th className="border border-black p-1 text-center w-[60px]">S.No</th>
+                            <th className="border border-black p-1 text-center">Product Name</th>
+                            <th className="border border-black p-1 text-center w-[100px]">Quantity</th>
+                            <th className="border border-black p-1 text-center w-[120px]">Price</th>
+                            <th className="border border-black p-1 text-center w-[150px]">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map((item, index) => {
+                            const qty = toNumber(item.quantity ?? item.qty, 0);
+                            const price = toNumber(
+                                item.unitPrice ?? item.price ?? item.unitCost ?? item.rate,
+                                0
+                            );
+                            const lineTotal = toNumber(item.total ?? item.lineTotal ?? item.totalPrice ?? item.totalCost, qty * price);
+                            return (
+                                <tr key={index}>
+                                    <td className="border border-black p-1 text-center">{index + 1}</td>
+                                    <td className="border border-black p-1 uppercase">{item.product?.name || item.name || `Item ${index + 1}`}</td>
+                                    <td className="border border-black p-1 text-center">{formatCurrency(qty)}</td>
+                                    <td className="border border-black p-1 text-right">{formatCurrency(price)}</td>
+                                    <td className="border border-black p-1 text-right">{formatCurrency(lineTotal)}</td>
+                                </tr>
+                            );
+                        })}
+                        {/* Summary Footer of Table */}
+                        <tr className="font-bold">
+                            <td colSpan="4" className="border border-black p-1 text-right">Total</td>
+                            <td className="border border-black p-1 text-right">{formatCurrency(computedSubtotal)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                {/* Bottom Section */}
+                <div className="grid grid-cols-12 gap-0 mt-0">
+                    <div className="col-span-8 p-4 italic">
+                        <div className="mb-2">
+                            Printed By: <span className="underline font-bold uppercase">{orderData?.createdBy?.firstName || (orderData?.createdBy?.name ? orderData.createdBy.name.split(' ')[0] : 'ADMIN')}</span>
+                        </div>
+                        <div>
+                            Entry Date Time: {formatDateTime(orderData?.createdAt || orderData?.invoiceDate)}
+                        </div>
+                        <div className="mb-6">
+                            Print Date Time: {formatDateTime(generatedAt)}
+                        </div>
+                        <div className="urdu-note text-right font-bold text-lg mt-8" dir="rtl">
+                            نوٹ: پلٹی شدہ مال کی ٹوٹ پھوٹ کی ذمہ داری نہیں ہو گی۔ مال دوکان میں چیک
+                        </div>
+                    </div>
+                    <div className="col-span-4">
+                        <table className="w-full border-collapse border-l border-black">
+                            <tbody>
+                                <tr>
+                                    <td className="border-b border-r border-black p-1 text-right font-bold">Invoice Discount</td>
+                                    <td className="border-b border-r border-black p-1 text-right">{formatCurrency(discountValue)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border-b border-r border-black p-1 text-right font-bold">Net Amount</td>
+                                    <td className="border-b border-r border-black p-1 text-right font-bold">{formatCurrency(totalValue)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border-b border-r border-black p-1 text-right font-bold">Received Amount</td>
+                                    <td className="border-b border-r border-black p-1 text-right">{formatCurrency(orderData?.payment?.amountPaid || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border-b border-r border-black p-1 text-right font-bold">Invoice Balance</td>
+                                    <td className="border-b border-r border-black p-1 text-right">{formatCurrency(toNumber(totalValue) - toNumber(orderData?.payment?.amountPaid || 0))}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border-b border-r border-black p-1 text-right font-bold">Previous Balance</td>
+                                    <td className="border-b border-r border-black p-1 text-right">{formatCurrency(partyInfo.balance || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td className="border-b border-r border-black p-1 text-right font-bold">Total Receivables</td>
+                                    <td className="border-b border-r border-black p-1 text-right font-bold">{formatCurrency(totalReceivables)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="print-document">
@@ -300,21 +449,21 @@ const PrintDocument = ({
                     </div>
                 )}
 
-                <div className="print-document__company-name">{resolvedCompanyName}</div>
-                {showCompanyDetails && (
-                    <div className="print-document__company-subtitle">{resolvedCompanySubtitle}</div>
-                )}
+                <div className="print-document__company-details">
+                    <div className="print-document__company-name">{resolvedCompanyName}</div>
+                    {showCompanyDetails && (
+                        <div className="print-document__company-subtitle">{resolvedCompanySubtitle}</div>
+                    )}
+                </div>
             </div>
 
             <div className="print-document__info-grid">
                 <div className="print-document__info-block">
                     <div className="print-document__section-label">{partyHeaderLabel}:</div>
                     {billToLines.map((line, idx) => (
-                        <div
-                            key={`bill-${idx}`}
-                            className="print-document__info-line print-document__info-line--stack"
-                        >
-                            {line}
+                        <div key={`bill-${idx}`} className="print-document__info-line">
+                            <span className="print-document__info-label">{line.label}</span>
+                            <span className="print-document__info-value">{line.value}</span>
                         </div>
                     ))}
                 </div>
